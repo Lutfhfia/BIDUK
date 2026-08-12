@@ -44,11 +44,37 @@ class Student extends Model
         'status',
     ];
 
-    protected function casts(): array
+    protected $attributes = [
+        'siblings_biological' => 0,
+        'siblings_step' => 0,
+        'siblings_adopted' => 0,
+    ];
+
+    protected $casts = [
+        'birth_date' => 'date',
+        'siblings_biological' => 'integer',
+        'siblings_step' => 'integer',
+        'siblings_adopted' => 'integer',
+    ];
+
+    protected function normalizeSiblingValue($value): int
     {
-        return [
-            'birth_date' => 'date',
-        ];
+        return $value === null || $value === '' ? 0 : (int) $value;
+    }
+
+    public function setSiblingsBiologicalAttribute($value)
+    {
+        $this->attributes['siblings_biological'] = $this->normalizeSiblingValue($value);
+    }
+
+    public function setSiblingsStepAttribute($value)
+    {
+        $this->attributes['siblings_step'] = $this->normalizeSiblingValue($value);
+    }
+
+    public function setSiblingsAdoptedAttribute($value)
+    {
+        $this->attributes['siblings_adopted'] = $this->normalizeSiblingValue($value);
     }
 
     /**
