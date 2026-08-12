@@ -17,9 +17,19 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        $this->call([
+            RoleSeeder::class,
+            AcademicYearSeeder::class,
+            ClassSeeder::class,
+            StudentSeeder::class,
+        ]);
+
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Super Admin',
+            'email' => 'admin@sdn204.sch.id',
+            'username' => 'admin',
+            'password' => bcrypt('password'),
+            'role_id' => 1,
         ]);
     }
 }
