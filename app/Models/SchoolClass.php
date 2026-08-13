@@ -7,17 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class SchoolClass extends Model
 {
     protected $table = 'classes';
 
     protected $fillable = [
-        'academic_year_id',
-        'name',
-        'grade_level',
-        'homeroom_teacher_id',
-        'status',
-    ];
+    'academic_year_id',
+    'name',
+    'grade_level',
+    'homeroom_teacher_id',
+    'capacity',
+    'status',
+];
 
     /**
      * Tahun ajaran yang terkait dengan kelas ini.
