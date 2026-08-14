@@ -156,6 +156,28 @@
             cursor: pointer;
             transition: 0.2s;
         }
+        .btn-back {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 10px;
+            background: white;
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-back:hover {
+            background: #f4f4f4;
+            color: #198754;
+            border-color: #198754;
+}
 
         .btn-login:hover {
             background: #157347;
@@ -254,6 +276,9 @@
         <button type="submit" class="btn-login">
             Masuk
         </button>
+        <a href="{{ url('/') }}" class="btn-back">
+            ← Kembali ke Halaman Utama
+        </a>
 
     </form>
 
