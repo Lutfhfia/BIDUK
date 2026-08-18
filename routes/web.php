@@ -5,7 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\EmployeeController;
 Route::get('/', function () {
     return view('landing.index');
 });
@@ -49,4 +49,22 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
         ->name('classes.students.remove');
+       
+// ==============================
+// DATA PEGAWAI
+// ==============================
+
+Route::get('pegawai/import/template', [EmployeeController::class, 'downloadTemplate'])
+->name('pegawai.import.template');
+
+Route::post('pegawai/import', [EmployeeController::class, 'import'])
+->name('pegawai.import');
+
+Route::get('pegawai/export/excel', [EmployeeController::class, 'exportExcel'])
+    ->name('pegawai.export.excel');
+
+Route::get('pegawai/export/pdf', [EmployeeController::class, 'exportPdf'])
+    ->name('pegawai.export.pdf');
+
+Route::resource('pegawai', EmployeeController::class);
 });
