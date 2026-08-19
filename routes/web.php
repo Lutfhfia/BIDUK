@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
+use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +38,12 @@ Route::middleware('auth')->group(function () {
 
     // Data Kelas
     Route::resource('classes', SchoolClassController::class);
+
+    // Tahun Ajaran
+    Route::resource('academic-years', AcademicYearController::class);
+
+    // Semester
+    Route::resource('semesters', SemesterController::class);
 
     // Pengelolaan siswa dalam kelas
     Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
