@@ -87,14 +87,13 @@
 
             {{-- Tahun Ajaran --}}
             <li class="nav-item">
-
-                <a href="#" class="nav-link">
+                <a href="{{ route('academic-years.index') }}"
+                class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar3"></i>
                     <span>Tahun Ajaran</span>
 
                 </a>
-
             </li>
 
 
