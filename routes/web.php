@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
 Route::get('/', function () {
     return view('landing.index');
@@ -36,6 +37,9 @@ Route::middleware('auth')->group(function () {
 
     // Data Kelas
     Route::resource('classes', SchoolClassController::class);
+
+    // Mata Pelajaran
+    Route::resource('subjects', SubjectController::class);
 
     // Pengelolaan siswa dalam kelas
     Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
