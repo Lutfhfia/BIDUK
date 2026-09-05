@@ -6,6 +6,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\RekapAbsensiController;
 use App\Http\Controllers\EmployeeController;
 Route::get('/', function () {
     return view('landing.index');
@@ -40,6 +41,14 @@ Route::middleware('auth')->group(function () {
 
     // Mata Pelajaran
     Route::resource('subjects', SubjectController::class);
+    // Rekap Absensi
+   // Rekap Absensi
+Route::get(
+    'rekap-absensi/students/{class}',
+    [RekapAbsensiController::class, 'studentsByClass']
+)->name('rekap-absensi.students');
+
+Route::resource('rekap-absensi', RekapAbsensiController::class);
 
     // Pengelolaan siswa dalam kelas
     Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
