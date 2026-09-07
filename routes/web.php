@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SemesterController;
@@ -12,7 +13,10 @@ Route::get('/', function () {
     return view('landing.index');
 });
 
-// Login
+// =====================================================
+// LOGIN
+// =====================================================
+
 Route::get('/login', [AuthController::class, 'showLogin'])
     ->name('login');
 
@@ -22,30 +26,81 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])
     ->name('password.forgot');
 
-// Route yang hanya bisa diakses setelah login
+
+// =====================================================
+// ROUTE SETELAH LOGIN
+// =====================================================
+
 Route::middleware('auth')->group(function () {
 
-    // Dashboard
+    // =================================================
+    // DASHBOARD
+    // =================================================
+
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    // Logout
+
+    // =================================================
+    // LOGOUT
+    // =================================================
+
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
-    // Data Siswa
+
+    // =================================================
+    // LAPORAN - BUKU INDUK
+    // =================================================
+
+    // Halaman utama Buku Induk
+    Route::get('/laporan/buku-induk', [BukuIndukController::class, 'index'])
+        ->name('buku-induk.index');
+
+    // Daftar Buku Induk per kelas atau seluruh kelas
+    Route::get('/laporan/buku-induk/cetak-batch', [BukuIndukController::class, 'batch'])
+        ->name('buku-induk.batch');
+
+    // Halaman cetak Buku Induk per siswa
+    Route::get('/laporan/buku-induk/cetak/{student}', [BukuIndukController::class, 'print'])
+        ->name('buku-induk.print');
+
+    Route::get('/laporan/buku-induk/unduh-semua', [BukuIndukController::class, 'downloadAll'])
+        ->name('buku-induk.download-all');
+
+
+    // =================================================
+    // DATA SISWA
+    // =================================================
+
     Route::resource('students', StudentController::class);
 
-    // Data Kelas
+
+    // =================================================
+    // DATA KELAS
+    // =================================================
+
     Route::resource('classes', SchoolClassController::class);
 
-    // Tahun Ajaran
+
+    // =================================================
+    // TAHUN AJARAN
+    // =================================================
+
     Route::resource('academic-years', AcademicYearController::class);
 
-    // Semester
+
+    // =================================================
+    // SEMESTER
+    // =================================================
+
     Route::resource('semesters', SemesterController::class);
 
-    // Pengelolaan siswa dalam kelas
+
+    // =================================================
+    // PENGELOLAAN SISWA DALAM KELAS
+    // =================================================
+
     Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
         ->name('classes.students');
 
