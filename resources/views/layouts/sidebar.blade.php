@@ -21,7 +21,7 @@
         <ul class="sidebar-nav">
 
             <li class="nav-item">
-                <a href="{{ url('/') }}" class="nav-link {{ request()->is('/') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
 
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
@@ -88,7 +88,7 @@
             {{-- Tahun Ajaran --}}
             <li class="nav-item">
                 <a href="{{ route('academic-years.index') }}"
-                class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
+                    class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar3"></i>
                     <span>Tahun Ajaran</span>
@@ -113,7 +113,8 @@
             {{-- Semester --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('semesters.index') }}"
+                    class="nav-link {{ request()->routeIs('semesters.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar-range"></i>
                     <span>Semester</span>
@@ -146,7 +147,8 @@
             {{-- Buku Induk --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('buku-induk.index') }}"
+                    class="nav-link {{ request()->routeIs('buku-induk.*') ? 'active' : '' }}">
 
                     <i class="bi bi-book-fill"></i>
                     <span>Buku Induk</span>
