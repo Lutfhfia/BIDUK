@@ -221,15 +221,16 @@
 
 
         <div class="form-group">
-            <label for="nip">NIP</label>
+        <label for="login">NIP / Username</label>
 
             <div class="input-wrapper">
-                <input
-                    type="text"
-                    id="nip"
-                    name="nip"
-                    placeholder="Masukkan NIP"
-                    autocomplete="username"
+            <input
+            type="text"
+            id="login"
+            name="login"
+            placeholder="Masukkan NIP atau username"
+            autocomplete="username"
+
                 >
             </div>
         </div>

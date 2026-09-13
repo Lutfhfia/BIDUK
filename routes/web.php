@@ -7,6 +7,7 @@ use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\UserController;
 Route::get('/', function () {
     return view('landing.index');
 });
@@ -53,6 +54,9 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
         ->name('classes.students.remove');
+
+    // Manajemen User
+    Route::resource('users', UserController::class);
        
 // ==============================
 // DATA PEGAWAI
