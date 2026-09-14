@@ -54,7 +54,8 @@
             {{-- Data Pegawai --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('pegawai.index') }}"
+                    class="nav-link {{ request()->routeIs('pegawai.*') ? 'active' : '' }}">
 
                     <i class="bi bi-person-badge-fill"></i>
                     <span>Data Pegawai</span>
@@ -88,7 +89,8 @@
             {{-- Tahun Ajaran --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('academic-years.index') }}"
+                    class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar3"></i>
                     <span>Tahun Ajaran</span>
@@ -101,7 +103,8 @@
             {{-- Mata Pelajaran --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('subjects.index') }}"
+                    class="nav-link {{ request()->routeIs('subjects.*') ? 'active' : '' }}">
 
                     <i class="bi bi-journal-bookmark-fill"></i>
                     <span>Mata Pelajaran</span>
@@ -114,7 +117,8 @@
             {{-- Semester --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('semesters.index') }}"
+                    class="nav-link {{ request()->routeIs('semesters.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar-range"></i>
                     <span>Semester</span>
@@ -127,7 +131,8 @@
             {{-- Nilai Rapot --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('buku-induk.index') }}"
+                    class="nav-link {{ request()->routeIs('buku-induk.*') ? 'active' : '' }}">
 
                     <i class="bi bi-card-checklist"></i>
                     <span>Nilai Rapot</span>
@@ -147,7 +152,8 @@
             {{-- Buku Induk --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('buku-induk.index') }}"
+                    class="nav-link {{ request()->routeIs('buku-induk.*') ? 'active' : '' }}">
 
                     <i class="bi bi-book-fill"></i>
                     <span>Buku Induk</span>

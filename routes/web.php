@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\SemesterController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
@@ -32,11 +35,28 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
+    // Laporan Buku Induk
+    Route::get('/laporan/buku-induk', [BukuIndukController::class, 'index'])
+        ->name('buku-induk.index');
+
+    Route::get('/laporan/buku-induk/cetak-batch', [BukuIndukController::class, 'batch'])
+        ->name('buku-induk.batch');
+
+    Route::get('/laporan/buku-induk/cetak/{student}', [BukuIndukController::class, 'print'])
+        ->name('buku-induk.print');
+
+    Route::get('/laporan/buku-induk/unduh-semua', [BukuIndukController::class, 'downloadAll'])
+        ->name('buku-induk.download-all');
+
     // Data Siswa
     Route::resource('students', StudentController::class);
 
     // Data Kelas
     Route::resource('classes', SchoolClassController::class);
+
+    // Tahun Ajaran dan Semester
+    Route::resource('academic-years', AcademicYearController::class);
+    Route::resource('semesters', SemesterController::class);
 
     // Mata Pelajaran
     Route::resource('subjects', SubjectController::class);
