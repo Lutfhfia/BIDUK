@@ -1,0 +1,68 @@
+* [33mfd35f89[m[33m ([m[1;32mfeature/nilai-rapot[m[33m)[m backup fitur lokal
+[31m|[m * [33m563e9d1[m[33m ([m[1;31morigin/feature/manajemen-user[m[33m)[m feat: tambah manajemen user
+[31m|[m[31m/[m  
+[31m|[m *   [33m66c4cac[m[33m ([m[1;31morigin/develop[m[33m)[m Merge pull request #11 from Lutfhfia/feature/buku-induk
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33m80f8fa2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/buku-induk[m[33m, [m[1;31morigin/feature/buku-induk[m[33m)[m feat: implement buku induk
+[31m|[m [33m|[m[33m/[m  
+[31m|[m *   [33m0239a0a[m[33m ([m[1;32mdevelop[m[33m)[m Merge pull request #8 from Lutfhfia/feature/academic-years
+[31m|[m [35m|[m[36m\[m  
+[31m|[m [35m|[m *   [33m97e184d[m[33m ([m[1;31morigin/feature/academic-years[m[33m, [m[1;32mfeature/academic-years[m[33m)[m Merge branch 'develop' into feature/academic-years
+[31m|[m [35m|[m [1;31m|[m[35m\[m  
+[31m|[m [35m|[m [1;31m|[m[35m/[m  
+[31m|[m [35m|[m[35m/[m[1;31m|[m   
+[31m|[m [35m|[m * [33m8573719[m pull
+[31m|[m [35m|[m * [33mefed460[m feat: add academic year management
+[31m|[m [35m|[m [1;32m|[m * [33m44ac01c[m[33m ([m[1;31morigin/feature/rekap-absensi[m[33m)[m feat: lengkapi CRUD rekap absensi
+[31m|[m [35m|[m [1;32m|[m * [33m4e3697b[m feat: mulai fitur rekap absensi
+[31m|[m [35m|[m[31m_[m[1;32m|[m[31m/[m  
+[31m|[m[31m/[m[35m|[m [1;32m|[m   
+* [35m|[m [1;32m|[m   [33m88808f4[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #9 from Lutfhfia/feature/master-mata-pelajaran
+[1;34m|[m[1;35m\[m [35m\[m [1;32m\[m  
+[1;34m|[m * [35m|[m [1;32m|[m [33mdeaeaa1[m[33m ([m[1;31morigin/feature/master-mata-pelajaran[m[33m, [m[1;32mfeature/master-mata-pelajaran[m[33m)[m feat: tambah master data mata pelajaran
+[1;34m|[m[1;34m/[m [35m/[m [1;32m/[m  
+* [35m|[m [1;32m|[m   [33mbb134f3[m Merge pull request #7 from Lutfhfia/feature/master-pegawai
+[1;36m|[m[31m\[m [35m\[m [1;32m\[m  
+[1;36m|[m * [35m|[m [1;32m|[m [33m1c41f22[m[33m ([m[1;31morigin/feature/master-pegawai[m[33m)[m feat: tambah master data pegawai
+[1;36m|[m [35m|[m[35m/[m [1;32m/[m  
+[1;36m|[m * [1;32m|[m   [33mc0adccd[m Merge pull request #6 from Lutfhfia/feature/login
+[1;36m|[m [32m|[m[33m\[m [1;32m\[m  
+[1;36m|[m [32m|[m * [1;32m|[m [33m65f0d74[m[33m ([m[1;31morigin/feature/login[m[33m)[m fix: add back button to login
+[1;36m|[m * [33m|[m [1;32m|[m   [33m1812594[m Merge pull request #5 from Lutfhfia/feature/dashboard-superadmin
+[1;36m|[m [1;32m|[m[35m\[m [33m\[m [1;32m\[m  
+[1;36m|[m [1;32m|[m [35m|[m[1;32m_[m[33m|[m[1;32m/[m  
+[1;36m|[m [1;32m|[m[1;32m/[m[35m|[m [33m|[m   
+[1;36m|[m [1;32m|[m * [33m|[m   [33m07959c7[m[33m ([m[1;31morigin/feature/dashboard-superadmin[m[33m)[m Merge branch 'develop' into feature/dashboard-superadmin
+[1;36m|[m [1;32m|[m [36m|[m[1;32m\[m [33m\[m  
+[1;36m|[m [1;32m|[m [36m|[m[1;32m/[m [33m/[m  
+[1;36m|[m [1;32m|[m[1;32m/[m[36m|[m [33m|[m   
+[1;36m|[m * [36m|[m [33m|[m   [33m087394f[m Merge pull request #4 from Lutfhfia/feature/master-kelas
+[1;36m|[m [1;32m|[m[1;33m\[m [36m\[m [33m\[m  
+[1;36m|[m [1;32m|[m * [36m\[m [33m\[m   [33m8ccd3a9[m[33m ([m[1;31morigin/feature/master-kelas[m[33m)[m Merge branch 'develop' into feature/master-kelas
+[1;36m|[m [1;32m|[m [1;34m|[m[1;32m\[m [36m\[m [33m\[m  
+[1;36m|[m [1;32m|[m [1;34m|[m[1;32m/[m [36m/[m [33m/[m  
+[1;36m|[m [1;32m|[m[1;32m/[m[1;34m|[m [36m|[m [33m|[m   
+[1;36m|[m [1;32m|[m * [36m|[m [33m|[m [33mab139a7[m[33m ([m[1;32mfeature/master-kelas[m[33m)[m feat: add master class management
+[1;36m|[m [1;32m|[m [1;35m|[m * [33m|[m [33mb5f1a45[m feat: implement super admin dashboard
+[1;36m|[m [1;32m|[m [1;35m|[m[1;32m/[m [33m/[m  
+[1;36m|[m [1;32m|[m[1;32m/[m[1;35m|[m [33m|[m   
+[1;36m|[m * [1;35m|[m [33m|[m   [33m2c1a81e[m Merge pull request #3 from Lutfhfia/feature/login
+[1;36m|[m [1;35m|[m[33m\[m [1;35m\[m [33m\[m  
+[1;36m|[m [1;35m|[m [33m|[m[1;35m/[m [33m/[m  
+[1;36m|[m [1;35m|[m[1;35m/[m[33m|[m [33m/[m   
+[1;36m|[m [1;35m|[m [33m|[m[33m/[m    
+[1;36m|[m [1;35m|[m * [33m457b29e[m feat: implement login and authentication
+[1;36m|[m [1;35m|[m[1;35m/[m  
+[1;36m|[m *   [33m532417d[m Merge pull request #2 from Lutfhfia/feature/landing-page
+[1;36m|[m [32m|[m[33m\[m  
+[1;36m|[m [32m|[m *   [33mdd813b4[m[33m ([m[1;31morigin/feature/landing-page[m[33m)[m Merge develop into feature/landing-page
+[1;36m|[m [32m|[m [34m|[m[32m\[m  
+[1;36m|[m [32m|[m [34m|[m[32m/[m  
+[1;36m|[m [32m|[m[32m/[m[34m|[m   
+[1;36m|[m * [34m|[m [33m1d3cd88[m Merge pull request #1 from Lutfhfia/feature/master-siswa
+[1;36m|[m[1;36m/[m[1;31m|[m [34m|[m 
+[1;36m|[m * [34m|[m [33mc7c3292[m[33m ([m[1;31morigin/feature/master-siswa[m[33m, [m[1;32mfeature/master-siswa[m[33m)[m feat: menambahkan fitur data siswa
+[1;36m|[m * [34m|[m [33mb626f61[m feat: menambahkan fitur data siswa
+[1;36m|[m[1;36m/[m [34m/[m  
+[1;36m|[m * [33m8035565[m Menyelesaikan landing page BIDUK
+[1;36m|[m[1;36m/[m  

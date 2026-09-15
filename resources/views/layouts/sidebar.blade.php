@@ -101,7 +101,8 @@
             {{-- Mata Pelajaran --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('subjects.index') }}"
+                    class="nav-link {{ request()->routeIs('subjects.*') ? 'active' : '' }}">
 
                     <i class="bi bi-journal-bookmark-fill"></i>
                     <span>Mata Pelajaran</span>
