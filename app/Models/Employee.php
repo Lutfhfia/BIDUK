@@ -33,7 +33,7 @@ class Employee extends Model
     }
 
     /**
-     * Akun user yang terkait dengan pegawai ini.
+     * Akun BIDUK milik pegawai.
      */
     public function user(): HasOne
     {
@@ -41,24 +41,21 @@ class Employee extends Model
     }
 
     /**
-     * Kelas-kelas yang diwalikan oleh pegawai ini.
+     * Kelas yang diwalikan pegawai.
      */
     public function homeroomClasses(): HasMany
     {
-        return $this->hasMany(SchoolClass::class, 'homeroom_teacher_id');
+        return $this->hasMany(
+            SchoolClass::class,
+            'homeroom_teacher_id'
+        );
     }
 
-    /**
-     * Scope: hanya pegawai aktif.
-     */
     public function scopeActive($query)
     {
         return $query->where('status', 'Aktif');
     }
 
-    /**
-     * Scope: hanya guru.
-     */
     public function scopeTeachers($query)
     {
         return $query->where('employee_type', 'Guru');
