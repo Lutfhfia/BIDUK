@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ReportCardGradeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -27,6 +28,7 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+
     // Logout
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
@@ -50,3 +52,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
         ->name('classes.students.remove');
 });
+
+Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
+    ->name('classes.students.remove');
+
+// Nilai Rapot
+
+Route::get('report-card-grades', [ReportCardGradeController::class, 'index'])
+    ->name('report-card-grades.index');
+
+Route::get('report-card-grades/{class}/{student}/edit', [ReportCardGradeController::class, 'edit'])
+    ->name('report-card-grades.edit');
+
+Route::put('report-card-grades/{class}/{student}', [ReportCardGradeController::class, 'update'])
+    ->name('report-card-grades.update');
+
+Route::delete('report-card-grades/{class}/{student}', [ReportCardGradeController::class, 'destroy'])
+    ->name('report-card-grades.destroy');
+
