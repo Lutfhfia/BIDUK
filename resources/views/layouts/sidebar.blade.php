@@ -21,7 +21,8 @@
         <ul class="sidebar-nav">
 
             <li class="nav-item">
-                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}"
+                    class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
 
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
@@ -87,6 +88,7 @@
 
             {{-- Tahun Ajaran --}}
             <li class="nav-item">
+
                 <a href="{{ route('academic-years.index') }}"
                     class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
@@ -94,6 +96,7 @@
                     <span>Tahun Ajaran</span>
 
                 </a>
+
             </li>
 
 
@@ -111,24 +114,11 @@
             </li>
 
 
-            {{-- Semester --}}
-            <li class="nav-item">
-
-                <a href="{{ route('semesters.index') }}"
-                    class="nav-link {{ request()->routeIs('semesters.*') ? 'active' : '' }}">
-
-                    <i class="bi bi-calendar-range"></i>
-                    <span>Semester</span>
-
-                </a>
-
-            </li>
-
-
             {{-- Nilai Rapot --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('report-card-grades.index') }}"
+                    class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
 
                     <i class="bi bi-card-checklist"></i>
                     <span>Nilai Rapot</span>
