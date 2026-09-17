@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Tambah Kelas')
+
 @section('content')
 
 <div class="container-fluid py-4">
@@ -41,11 +43,9 @@
             </div>
 
             <ul class="mb-0 ps-4">
-
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
-
             </ul>
 
         </div>
@@ -342,17 +342,13 @@
                             <option
                                 value="Aktif"
                                 {{ old('status', 'Aktif') === 'Aktif' ? 'selected' : '' }}>
-
                                 Aktif
-
                             </option>
 
                             <option
                                 value="Nonaktif"
                                 {{ old('status') === 'Nonaktif' ? 'selected' : '' }}>
-
                                 Nonaktif
-
                             </option>
 
                         </select>
@@ -367,6 +363,126 @@
 
                     </div>
 
+
+                    {{-- ================================================ --}}
+                    {{-- MATA PELAJARAN --}}
+                    {{-- ================================================ --}}
+                    <div class="col-12">
+
+                        <div class="border rounded-3 p-3">
+
+                            {{-- Header --}}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                                <div>
+                                    <label class="form-label fw-semibold mb-0">
+                                        <i class="bi bi-book me-1"></i>
+                                        Mata Pelajaran
+                                        <span class="text-danger">*</span>
+                                    </label>
+
+                                    <div class="text-muted small">
+                                        Pilih mata pelajaran untuk kelas ini.
+                                    </div>
+                                </div>
+
+                                @if($subjects->count() > 0)
+
+                                    <div class="form-check mb-0">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            id="checkAllSubjects">
+
+                                        <label
+                                            class="form-check-label small fw-semibold"
+                                            for="checkAllSubjects">
+
+                                            Pilih Semua
+
+                                        </label>
+
+                                    </div>
+
+                                @endif
+
+                            </div>
+
+
+                            {{-- Daftar Mata Pelajaran --}}
+                            @if($subjects->count() > 0)
+
+                                <div class="row g-2">
+
+                                    @foreach($subjects as $subject)
+
+                                        <div class="col-md-4">
+
+                                            <div class="form-check border rounded-2 px-3 py-2">
+
+                                                <input
+                                                    class="form-check-input subject-checkbox"
+                                                    type="checkbox"
+                                                    name="subject_ids[]"
+                                                    value="{{ $subject->id }}"
+                                                    id="subject_{{ $subject->id }}"
+                                                    {{ in_array(
+                                                        $subject->id,
+                                                        old('subject_ids', [])
+                                                    ) ? 'checked' : '' }}>
+
+                                                <label
+                                                    class="form-check-label small"
+                                                    for="subject_{{ $subject->id }}">
+
+                                                    {{ $subject->name }}
+
+                                                </label>
+
+                                            </div>
+
+                                        </div>
+
+                                    @endforeach
+
+                                </div>
+
+                            @else
+
+                                <div class="alert alert-warning mb-0 py-2">
+
+                                    <i class="bi bi-info-circle me-1"></i>
+
+                                    Belum ada mata pelajaran aktif.
+
+                                </div>
+
+                            @endif
+
+
+                            {{-- Validation Error --}}
+                            @error('subject_ids')
+
+                                <div class="text-danger small mt-2">
+                                    {{ $message }}
+                                </div>
+
+                            @enderror
+
+                            @error('subject_ids.*')
+
+                                <div class="text-danger small mt-2">
+                                    {{ $message }}
+                                </div>
+
+                            @enderror
+
+                        </div>
+
+                    </div>
+
+
                 </div>
 
 
@@ -380,6 +496,7 @@
                         Batal
 
                     </a>
+
 
                     <button type="submit"
                             class="btn btn-primary">
@@ -398,5 +515,63 @@
     </div>
 
 </div>
+
+
+{{-- ================================================= --}}
+{{-- SCRIPT PILIH SEMUA MATA PELAJARAN --}}
+{{-- ================================================= --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const checkAll = document.getElementById('checkAllSubjects');
+
+    const subjectCheckboxes = document.querySelectorAll(
+        '.subject-checkbox'
+    );
+
+    if (!checkAll) {
+        return;
+    }
+
+    function updateCheckAllStatus() {
+
+        const total = subjectCheckboxes.length;
+
+        const checked = document.querySelectorAll(
+            '.subject-checkbox:checked'
+        ).length;
+
+        checkAll.checked =
+            total > 0 && checked === total;
+
+        checkAll.indeterminate =
+            checked > 0 && checked < total;
+    }
+
+    checkAll.addEventListener('change', function () {
+
+        subjectCheckboxes.forEach(function (checkbox) {
+
+            checkbox.checked = checkAll.checked;
+
+        });
+
+        updateCheckAllStatus();
+    });
+
+    subjectCheckboxes.forEach(function (checkbox) {
+
+        checkbox.addEventListener('change', function () {
+
+            updateCheckAllStatus();
+
+        });
+
+    });
+
+    updateCheckAllStatus();
+
+});
+</script>
 
 @endsection

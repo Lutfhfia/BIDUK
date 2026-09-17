@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+
 class Student extends Model
 {
     use SoftDeletes;
@@ -178,4 +179,9 @@ class Student extends Model
         $currentClass = $this->currentClass()->first();
         return $currentClass?->name;
     }
+
+    public function reportCardGrades(): HasMany
+{
+    return $this->hasMany(ReportCardGrade::class);
+}
 }

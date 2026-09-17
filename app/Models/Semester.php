@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Semester extends Model
 {
@@ -28,4 +29,12 @@ class Semester extends Model
         $name = now()->month >= 7 ? 'Ganjil' : 'Genap';
         return static::firstOrCreate(['academic_year_id' => $year->id, 'name' => $name]);
     }
+
+    /**
+ * Nilai rapot pada semester ini.
+ */
+public function reportCardGrades(): HasMany
+{
+    return $this->hasMany(ReportCardGrade::class);
+}
 }

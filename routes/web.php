@@ -7,12 +7,19 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
+use Illuminate\Support\Facades\Route;
+
+// =====================================================
+// LANDING PAGE
+// =====================================================
+
 Route::get('/', function () {
     return view('landing.index');
 });
+
 
 // =====================================================
 // LOGIN
@@ -54,15 +61,12 @@ Route::middleware('auth')->group(function () {
     // LAPORAN - BUKU INDUK
     // =================================================
 
-    // Halaman utama Buku Induk
     Route::get('/laporan/buku-induk', [BukuIndukController::class, 'index'])
         ->name('buku-induk.index');
 
-    // Daftar Buku Induk per kelas atau seluruh kelas
     Route::get('/laporan/buku-induk/cetak-batch', [BukuIndukController::class, 'batch'])
         ->name('buku-induk.batch');
 
-    // Halaman cetak Buku Induk per siswa
     Route::get('/laporan/buku-induk/cetak/{student}', [BukuIndukController::class, 'print'])
         ->name('buku-induk.print');
 
@@ -83,12 +87,13 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('classes', SchoolClassController::class);
 
-<<<<<<< HEAD
-    // Mata Pelajaran
+
+    // =================================================
+    // MATA PELAJARAN
+    // =================================================
+
     Route::resource('subjects', SubjectController::class);
 
-    // Pengelolaan siswa dalam kelas
-=======
 
     // =================================================
     // TAHUN AJARAN
@@ -108,38 +113,76 @@ Route::middleware('auth')->group(function () {
     // PENGELOLAAN SISWA DALAM KELAS
     // =================================================
 
->>>>>>> origin/develop
-    Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
-        ->name('classes.students');
+    Route::get(
+        'classes/{class}/students',
+        [SchoolClassController::class, 'students']
+    )->name('classes.students');
 
-    Route::get('classes/{class}/students/add', [SchoolClassController::class, 'addStudents'])
-        ->name('classes.students.add');
+    Route::get(
+        'classes/{class}/students/add',
+        [SchoolClassController::class, 'addStudents']
+    )->name('classes.students.add');
 
-    Route::post('classes/{class}/students', [SchoolClassController::class, 'storeStudents'])
-        ->name('classes.students.store');
+    Route::post(
+        'classes/{class}/students',
+        [SchoolClassController::class, 'storeStudents']
+    )->name('classes.students.store');
 
-    Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
-        ->name('classes.students.remove');
-<<<<<<< HEAD
-       
-// ==============================
-// DATA PEGAWAI
-// ==============================
+    Route::delete(
+        'classes/{class}/students/{student}',
+        [SchoolClassController::class, 'removeStudent']
+    )->name('classes.students.remove');
 
-Route::get('pegawai/import/template', [EmployeeController::class, 'downloadTemplate'])
-->name('pegawai.import.template');
 
-Route::post('pegawai/import', [EmployeeController::class, 'import'])
-->name('pegawai.import');
+    // =================================================
+    // NILAI RAPOT
+    // =================================================
 
-Route::get('pegawai/export/excel', [EmployeeController::class, 'exportExcel'])
-    ->name('pegawai.export.excel');
+    Route::get(
+        'report-card-grades',
+        [ReportCardGradeController::class, 'index']
+    )->name('report-card-grades.index');
 
-Route::get('pegawai/export/pdf', [EmployeeController::class, 'exportPdf'])
-    ->name('pegawai.export.pdf');
+    Route::get(
+        'report-card-grades/{class}/{student}/edit',
+        [ReportCardGradeController::class, 'edit']
+    )->name('report-card-grades.edit');
 
-Route::resource('pegawai', EmployeeController::class);
+    Route::put(
+        'report-card-grades/{class}/{student}',
+        [ReportCardGradeController::class, 'update']
+    )->name('report-card-grades.update');
+
+    Route::delete(
+        'report-card-grades/{class}/{student}',
+        [ReportCardGradeController::class, 'destroy']
+    )->name('report-card-grades.destroy');
+
+
+    // =================================================
+    // DATA PEGAWAI
+    // =================================================
+
+    Route::get(
+        'pegawai/import/template',
+        [EmployeeController::class, 'downloadTemplate']
+    )->name('pegawai.import.template');
+
+    Route::post(
+        'pegawai/import',
+        [EmployeeController::class, 'import']
+    )->name('pegawai.import');
+
+    Route::get(
+        'pegawai/export/excel',
+        [EmployeeController::class, 'exportExcel']
+    )->name('pegawai.export.excel');
+
+    Route::get(
+        'pegawai/export/pdf',
+        [EmployeeController::class, 'exportPdf']
+    )->name('pegawai.export.pdf');
+
+    Route::resource('pegawai', EmployeeController::class);
+
 });
-=======
-});
->>>>>>> origin/develop
