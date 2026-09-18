@@ -784,99 +784,228 @@
         </div>
 
 
-        {{-- =================================================
-            E. PRESTASI
-        ================================================== --}}
-        <div class="card border-0 shadow-sm mb-4">
+       {{-- =================================================
+    E. PRESTASI
+================================================== --}}
+<div class="card border-0 shadow-sm mb-4">
 
-            <div class="card-header bg-white py-3">
+    <div class="card-header bg-white py-3">
 
-                <h5 class="fw-bold mb-1">
-                    E. Prestasi
-                </h5>
+        <h5 class="fw-bold mb-1">
+            E. Prestasi
+        </h5>
 
-                <small class="text-muted">
-                    Masukkan prestasi peserta didik.
-                </small>
+        <small class="text-muted">
+            Masukkan prestasi peserta didik.
+        </small>
 
-            </div>
+    </div>
 
 
-            <div class="card-body">
+    <div class="card-body">
 
-                <div class="table-responsive">
+        <div class="table-responsive">
 
-                    <table class="table table-bordered align-middle">
+            <table class="table table-bordered align-middle">
 
-                        <thead class="table-light">
+                <thead class="table-light">
 
-                            <tr>
+                    <tr>
 
-                                <th
-                                    class="text-center"
-                                    style="width: 70px;"
+                        <th
+                            class="text-center"
+                            style="width: 70px;"
+                        >
+                            No.
+                        </th>
+
+                        <th style="min-width: 250px;">
+                            Jenis Prestasi
+                        </th>
+
+                        <th style="min-width: 180px;">
+                            Tingkat
+                        </th>
+
+                        <th style="min-width: 300px;">
+                            Keterangan
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    @for($i = 1; $i <= 3; $i++)
+
+                        @php
+                            $achievement =
+                                $achievementData[$i]
+                                ?? [
+                                    'type' => '',
+                                    'level' => '',
+                                    'description' => ''
+                                ];
+                        @endphp
+
+                        <tr>
+
+                            {{-- No --}}
+                            <td class="text-center">
+                                {{ $i }}
+                            </td>
+
+
+                            {{-- Jenis Prestasi --}}
+                            <td>
+
+                                <input
+                                    type="text"
+                                    name="achievements[{{ $i }}][type]"
+                                    class="form-control"
+                                    value="{{ old(
+                                        'achievements.' . $i . '.type',
+                                        $achievement['type']
+                                    ) }}"
+                                    placeholder="Contoh: Juara 1 Olimpiade Matematika"
                                 >
-                                    No.
-                                </th>
 
-                                <th>
-                                    Jenis Prestasi
-                                </th>
-
-                                <th>
-                                    Keterangan
-                                </th>
-
-                            </tr>
-
-                        </thead>
+                            </td>
 
 
-                        <tbody>
+                            {{-- Tingkat --}}
+                            <td>
 
-                            @for($i = 1; $i <= 3; $i++)
+                                <select
+                                    name="achievements[{{ $i }}][level]"
+                                    class="form-select"
+                                >
 
-                                <tr>
+                                    <option value="">
+                                        -- Pilih Tingkat --
+                                    </option>
 
-                                    <td class="text-center">
-                                        {{ $i }}
-                                    </td>
+                                    <option
+                                        value="Sekolah"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Sekolah'
+                                        )
+                                    >
+                                        Sekolah
+                                    </option>
 
-                                    <td>
+                                    <option
+                                        value="Kecamatan"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Kecamatan'
+                                        )
+                                    >
+                                        Kecamatan
+                                    </option>
 
-                                        <input
-                                            type="text"
-                                            name="achievements[{{ $i }}][type]"
-                                            class="form-control"
-                                            placeholder="Jenis prestasi"
-                                        >
+                                    <option
+                                        value="Kota"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Kota'
+                                        )
+                                    >
+                                        Kota
+                                    </option>
 
-                                    </td>
+                                    <option
+                                        value="Provinsi"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Provinsi'
+                                        )
+                                    >
+                                        Provinsi
+                                    </option>
 
-                                    <td>
+                                    <option
+                                        value="Nasional"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Nasional'
+                                        )
+                                    >
+                                        Nasional
+                                    </option>
 
-                                        <input
-                                            type="text"
-                                            name="achievements[{{ $i }}][description]"
-                                            class="form-control"
-                                            placeholder="Keterangan"
-                                        >
+                                    <option
+                                        value="Internasional"
+                                        @selected(
+                                            old(
+                                                'achievements.' . $i . '.level',
+                                                $achievement['level']
+                                            ) === 'Internasional'
+                                        )
+                                    >
+                                        Internasional
+                                    </option>
 
-                                    </td>
+                                </select>
 
-                                </tr>
+                            </td>
 
-                            @endfor
 
-                        </tbody>
+                            {{-- Keterangan --}}
+                            <td>
 
-                    </table>
+                                <input
+                                    type="text"
+                                    name="achievements[{{ $i }}][description]"
+                                    class="form-control"
+                                    value="{{ old(
+                                        'achievements.' . $i . '.description',
+                                        $achievement['description']
+                                    ) }}"
+                                    placeholder="Keterangan prestasi"
+                                >
 
-                </div>
+                            </td>
 
-            </div>
+                        </tr>
+
+                    @endfor
+
+                </tbody>
+
+            </table>
 
         </div>
+
+        <div class="mt-2">
+
+            <small class="text-muted">
+
+                <i class="bi bi-info-circle me-1"></i>
+
+                Kosongkan baris jika peserta didik tidak memiliki
+                prestasi.
+
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
 
 
         {{-- =================================================

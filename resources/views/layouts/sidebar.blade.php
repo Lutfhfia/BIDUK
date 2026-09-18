@@ -21,8 +21,7 @@
         <ul class="sidebar-nav">
 
             <li class="nav-item">
-                <a href="{{ route('dashboard') }}"
-                    class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
 
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
@@ -178,11 +177,10 @@
             {{-- Rekap Prestasi --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
-
-                    <i class="bi bi-trophy-fill"></i>
+                <a href="{{ route('achievement-reports.index') }}"
+                    class="nav-link {{ request()->routeIs('achievement-reports.*') ? 'active' : '' }}">
+                    <i class="bi bi-trophy me-2"></i>
                     <span>Rekap Prestasi</span>
-
                 </a>
 
             </li>

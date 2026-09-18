@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Models\Achievement;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
@@ -51,8 +52,14 @@ class ReportCardGradeController extends Controller
              * Ambil kelas berdasarkan tahun ajaran.
              */
             $classes = SchoolClass::with('academicYear')
-                ->where('academic_year_id', $selectedAcademicYearId)
-                ->where('status', 'Aktif')
+                ->where(
+                    'academic_year_id',
+                    $selectedAcademicYearId
+                )
+                ->where(
+                    'status',
+                    'Aktif'
+                )
                 ->withCount('subjects')
                 ->orderBy('grade_level')
                 ->orderBy('name')
@@ -68,11 +75,17 @@ class ReportCardGradeController extends Controller
                 ->orderBy('id')
                 ->get();
 
+            /*
+             * Semester Ganjil.
+             */
             $semesterGanjil = $semesters->first(
                 fn ($semester) =>
                     strtolower($semester->name) === 'ganjil'
             );
 
+            /*
+             * Semester Genap.
+             */
             $semesterGenap = $semesters->first(
                 fn ($semester) =>
                     strtolower($semester->name) === 'genap'
@@ -89,18 +102,27 @@ class ReportCardGradeController extends Controller
          */
         $selectedClass = null;
 
-        if ($selectedClassId && $selectedAcademicYearId) {
+        if (
+            $selectedClassId &&
+            $selectedAcademicYearId
+        ) {
 
             $selectedClass = SchoolClass::with([
                 'academicYear',
                 'subjects'
             ])
-                ->where('id', $selectedClassId)
+                ->where(
+                    'id',
+                    $selectedClassId
+                )
                 ->where(
                     'academic_year_id',
                     $selectedAcademicYearId
                 )
-                ->where('status', 'Aktif')
+                ->where(
+                    'status',
+                    'Aktif'
+                )
                 ->first();
 
             /*
@@ -109,7 +131,10 @@ class ReportCardGradeController extends Controller
             if ($selectedClass) {
 
                 $students = $selectedClass->students()
-                    ->wherePivot('status', 'Aktif')
+                    ->wherePivot(
+                        'status',
+                        'Aktif'
+                    )
                     ->orderBy('name')
                     ->get();
 
@@ -147,7 +172,10 @@ class ReportCardGradeController extends Controller
                         ) {
 
                             $studentGrades =
-                                $grades->get($student->id, collect());
+                                $grades->get(
+                                    $student->id,
+                                    collect()
+                                );
 
                             /*
                              * Jumlah nilai Ganjil.
@@ -199,71 +227,84 @@ class ReportCardGradeController extends Controller
 
 
     /**
-     * ==========================================================
-     * EDIT
-     * ==========================================================
-     *
-     * Form rapot satu siswa.
-     *
-     * Ganjil + Genap ditampilkan sekaligus.
+ * ==========================================================
+ * EDIT
+ * ==========================================================
+ *
+ * Form rapot satu siswa.
+ *
+ * Ganjil + Genap ditampilkan sekaligus.
+ */
+public function edit(
+    SchoolClass $class,
+    Student $student
+) {
+    /*
+     * Pastikan siswa memang berada di kelas tersebut.
      */
-    public function edit(
-        SchoolClass $class,
-        Student $student
-    ) {
-        /*
-         * Pastikan siswa memang berada di kelas tersebut.
-         */
-        $isStudentInClass = $class->students()
-            ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
-            ->exists();
+    $isStudentInClass = $class->students()
+        ->where('students.id', $student->id)
+        ->wherePivot('status', 'Aktif')
+        ->exists();
 
-        if (!$isStudentInClass) {
-            abort(404);
-        }
+    if (!$isStudentInClass) {
+        abort(404);
+    }
 
-        /*
-         * Tahun ajaran kelas.
-         */
-        $semesters = Semester::where(
-            'academic_year_id',
-            $class->academic_year_id
-        )
-            ->orderBy('id')
-            ->get();
+    /*
+     * ======================================================
+     * SEMESTER
+     * ======================================================
+     */
 
-        /*
-         * Semester Ganjil.
-         */
-        $semesterGanjil = $semesters->first(
-            fn ($semester) =>
-                strtolower($semester->name) === 'ganjil'
-        );
+    $semesters = Semester::where(
+        'academic_year_id',
+        $class->academic_year_id
+    )
+        ->orderBy('id')
+        ->get();
 
-        /*
-         * Semester Genap.
-         */
-        $semesterGenap = $semesters->first(
-            fn ($semester) =>
-                strtolower($semester->name) === 'genap'
-        );
+    /*
+     * Semester Ganjil.
+     */
+    $semesterGanjil = $semesters->first(
+        fn ($semester) =>
+            strtolower($semester->name) === 'ganjil'
+    );
 
-        /*
-         * Mata pelajaran berdasarkan kelas.
-         */
-        $subjects = $class->subjects()
-            ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.name')
-            ->get();
+    /*
+     * Semester Genap.
+     */
+    $semesterGenap = $semesters->first(
+        fn ($semester) =>
+            strtolower($semester->name) === 'genap'
+    );
 
-        /*
-         * Nilai siswa untuk Ganjil + Genap.
-         */
-        $semesterIds = collect([
-            $semesterGanjil?->id,
-            $semesterGenap?->id,
-        ])->filter();
+    /*
+     * ======================================================
+     * MATA PELAJARAN
+     * ======================================================
+     */
+
+    $subjects = $class->subjects()
+        ->where('subjects.status', 'Aktif')
+        ->orderBy('subjects.name')
+        ->get();
+
+    /*
+     * ======================================================
+     * NILAI RAPOT
+     * ======================================================
+     */
+
+    $semesterIds = collect([
+        $semesterGanjil?->id,
+        $semesterGenap?->id,
+    ])->filter();
+
+    $grades = collect();
+
+    if ($semesterIds->isNotEmpty()) {
 
         $grades = ReportCardGrade::where(
             'student_id',
@@ -285,327 +326,535 @@ class ReportCardGradeController extends Controller
                     . $grade->subject_id;
 
             });
-
-        return view(
-            'admin.report-card-grades.edit',
-            compact(
-                'class',
-                'student',
-                'subjects',
-                'semesterGanjil',
-                'semesterGenap',
-                'grades'
-            )
-        );
     }
 
-
-    /**
-     * ==========================================================
-     * UPDATE
-     * ==========================================================
+    /*
+     * ======================================================
+     * PRESTASI
+     * ======================================================
      *
-     * Menyimpan nilai Ganjil + Genap.
+     * Ambil prestasi siswa pada:
+     *
+     * - siswa yang sama
+     * - kelas yang sama
+     * - tahun ajaran yang sama
+     *
+     * Maksimal 3 ditampilkan karena form Nilai Rapot
+     * saat ini menyediakan 3 baris prestasi.
      */
-    public function update(
-        Request $request,
-        SchoolClass $class,
-        Student $student
-    ) {
-        /*
-         * Pastikan siswa berada di kelas tersebut.
-         */
-        $isStudentInClass = $class->students()
-            ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
-            ->exists();
 
-        if (!$isStudentInClass) {
-            abort(404);
-        }
-
-        /*
-         * Ambil semester.
-         */
-        $semesters = Semester::where(
+    $achievements = Achievement::where(
+        'student_id',
+        $student->id
+    )
+        ->where(
+            'class_id',
+            $class->id
+        )
+        ->where(
             'academic_year_id',
             $class->academic_year_id
         )
-            ->get();
+        ->orderBy('id')
+        ->limit(3)
+        ->get();
 
-        $semesterGanjil = $semesters->first(
-            fn ($semester) =>
-                strtolower($semester->name) === 'ganjil'
-        );
+    /*
+     * Siapkan 3 baris untuk Blade.
+     *
+     * Key menggunakan 1, 2, 3 agar sesuai dengan
+     * struktur form yang sekarang.
+     */
+    $achievementData = [];
 
-        $semesterGenap = $semesters->first(
-            fn ($semester) =>
-                strtolower($semester->name) === 'genap'
-        );
+    for ($i = 1; $i <= 3; $i++) {
+
+        $achievement = $achievements->get($i - 1);
+
+        $achievementData[$i] = [
+            'type' => $achievement?->type,
+            'level' => $achievement?->level,
+            'description' => $achievement?->description,
+        ];
+    }
+
+    /*
+     * ======================================================
+     * RETURN VIEW
+     * ======================================================
+     */
+
+    return view(
+        'admin.report-card-grades.edit',
+        compact(
+            'class',
+            'student',
+            'subjects',
+            'semesterGanjil',
+            'semesterGenap',
+            'grades',
+            'achievementData'
+        )
+    );
+}
+
+
+
+    /**
+ * ==========================================================
+ * UPDATE
+ * ==========================================================
+ *
+ * Menyimpan:
+ *
+ * - Nilai Ganjil
+ * - Nilai Genap
+ * - Prestasi
+ */
+public function update(
+    Request $request,
+    SchoolClass $class,
+    Student $student
+) {
+    /*
+     * ======================================================
+     * VALIDASI SISWA
+     * ======================================================
+     */
+
+    $isStudentInClass = $class->students()
+        ->where('students.id', $student->id)
+        ->wherePivot('status', 'Aktif')
+        ->exists();
+
+    if (!$isStudentInClass) {
+        abort(404);
+    }
+
+    /*
+     * ======================================================
+     * SEMESTER
+     * ======================================================
+     */
+
+    $semesters = Semester::where(
+        'academic_year_id',
+        $class->academic_year_id
+    )
+        ->get();
+
+    $semesterGanjil = $semesters->first(
+        fn ($semester) =>
+            strtolower($semester->name) === 'ganjil'
+    );
+
+    $semesterGenap = $semesters->first(
+        fn ($semester) =>
+            strtolower($semester->name) === 'genap'
+    );
+
+    /*
+     * ======================================================
+     * MATA PELAJARAN
+     * ======================================================
+     */
+
+    $subjects = $class->subjects()
+        ->where('subjects.status', 'Aktif')
+        ->get();
+
+    /*
+     * ======================================================
+     * VALIDASI
+     * ======================================================
+     */
+
+    $rules = [
 
         /*
-         * Mata pelajaran kelas.
+         * Ganjil
          */
-        $subjects = $class->subjects()
-            ->where('subjects.status', 'Aktif')
-            ->get();
+        'ganjil_scores' => [
+            'nullable',
+            'array'
+        ],
+
+        'ganjil_learning_outcomes' => [
+            'nullable',
+            'array'
+        ],
 
         /*
-         * Validasi.
+         * Genap
          */
-        $rules = [
+        'genap_scores' => [
+            'nullable',
+            'array'
+        ],
 
-            'ganjil_scores' => [
-                'nullable',
-                'array'
-            ],
+        'genap_learning_outcomes' => [
+            'nullable',
+            'array'
+        ],
 
-            'ganjil_learning_outcomes' => [
-                'nullable',
-                'array'
-            ],
+        /*
+         * Ekstrakurikuler
+         */
+        'extracurricular' => [
+            'nullable',
+            'array'
+        ],
 
-            'genap_scores' => [
-                'nullable',
-                'array'
-            ],
+        /*
+         * Prestasi
+         */
+        'achievements' => [
+            'nullable',
+            'array'
+        ],
 
-            'genap_learning_outcomes' => [
-                'nullable',
-                'array'
-            ],
+        'achievements.*.type' => [
+            'nullable',
+            'string',
+            'max:255'
+        ],
 
-            /*
-             * D. Ekstrakurikuler
-             */
-            'extracurricular' => [
-                'nullable',
-                'array'
-            ],
+        'achievements.*.level' => [
+            'nullable',
+            'string',
+            'in:Sekolah,Kecamatan,Kota,Provinsi,Nasional,Internasional'
+        ],
 
-            /*
-             * E. Prestasi
-             */
-            'achievements' => [
-                'nullable',
-                'array'
-            ],
+        'achievements.*.description' => [
+            'nullable',
+            'string',
+            'max:2000'
+        ],
 
-            /*
-             * F. Ketidakhadiran
-             */
-            'attendance' => [
-                'nullable',
-                'array'
-            ],
+        /*
+         * Ketidakhadiran
+         */
+        'attendance' => [
+            'nullable',
+            'array'
+        ],
 
-            /*
-             * Kenaikan
-             */
-            'promotion_status' => [
-                'nullable',
-                'in:Naik,Tidak Naik'
-            ],
+        /*
+         * Kenaikan
+         */
+        'promotion_status' => [
+            'nullable',
+            'string',
+            'max:255'
+        ],
 
-            'promotion_class' => [
-                'nullable',
-                'string',
-                'max:50'
-            ],
+        'promotion_note' => [
+            'nullable',
+            'string',
+            'max:2000'
+        ],
+    ];
 
-            'promotion_date' => [
-                'nullable',
-                'date'
-            ],
+    /*
+     * Validasi setiap mata pelajaran.
+     */
+    foreach ($subjects as $subject) {
+
+        /*
+         * Nilai Ganjil
+         */
+        $rules[
+            'ganjil_scores.' . $subject->id
+        ] = [
+            'nullable',
+            'numeric',
+            'min:0',
+            'max:100'
         ];
 
         /*
-         * Validasi nilai berdasarkan mata pelajaran kelas.
+         * Capaian Ganjil
          */
-        foreach ($subjects as $subject) {
-
-            $rules[
-                'ganjil_scores.' . $subject->id
-            ] = [
-                'nullable',
-                'numeric',
-                'min:0',
-                'max:100'
-            ];
-
-            $rules[
-                'ganjil_learning_outcomes.' . $subject->id
-            ] = [
-                'nullable',
-                'string',
-                'max:2000'
-            ];
-
-            $rules[
-                'genap_scores.' . $subject->id
-            ] = [
-                'nullable',
-                'numeric',
-                'min:0',
-                'max:100'
-            ];
-
-            $rules[
-                'genap_learning_outcomes.' . $subject->id
-            ] = [
-                'nullable',
-                'string',
-                'max:2000'
-            ];
-        }
-
-        $validated = $request->validate($rules);
+        $rules[
+            'ganjil_learning_outcomes.' . $subject->id
+        ] = [
+            'nullable',
+            'string',
+            'max:2000'
+        ];
 
         /*
-         * Simpan semuanya dalam satu transaksi.
+         * Nilai Genap
          */
-        DB::transaction(function () use (
-            $validated,
-            $subjects,
-            $student,
-            $class,
-            $semesterGanjil,
-            $semesterGenap
-        ) {
+        $rules[
+            'genap_scores.' . $subject->id
+        ] = [
+            'nullable',
+            'numeric',
+            'min:0',
+            'max:100'
+        ];
 
-            /*
-             * ==================================================
-             * SEMESTER GANJIL
-             * ==================================================
-             */
-            if ($semesterGanjil) {
-
-                foreach ($subjects as $subject) {
-
-                    $score =
-                        $validated[
-                            'ganjil_scores'
-                        ][$subject->id] ?? null;
-
-                    $learningOutcome =
-                        $validated[
-                            'ganjil_learning_outcomes'
-                        ][$subject->id] ?? null;
-
-                    /*
-                     * Jika keduanya kosong, hapus record
-                     * jika sebelumnya pernah ada.
-                     */
-                    if (
-                        ($score === null || $score === '') &&
-                        (
-                            $learningOutcome === null ||
-                            $learningOutcome === ''
-                        )
-                    ) {
-
-                        ReportCardGrade::where([
-                            'student_id' => $student->id,
-                            'class_id' => $class->id,
-                            'subject_id' => $subject->id,
-                            'semester_id' => $semesterGanjil->id,
-                        ])->delete();
-
-                        continue;
-                    }
-
-                    ReportCardGrade::updateOrCreate(
-                        [
-                            'student_id' => $student->id,
-                            'class_id' => $class->id,
-                            'subject_id' => $subject->id,
-                            'semester_id' => $semesterGanjil->id,
-                        ],
-                        [
-                            'score' => $score,
-                            'learning_outcome' => $learningOutcome,
-                        ]
-                    );
-                }
-            }
-
-
-            /*
-             * ==================================================
-             * SEMESTER GENAP
-             * ==================================================
-             */
-            if ($semesterGenap) {
-
-                foreach ($subjects as $subject) {
-
-                    $score =
-                        $validated[
-                            'genap_scores'
-                        ][$subject->id] ?? null;
-
-                    $learningOutcome =
-                        $validated[
-                            'genap_learning_outcomes'
-                        ][$subject->id] ?? null;
-
-                    /*
-                     * Jika keduanya kosong, hapus record
-                     * jika sebelumnya pernah ada.
-                     */
-                    if (
-                        ($score === null || $score === '') &&
-                        (
-                            $learningOutcome === null ||
-                            $learningOutcome === ''
-                        )
-                    ) {
-
-                        ReportCardGrade::where([
-                            'student_id' => $student->id,
-                            'class_id' => $class->id,
-                            'subject_id' => $subject->id,
-                            'semester_id' => $semesterGenap->id,
-                        ])->delete();
-
-                        continue;
-                    }
-
-                    ReportCardGrade::updateOrCreate(
-                        [
-                            'student_id' => $student->id,
-                            'class_id' => $class->id,
-                            'subject_id' => $subject->id,
-                            'semester_id' => $semesterGenap->id,
-                        ],
-                        [
-                            'score' => $score,
-                            'learning_outcome' => $learningOutcome,
-                        ]
-                    );
-                }
-            }
-        });
-
-        return redirect()
-            ->route(
-                'report-card-grades.index',
-                [
-                    'academic_year_id' =>
-                        $class->academic_year_id,
-
-                    'class_id' =>
-                        $class->id,
-                ]
-            )
-            ->with(
-                'success',
-                'Data nilai rapot ' .
-                $student->name .
-                ' berhasil disimpan.'
-            );
+        /*
+         * Capaian Genap
+         */
+        $rules[
+            'genap_learning_outcomes.' . $subject->id
+        ] = [
+            'nullable',
+            'string',
+            'max:2000'
+        ];
     }
 
+    /*
+     * Jalankan validasi.
+     */
+    $validated = $request->validate($rules);
+
+    /*
+     * ======================================================
+     * TRANSAKSI DATABASE
+     * ======================================================
+     */
+
+    DB::transaction(function () use (
+        $validated,
+        $subjects,
+        $student,
+        $class,
+        $semesterGanjil,
+        $semesterGenap
+    ) {
+
+        /*
+         * ==================================================
+         * SEMESTER GANJIL
+         * ==================================================
+         */
+
+        if ($semesterGanjil) {
+
+            foreach ($subjects as $subject) {
+
+                $score =
+                    $validated[
+                        'ganjil_scores'
+                    ][$subject->id] ?? null;
+
+                $learningOutcome =
+                    $validated[
+                        'ganjil_learning_outcomes'
+                    ][$subject->id] ?? null;
+
+                /*
+                 * Jika keduanya kosong,
+                 * hapus data lama.
+                 */
+                if (
+                    ($score === null || $score === '') &&
+                    (
+                        $learningOutcome === null ||
+                        $learningOutcome === ''
+                    )
+                ) {
+
+                    ReportCardGrade::where([
+                        'student_id' => $student->id,
+                        'class_id' => $class->id,
+                        'subject_id' => $subject->id,
+                        'semester_id' => $semesterGanjil->id,
+                    ])->delete();
+
+                    continue;
+                }
+
+                /*
+                 * Simpan / update nilai.
+                 */
+                ReportCardGrade::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'class_id' => $class->id,
+                        'subject_id' => $subject->id,
+                        'semester_id' => $semesterGanjil->id,
+                    ],
+                    [
+                        'score' => $score,
+                        'learning_outcome' => $learningOutcome,
+                    ]
+                );
+            }
+        }
+
+        /*
+         * ==================================================
+         * SEMESTER GENAP
+         * ==================================================
+         */
+
+        if ($semesterGenap) {
+
+            foreach ($subjects as $subject) {
+
+                $score =
+                    $validated[
+                        'genap_scores'
+                    ][$subject->id] ?? null;
+
+                $learningOutcome =
+                    $validated[
+                        'genap_learning_outcomes'
+                    ][$subject->id] ?? null;
+
+                /*
+                 * Jika keduanya kosong,
+                 * hapus data lama.
+                 */
+                if (
+                    ($score === null || $score === '') &&
+                    (
+                        $learningOutcome === null ||
+                        $learningOutcome === ''
+                    )
+                ) {
+
+                    ReportCardGrade::where([
+                        'student_id' => $student->id,
+                        'class_id' => $class->id,
+                        'subject_id' => $subject->id,
+                        'semester_id' => $semesterGenap->id,
+                    ])->delete();
+
+                    continue;
+                }
+
+                /*
+                 * Simpan / update nilai.
+                 */
+                ReportCardGrade::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'class_id' => $class->id,
+                        'subject_id' => $subject->id,
+                        'semester_id' => $semesterGenap->id,
+                    ],
+                    [
+                        'score' => $score,
+                        'learning_outcome' => $learningOutcome,
+                    ]
+                );
+            }
+        }
+
+        /*
+         * ==================================================
+         * E. PRESTASI
+         * ==================================================
+         *
+         * Strategi:
+         *
+         * 1. Hapus prestasi lama siswa pada kelas + tahun
+         * 2. Simpan kembali data yang ada di form
+         *
+         * Karena form sekarang hanya menyediakan 3 baris,
+         * maksimal 3 prestasi akan disimpan dari halaman ini.
+         */
+
+        Achievement::where(
+            'student_id',
+            $student->id
+        )
+            ->where(
+                'class_id',
+                $class->id
+            )
+            ->where(
+                'academic_year_id',
+                $class->academic_year_id
+            )
+            ->delete();
+
+        /*
+         * Ambil input prestasi.
+         */
+        $achievements =
+            $validated['achievements'] ?? [];
+
+        /*
+         * Loop setiap baris.
+         */
+        foreach ($achievements as $achievementData) {
+
+            $type =
+                trim(
+                    $achievementData['type'] ?? ''
+                );
+
+            $level =
+                trim(
+                    $achievementData['level'] ?? ''
+                );
+
+            $description =
+                trim(
+                    $achievementData['description'] ?? ''
+                );
+
+            /*
+             * Jika satu baris benar-benar kosong,
+             * jangan buat record database.
+             */
+            if (
+                $type === '' &&
+                $level === '' &&
+                $description === ''
+            ) {
+                continue;
+            }
+
+            /*
+             * Simpan prestasi.
+             */
+            Achievement::create([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $class->academic_year_id,
+                'type' => $type,
+                'level' => $level !== ''
+                    ? $level
+                    : null,
+                'description' => $description !== ''
+                    ? $description
+                    : null,
+            ]);
+        }
+    });
+
+    /*
+     * ======================================================
+     * REDIRECT
+     * ======================================================
+     */
+
+    return redirect()
+        ->route(
+            'report-card-grades.index',
+            [
+                'academic_year_id' =>
+                    $class->academic_year_id,
+
+                'class_id' =>
+                    $class->id,
+            ]
+        )
+        ->with(
+            'success',
+            'Data rapot dan prestasi berhasil disimpan.'
+        );
+}
+
+   
 
     /**
      * ==========================================================
@@ -620,13 +869,20 @@ class ReportCardGradeController extends Controller
          * Pastikan siswa berada di kelas.
          */
         $isStudentInClass = $class->students()
-            ->where('students.id', $student->id)
+            ->where(
+                'students.id',
+                $student->id
+            )
             ->exists();
 
         if (!$isStudentInClass) {
             abort(404);
         }
 
+        /*
+         * Hapus seluruh nilai rapot siswa
+         * pada kelas tersebut.
+         */
         ReportCardGrade::where(
             'student_id',
             $student->id
@@ -637,6 +893,24 @@ class ReportCardGradeController extends Controller
             )
             ->delete();
 
+        /*
+         * Hapus seluruh prestasi siswa
+         * pada kelas dan tahun ajaran tersebut.
+         */
+        Achievement::where([
+            'student_id' =>
+                $student->id,
+
+            'class_id' =>
+                $class->id,
+
+            'academic_year_id' =>
+                $class->academic_year_id,
+        ])->delete();
+
+        /*
+         * Kembali ke daftar siswa.
+         */
         return redirect()
             ->route(
                 'report-card-grades.index',
@@ -650,7 +924,7 @@ class ReportCardGradeController extends Controller
             )
             ->with(
                 'success',
-                'Seluruh nilai rapot ' .
+                'Seluruh nilai rapot dan prestasi ' .
                 $student->name .
                 ' berhasil dihapus.'
             );

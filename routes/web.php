@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\AchievementReportController;
 use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
@@ -72,6 +73,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/laporan/buku-induk/unduh-semua', [BukuIndukController::class, 'downloadAll'])
         ->name('buku-induk.download-all');
+
+
+
+        // rekap prestasi
+        Route::get(
+    '/achievement-reports',
+    [AchievementReportController::class, 'index']
+)->name('achievement-reports.index');
 
 
     // =================================================
