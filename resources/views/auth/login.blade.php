@@ -220,20 +220,20 @@
     @csrf
 
 
-        <div class="form-group">
-            <label for="nip">NIP</label>
+    <div class="form-group">
+    <label for="login">NIP / Username</label>
 
-            <div class="input-wrapper">
-                <input
-                    type="text"
-                    id="nip"
-                    name="nip"
-                    placeholder="Masukkan NIP"
-                    autocomplete="username"
-                >
-            </div>
-        </div>
-
+    <div class="input-wrapper">
+        <input
+            type="text"
+            id="login"
+            name="login"
+            placeholder="Masukkan NIP atau Username"
+            autocomplete="username"
+            value="{{ old('login') }}"
+        >
+    </div>
+</div>
         <div class="form-group">
             <label for="password">Password</label>
 

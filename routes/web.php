@@ -7,6 +7,7 @@ use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ActivityLogController;
 Route::get('/', function () {
     return view('landing.index');
 });
@@ -53,6 +54,12 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
         ->name('classes.students.remove');
+
+    Route::get('activity-logs', [ActivityLogController::class, 'index'])
+        ->name('activity-logs.index');
+    
+    Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])
+        ->name('activity-logs.show');
        
 // ==============================
 // DATA PEGAWAI

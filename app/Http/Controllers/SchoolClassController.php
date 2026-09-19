@@ -7,6 +7,7 @@ use App\Models\ClassStudent;
 use App\Models\Employee;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -16,55 +17,55 @@ class SchoolClassController extends Controller
     /**
      * Menampilkan daftar kelas.
      */
-public function index(Request $request)
-{
-    $query = SchoolClass::with([
-        'academicYear',
-        'homeroomTeacher',
-    ])->withCount([
-        'students as active_students_count' => function ($query) {
-            $query->where('class_student.status', 'Aktif');
+    public function index(Request $request)
+    {
+        $query = SchoolClass::with([
+            'academicYear',
+            'homeroomTeacher',
+        ])->withCount([
+            'students as active_students_count' => function ($query) {
+                $query->where('class_student.status', 'Aktif');
+            }
+        ]);
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
         }
-    ]);
 
-    if ($request->filled('search')) {
-        $query->where('name', 'like', '%' . $request->search . '%');
+        if ($request->filled('academic_year_id')) {
+            $query->where(
+                'academic_year_id',
+                $request->academic_year_id
+            );
+        }
+
+        if ($request->filled('grade_level')) {
+            $query->where(
+                'grade_level',
+                $request->grade_level
+            );
+        }
+
+        if ($request->filled('status')) {
+            $query->where(
+                'status',
+                $request->status
+            );
+        }
+
+        $classes = $query
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
+        $academicYears = AcademicYear::orderByDesc('start_date')->get();
+
+        return view('admin.classes.index', compact(
+            'classes',
+            'academicYears'
+        ));
     }
-
-    if ($request->filled('academic_year_id')) {
-        $query->where(
-            'academic_year_id',
-            $request->academic_year_id
-        );
-    }
-
-    if ($request->filled('grade_level')) {
-        $query->where(
-            'grade_level',
-            $request->grade_level
-        );
-    }
-
-    if ($request->filled('status')) {
-        $query->where(
-            'status',
-            $request->status
-        );
-    }
-
-    $classes = $query
-        ->orderBy('grade_level')
-        ->orderBy('name')
-        ->paginate(10)
-        ->withQueryString();
-
-    $academicYears = AcademicYear::orderByDesc('start_date')->get();
-
-    return view('admin.classes.index', compact(
-        'classes',
-        'academicYears'
-    ));
-}
 
     /**
      * Form tambah kelas.
@@ -172,7 +173,17 @@ public function index(Request $request)
             }
         }
 
-        SchoolClass::create($validated);
+        $class = SchoolClass::create($validated);
+
+        // Catat aktivitas penambahan kelas.
+        app(ActivityLogger::class)->log(
+            'created',
+            'classes',
+            'Menambahkan data kelas: ' . $class->name,
+            $class->fresh(),
+            null,
+            $class->fresh()->getAttributes()
+        );
 
         return redirect()
             ->route('classes.index')
@@ -262,6 +273,11 @@ public function index(Request $request)
         ]);
 
         /*
+         * Simpan kondisi kelas sebelum perubahan.
+         */
+        $oldClassValues = $class->getAttributes();
+
+        /*
          * Pastikan kapasitas tidak lebih kecil
          * dari jumlah siswa yang sudah ada.
          */
@@ -328,6 +344,48 @@ public function index(Request $request)
 
         $class->update($validated);
 
+        /*
+         * Ambil kondisi setelah perubahan.
+         */
+        $newClassValues = $class->fresh()->getAttributes();
+
+        unset(
+            $oldClassValues['created_at'],
+            $oldClassValues['updated_at']
+        );
+
+        unset(
+            $newClassValues['created_at'],
+            $newClassValues['updated_at']
+        );
+
+        /*
+         * Cari field yang benar-benar berubah.
+         */
+        $changedOldValues = [];
+        $changedNewValues = [];
+
+        foreach ($newClassValues as $key => $newValue) {
+            $oldValue = $oldClassValues[$key] ?? null;
+
+            if ((string) $oldValue !== (string) $newValue) {
+                $changedOldValues[$key] = $oldValue;
+                $changedNewValues[$key] = $newValue;
+            }
+        }
+
+        // Catat aktivitas jika ada perubahan.
+        if (!empty($changedNewValues)) {
+            app(ActivityLogger::class)->log(
+                'updated',
+                'classes',
+                'Mengubah data kelas: ' . $class->name,
+                $class->fresh(),
+                $changedOldValues,
+                $changedNewValues
+            );
+        }
+
         return redirect()
             ->route('classes.index')
             ->with('success', 'Data kelas berhasil diperbarui.');
@@ -349,7 +407,21 @@ public function index(Request $request)
             ]);
         }
 
+        // Simpan data sebelum dihapus.
+        $oldClassValues = $class->getAttributes();
+        $className = $class->name;
+
         $class->delete();
+
+        // Catat aktivitas penghapusan.
+        app(ActivityLogger::class)->log(
+            'deleted',
+            'classes',
+            'Menghapus data kelas: ' . $className,
+            $class,
+            $oldClassValues,
+            null
+        );
 
         return redirect()
             ->route('classes.index')
@@ -382,36 +454,36 @@ public function index(Request $request)
      * Form checklist siswa untuk dimasukkan ke kelas.
      */
     public function addStudents(SchoolClass $class)
-{
-    /*
-     * Ambil ID siswa yang sudah memiliki kelas aktif
-     * pada tahun ajaran yang sama.
-     */
-    $assignedStudentIds = ClassStudent::query()
-        ->where('status', 'Aktif')
-        ->whereHas('schoolClass', function ($query) use ($class) {
-            $query->where(
-                'academic_year_id',
-                $class->academic_year_id
-            );
-        })
-        ->pluck('student_id')
-        ->toArray();
+    {
+        /*
+         * Ambil ID siswa yang sudah memiliki kelas aktif
+         * pada tahun ajaran yang sama.
+         */
+        $assignedStudentIds = ClassStudent::query()
+            ->where('status', 'Aktif')
+            ->whereHas('schoolClass', function ($query) use ($class) {
+                $query->where(
+                    'academic_year_id',
+                    $class->academic_year_id
+                );
+            })
+            ->pluck('student_id')
+            ->toArray();
 
-    /*
-     * Tampilkan hanya siswa yang BELUM memiliki
-     * kelas aktif pada tahun ajaran tersebut.
-     */
-    $students = Student::query()
-        ->whereNotIn('id', $assignedStudentIds)
-        ->orderBy('name')
-        ->get();
+        /*
+         * Tampilkan hanya siswa yang BELUM memiliki
+         * kelas aktif pada tahun ajaran tersebut.
+         */
+        $students = Student::query()
+            ->whereNotIn('id', $assignedStudentIds)
+            ->orderBy('name')
+            ->get();
 
-    return view('admin.classes.add-students', compact(
-        'class',
-        'students'
-    ));
-}
+        return view('admin.classes.add-students', compact(
+            'class',
+            'students'
+        ));
+    }
 
     /**
      * Menyimpan siswa yang dipilih ke kelas.
@@ -507,6 +579,25 @@ public function index(Request $request)
             }
         });
 
+        // Ambil nama siswa yang dimasukkan.
+        $studentNames = Student::whereIn('id', $studentIds)
+            ->orderBy('name')
+            ->pluck('name')
+            ->implode(', ');
+
+        // Catat aktivitas memasukkan siswa ke kelas.
+        app(ActivityLogger::class)->log(
+            'students_added',
+            'classes',
+            'Memasukkan siswa ke kelas ' . $class->name . ': ' . $studentNames,
+            $class->fresh(),
+            null,
+            [
+                'student_ids' => $studentIds,
+                'student_names' => $studentNames,
+            ]
+        );
+
         return redirect()
             ->route('classes.students', $class)
             ->with('success', 'Siswa berhasil dimasukkan ke kelas.');
@@ -534,6 +625,25 @@ public function index(Request $request)
             'status' => 'Pindah',
             'exit_date' => now()->toDateString(),
         ]);
+
+        // Catat aktivitas mengeluarkan siswa dari kelas.
+        app(ActivityLogger::class)->log(
+            'student_removed',
+            'classes',
+            'Mengeluarkan siswa ' . $student->name . ' dari kelas ' . $class->name,
+            $class->fresh(),
+            [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'status' => 'Aktif',
+            ],
+            [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'status' => 'Pindah',
+                'exit_date' => $assignment->exit_date,
+            ]
+        );
 
         return back()->with(
             'success',

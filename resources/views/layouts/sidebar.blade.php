@@ -255,20 +255,48 @@
             </li>
 
 
-            {{-- Log Aktivitas --}}
-            <li class="nav-item">
+                  {{-- Log Aktivitas --}}
+@if(auth()->user()?->isSuperAdmin() || auth()->user()?->isKepalaSekolah())
+    <li class="nav-item">
 
-                <a href="#" class="nav-link">
+        <a href="{{ route('activity-logs.index') }}"
+           class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
 
-                    <i class="bi bi-clock-history"></i>
-                    <span>Log Aktivitas</span>
+            <i class="bi bi-clock-history"></i>
+            <span>Log Aktivitas</span>
 
-                </a>
+        </a>
 
-            </li>
+    </li>
+@endif
 
-        </ul>
+{{-- ==================== LOGOUT ==================== --}}
+<div class="mt-3 pt-2 border-top border-light border-opacity-25">
 
-    </nav>
+<ul class="sidebar-nav">
+
+<li class="nav-item">
+
+    <form action="{{ route('logout') }}" method="POST">
+        @csrf
+
+        <button type="submit"
+                class="nav-link w-100 border-0 bg-transparent text-start"
+                style="cursor: pointer;">
+
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Keluar</span>
+
+        </button>
+
+    </form>
+
+</li>
+
+</ul>
+
+</div>
+
+</nav>
 
 </aside>

@@ -8,6 +8,8 @@ use App\Imports\EmployeeImport;
 use App\Models\Employee;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ActivityLogger;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,7 +19,6 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Throwable;
 
 class EmployeeController extends Controller
@@ -160,8 +161,11 @@ class EmployeeController extends Controller
         $photoPath = null;
 
         try {
-            $employee = DB::transaction(function () use ($validated, $request, &$photoPath) {
-
+            $employee = DB::transaction(function () use (
+                $validated,
+                $request,
+                &$photoPath
+            ) {
                 if ($request->hasFile('photo')) {
                     $photoPath = $request->file('photo')
                         ->store('employees', 'public');
@@ -196,6 +200,16 @@ class EmployeeController extends Controller
 
                 return $employee;
             });
+
+            // Catat aktivitas penambahan pegawai.
+            app(ActivityLogger::class)->log(
+                'created',
+                'employees',
+                'Menambahkan data pegawai: ' . $employee->name,
+                $employee->fresh(),
+                null,
+                $employee->fresh()->getAttributes()
+            );
 
             $username = $employee->nip ?: $employee->nuptk;
             $password = $this->initialPassword($username);
@@ -344,18 +358,19 @@ class EmployeeController extends Controller
                 ]);
         }
 
+        // Simpan kondisi data sebelum perubahan.
+        $oldEmployeeValues = $pegawai->getAttributes();
+
         $oldPhoto = $pegawai->photo;
         $newPhotoPath = null;
 
         try {
-
             DB::transaction(function () use (
                 $validated,
                 $request,
                 $pegawai,
                 &$newPhotoPath
             ) {
-
                 if ($request->hasFile('photo')) {
                     $newPhotoPath = $request->file('photo')
                         ->store('employees', 'public');
@@ -378,6 +393,45 @@ class EmployeeController extends Controller
 
             if ($newPhotoPath && $oldPhoto) {
                 Storage::disk('public')->delete($oldPhoto);
+            }
+
+            // Ambil kondisi data setelah perubahan.
+            $newEmployeeValues = $pegawai->fresh()->getAttributes();
+
+            // Jangan masukkan timestamp sebagai perubahan data.
+            unset(
+                $oldEmployeeValues['created_at'],
+                $oldEmployeeValues['updated_at']
+            );
+
+            unset(
+                $newEmployeeValues['created_at'],
+                $newEmployeeValues['updated_at']
+            );
+
+            // Cari field yang benar-benar berubah.
+            $changedOldValues = [];
+            $changedNewValues = [];
+
+            foreach ($newEmployeeValues as $key => $newValue) {
+                $oldValue = $oldEmployeeValues[$key] ?? null;
+
+                if ((string) $oldValue !== (string) $newValue) {
+                    $changedOldValues[$key] = $oldValue;
+                    $changedNewValues[$key] = $newValue;
+                }
+            }
+
+            // Catat aktivitas jika ada perubahan.
+            if (!empty($changedNewValues)) {
+                app(ActivityLogger::class)->log(
+                    'updated',
+                    'employees',
+                    'Mengubah data pegawai: ' . $pegawai->name,
+                    $pegawai->fresh(),
+                    $changedOldValues,
+                    $changedNewValues
+                );
             }
 
             return redirect()
@@ -405,10 +459,13 @@ class EmployeeController extends Controller
      */
     public function destroy(Employee $pegawai)
     {
+        // Simpan data sebelum dihapus.
+        $oldEmployeeValues = $pegawai->getAttributes();
+        $employeeName = $pegawai->name;
+
         $photo = $pegawai->photo;
 
         try {
-
             DB::transaction(function () use ($pegawai) {
 
                 if ($pegawai->user) {
@@ -421,6 +478,16 @@ class EmployeeController extends Controller
             if ($photo) {
                 Storage::disk('public')->delete($photo);
             }
+
+            // Catat aktivitas penghapusan setelah transaction berhasil.
+            app(ActivityLogger::class)->log(
+                'deleted',
+                'employees',
+                'Menghapus data pegawai: ' . $employeeName,
+                $pegawai,
+                $oldEmployeeValues,
+                null
+            );
 
             return redirect()
                 ->route('pegawai.index')
@@ -448,18 +515,22 @@ class EmployeeController extends Controller
             'template-data-pegawai-biduk.xlsx'
         );
     }
+
+    /**
+     * Export PDF.
+     */
     public function exportPdf()
-{
-    $employees = Employee::with([
-        'homeroomClasses.academicYear',
-    ])->get();
+    {
+        $employees = Employee::with([
+            'homeroomClasses.academicYear',
+        ])->get();
 
-    $pdf = Pdf::loadView('pegawai.pdf', compact('employees'));
+        $pdf = Pdf::loadView('pegawai.pdf', compact('employees'));
 
-    $pdf->setPaper('a4', 'landscape');
+        $pdf->setPaper('a4', 'landscape');
 
-    return $pdf->download('data-pegawai-biduk.pdf');
-}
+        return $pdf->download('data-pegawai-biduk.pdf');
+    }
 
     /**
      * Import Excel.
@@ -476,7 +547,6 @@ class EmployeeController extends Controller
         ]);
 
         try {
-
             $import = new EmployeeImport();
 
             Excel::import(
