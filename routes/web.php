@@ -5,6 +5,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\RekapAbsensiController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
@@ -35,11 +36,13 @@ Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])
 
 Route::middleware('auth')->group(function () {
 
-    // Dashboard
+    // ==============================
+    // DASHBOARD
+    // ==============================
+
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    // Logout
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
@@ -77,17 +80,25 @@ Route::middleware('auth')->group(function () {
     Route::resource('classes', SchoolClassController::class);
 
     // Pengelolaan siswa dalam kelas
-    Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
-        ->name('classes.students');
+    Route::get(
+        'classes/{class}/students',
+        [SchoolClassController::class, 'students']
+    )->name('classes.students');
 
-    Route::get('classes/{class}/students/add', [SchoolClassController::class, 'addStudents'])
-        ->name('classes.students.add');
+    Route::get(
+        'classes/{class}/students/add',
+        [SchoolClassController::class, 'addStudents']
+    )->name('classes.students.add');
 
-    Route::post('classes/{class}/students', [SchoolClassController::class, 'storeStudents'])
-        ->name('classes.students.store');
+    Route::post(
+        'classes/{class}/students',
+        [SchoolClassController::class, 'storeStudents']
+    )->name('classes.students.store');
 
-    Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
-        ->name('classes.students.remove');
+    Route::delete(
+        'classes/{class}/students/{student}',
+        [SchoolClassController::class, 'removeStudent']
+    )->name('classes.students.remove');
 
 
     // ==============================
@@ -98,6 +109,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('academic-years', AcademicYearController::class);
 
     // Semester
+    // Backend masih dipertahankan, tetapi menu/fitur dapat tidak digunakan.
     Route::resource('semesters', SemesterController::class);
 
     // Mata Pelajaran
@@ -105,12 +117,31 @@ Route::middleware('auth')->group(function () {
 
 
     // ==============================
+    // REKAP ABSENSI
+    // ==============================
+
+    Route::get(
+        'rekap-absensi/students/{class}',
+        [RekapAbsensiController::class, 'studentsByClass']
+    )->name('rekap-absensi.students');
+
+    Route::resource(
+        'rekap-absensi',
+        RekapAbsensiController::class
+    );
+
+
+    // ==============================
     // LOG AKTIVITAS
     // ==============================
 
-    Route::get('activity-logs', [ActivityLogController::class, 'index'])
-        ->name('activity-logs.index');
+    Route::get(
+        'activity-logs',
+        [ActivityLogController::class, 'index']
+    )->name('activity-logs.index');
 
-    Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])
-        ->name('activity-logs.show');
+    Route::get(
+        'activity-logs/{activityLog}',
+        [ActivityLogController::class, 'show']
+    )->name('activity-logs.show');
 });
