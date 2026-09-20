@@ -56,9 +56,11 @@ Route::middleware('auth')->group(function () {
         ->name('classes.students.remove');
     
         Route::get('role-permissions', [RolePermissionController::class, 'index'])
+        ->middleware('permission:roles.manage')
         ->name('role-permissions.index');
     
     Route::put('role-permissions/{role}', [RolePermissionController::class, 'update'])
+        ->middleware('permission:roles.manage')
         ->name('role-permissions.update');
        
 // ==============================
