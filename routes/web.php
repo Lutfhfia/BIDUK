@@ -7,6 +7,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -132,10 +133,16 @@ Route::middleware('auth')->group(function () {
 
 
     // ==============================
+    // MANAJEMEN USER
+    // ==============================
+
+    Route::resource('users', UserController::class);
+
+
+    // ==============================
     // DATA PEGAWAI
     // ==============================
 
-    // Daftar pegawai
     Route::get(
         'pegawai',
         [EmployeeController::class, 'index']
@@ -143,7 +150,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.view')
         ->name('pegawai.index');
 
-    // Form tambah pegawai
     Route::get(
         'pegawai/create',
         [EmployeeController::class, 'create']
@@ -151,7 +157,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.create')
         ->name('pegawai.create');
 
-    // Menyimpan pegawai baru
     Route::post(
         'pegawai',
         [EmployeeController::class, 'store']
@@ -159,7 +164,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.create')
         ->name('pegawai.store');
 
-    // Template import
     Route::get(
         'pegawai/import/template',
         [EmployeeController::class, 'downloadTemplate']
@@ -167,7 +171,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.view')
         ->name('pegawai.import.template');
 
-    // Import data pegawai
     Route::post(
         'pegawai/import',
         [EmployeeController::class, 'import']
@@ -175,7 +178,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.create')
         ->name('pegawai.import');
 
-    // Export Excel
     Route::get(
         'pegawai/export/excel',
         [EmployeeController::class, 'exportExcel']
@@ -183,7 +185,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.view')
         ->name('pegawai.export.excel');
 
-    // Export PDF
     Route::get(
         'pegawai/export/pdf',
         [EmployeeController::class, 'exportPdf']
@@ -191,7 +192,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.view')
         ->name('pegawai.export.pdf');
 
-    // Detail pegawai
     Route::get(
         'pegawai/{pegawai}',
         [EmployeeController::class, 'show']
@@ -199,7 +199,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.view')
         ->name('pegawai.show');
 
-    // Form edit pegawai
     Route::get(
         'pegawai/{pegawai}/edit',
         [EmployeeController::class, 'edit']
@@ -207,7 +206,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.edit')
         ->name('pegawai.edit');
 
-    // Update pegawai
     Route::put(
         'pegawai/{pegawai}',
         [EmployeeController::class, 'update']
@@ -215,7 +213,6 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:employees.edit')
         ->name('pegawai.update');
 
-    // Hapus pegawai
     Route::delete(
         'pegawai/{pegawai}',
         [EmployeeController::class, 'destroy']

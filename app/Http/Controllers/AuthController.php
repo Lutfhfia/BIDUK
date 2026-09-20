@@ -22,65 +22,68 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'nip' => ['required', 'string'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ], [
-            'nip.required' => 'NIP wajib diisi.',
+            'login.required' => 'NIP atau username wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        // Cari pegawai berdasarkan NIP.
-        $employee = Employee::where('nip', $credentials['nip'])->first();
+        // Cari user berdasarkan username terlebih dahulu.
+        $user = \App\Models\User::with(['employee', 'role'])
+            ->where('username', $credentials['login'])
+            ->first();
 
-        if (!$employee) {
-            return back()
-                ->withErrors([
-                    'nip' => 'NIP atau password yang dimasukkan salah.',
-                ])
-                ->withInput($request->only('nip'));
+        // Jika username tidak ditemukan,
+        // cari melalui NIP pegawai yang terhubung dengan user.
+        if (!$user) {
+            $employee = Employee::where('nip', $credentials['login'])->first();
+
+            if ($employee) {
+                $user = $employee->user;
+            }
         }
 
-        // Cari akun user yang terhubung dengan pegawai tersebut.
-        $user = $employee->user;
-
+        // Akun tidak ditemukan.
         if (!$user) {
             return back()
                 ->withErrors([
-                    'nip' => 'Akun untuk NIP tersebut belum tersedia.',
+                    'login' => 'NIP atau username atau password yang dimasukkan salah.',
                 ])
-                ->withInput($request->only('nip'));
+                ->withInput($request->only('login'));
         }
 
         // Pastikan akun user masih aktif.
         if ($user->status !== 'Aktif') {
             return back()
                 ->withErrors([
-                    'nip' => 'Akun Anda sedang tidak aktif.',
+                    'login' => 'Akun Anda sedang tidak aktif.',
                 ])
-                ->withInput($request->only('nip'));
+                ->withInput($request->only('login'));
         }
 
-        // Pastikan data pegawai juga masih aktif.
-        if ($employee->status !== 'Aktif') {
+        // Jika user terhubung dengan pegawai,
+        // pastikan data pegawai juga masih aktif.
+        if ($user->employee && $user->employee->status !== 'Aktif') {
             return back()
                 ->withErrors([
-                    'nip' => 'Data pegawai Anda sedang tidak aktif.',
+                    'login' => 'Data pegawai Anda sedang tidak aktif.',
                 ])
-                ->withInput($request->only('nip'));
+                ->withInput($request->only('login'));
         }
 
         $remember = $request->boolean('remember');
 
-        // Cek password dan login user.
+        // Cek password.
         if (!Auth::attempt([
             'id' => $user->id,
             'password' => $credentials['password'],
         ], $remember)) {
             return back()
                 ->withErrors([
-                    'nip' => 'NIP atau password yang dimasukkan salah.',
+                    'login' => 'NIP atau username atau password yang dimasukkan salah.',
                 ])
-                ->withInput($request->only('nip'));
+                ->withInput($request->only('login'));
         }
 
         // Regenerasi session setelah login berhasil.
@@ -91,10 +94,8 @@ class AuthController extends Controller
             'last_login_at' => now(),
         ]);
 
-        // Untuk sementara arahkan ke dashboard.
         return redirect()->route('dashboard');
     }
-
     /**
      * Logout pengguna.
      */
