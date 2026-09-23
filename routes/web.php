@@ -11,7 +11,9 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
 
 // =====================================================
 // LANDING PAGE
@@ -75,12 +77,14 @@ Route::middleware('auth')->group(function () {
         ->name('buku-induk.download-all');
 
 
+    // =================================================
+    // REKAP PRESTASI
+    // =================================================
 
-        // rekap prestasi
-        Route::get(
-    '/achievement-reports',
-    [AchievementReportController::class, 'index']
-)->name('achievement-reports.index');
+    Route::get(
+        '/achievement-reports',
+        [AchievementReportController::class, 'index']
+    )->name('achievement-reports.index');
 
 
     // =================================================
@@ -166,6 +170,13 @@ Route::middleware('auth')->group(function () {
         'report-card-grades/{class}/{student}',
         [ReportCardGradeController::class, 'destroy']
     )->name('report-card-grades.destroy');
+
+
+    // =================================================
+    // MANAJEMEN USER
+    // =================================================
+
+    Route::resource('users', UserController::class);
 
 
     // =================================================
