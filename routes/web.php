@@ -10,6 +10,7 @@ use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\RekapAbsensiController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +107,14 @@ Route::middleware('auth')->group(function () {
     // =================================================
 
     Route::resource('subjects', SubjectController::class);
+    // Rekap Absensi
+   // Rekap Absensi
+Route::get(
+    'rekap-absensi/students/{class}',
+    [RekapAbsensiController::class, 'studentsByClass']
+)->name('rekap-absensi.students');
+
+Route::resource('rekap-absensi', RekapAbsensiController::class);
 
 
     // =================================================
