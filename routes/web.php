@@ -177,10 +177,64 @@ Route::delete(
     ->name('classes.students.remove');
 
     // ==============================
-    // MATA PELAJARAN
-    // ==============================
+// MATA PELAJARAN
+// ==============================
 
-    Route::resource('subjects', SubjectController::class);
+// Melihat daftar mata pelajaran
+Route::get(
+    'subjects',
+    [SubjectController::class, 'index']
+)
+    ->middleware('permission:subjects.view')
+    ->name('subjects.index');
+
+// Form tambah mata pelajaran
+Route::get(
+    'subjects/create',
+    [SubjectController::class, 'create']
+)
+    ->middleware('permission:subjects.create')
+    ->name('subjects.create');
+
+// Menyimpan mata pelajaran baru
+Route::post(
+    'subjects',
+    [SubjectController::class, 'store']
+)
+    ->middleware('permission:subjects.create')
+    ->name('subjects.store');
+
+// Melihat detail mata pelajaran
+Route::get(
+    'subjects/{subject}',
+    [SubjectController::class, 'show']
+)
+    ->middleware('permission:subjects.view')
+    ->name('subjects.show');
+
+// Form edit mata pelajaran
+Route::get(
+    'subjects/{subject}/edit',
+    [SubjectController::class, 'edit']
+)
+    ->middleware('permission:subjects.edit')
+    ->name('subjects.edit');
+
+// Memperbarui mata pelajaran
+Route::put(
+    'subjects/{subject}',
+    [SubjectController::class, 'update']
+)
+    ->middleware('permission:subjects.edit')
+    ->name('subjects.update');
+
+// Menghapus mata pelajaran
+Route::delete(
+    'subjects/{subject}',
+    [SubjectController::class, 'destroy']
+)
+    ->middleware('permission:subjects.delete')
+    ->name('subjects.destroy');
 
 
     // ==============================
