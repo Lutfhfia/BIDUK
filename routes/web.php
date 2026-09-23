@@ -80,31 +80,101 @@ Route::middleware('auth')->group(function () {
 
 
     // ==============================
-    // DATA KELAS
-    // ==============================
+// DATA KELAS
+// ==============================
 
-    Route::resource('classes', SchoolClassController::class);
+// Melihat daftar kelas
+Route::get(
+    'classes',
+    [SchoolClassController::class, 'index']
+)
+    ->middleware('permission:classes.view')
+    ->name('classes.index');
 
-    Route::get(
-        'classes/{class}/students',
-        [SchoolClassController::class, 'students']
-    )->name('classes.students');
+// Form tambah kelas
+Route::get(
+    'classes/create',
+    [SchoolClassController::class, 'create']
+)
+    ->middleware('permission:classes.create')
+    ->name('classes.create');
 
-    Route::get(
-        'classes/{class}/students/add',
-        [SchoolClassController::class, 'addStudents']
-    )->name('classes.students.add');
+// Menyimpan kelas baru
+Route::post(
+    'classes',
+    [SchoolClassController::class, 'store']
+)
+    ->middleware('permission:classes.create')
+    ->name('classes.store');
 
-    Route::post(
-        'classes/{class}/students',
-        [SchoolClassController::class, 'storeStudents']
-    )->name('classes.students.store');
+// Melihat detail kelas
+Route::get(
+    'classes/{class}',
+    [SchoolClassController::class, 'show']
+)
+    ->middleware('permission:classes.view')
+    ->name('classes.show');
 
-    Route::delete(
-        'classes/{class}/students/{student}',
-        [SchoolClassController::class, 'removeStudent']
-    )->name('classes.students.remove');
+// Form edit kelas
+Route::get(
+    'classes/{class}/edit',
+    [SchoolClassController::class, 'edit']
+)
+    ->middleware('permission:classes.edit')
+    ->name('classes.edit');
 
+// Memperbarui kelas
+Route::put(
+    'classes/{class}',
+    [SchoolClassController::class, 'update']
+)
+    ->middleware('permission:classes.edit')
+    ->name('classes.update');
+
+// Menghapus kelas
+Route::delete(
+    'classes/{class}',
+    [SchoolClassController::class, 'destroy']
+)
+    ->middleware('permission:classes.delete')
+    ->name('classes.destroy');
+
+
+// ==============================
+// PENGELOLAAN SISWA DALAM KELAS
+// ==============================
+
+// Melihat siswa dalam kelas
+Route::get(
+    'classes/{class}/students',
+    [SchoolClassController::class, 'students']
+)
+    ->middleware('permission:classes.view')
+    ->name('classes.students');
+
+// Form menambahkan siswa ke kelas
+Route::get(
+    'classes/{class}/students/add',
+    [SchoolClassController::class, 'addStudents']
+)
+    ->middleware('permission:classes.edit')
+    ->name('classes.students.add');
+
+// Menambahkan siswa ke kelas
+Route::post(
+    'classes/{class}/students',
+    [SchoolClassController::class, 'storeStudents']
+)
+    ->middleware('permission:classes.edit')
+    ->name('classes.students.store');
+
+// Mengeluarkan siswa dari kelas
+Route::delete(
+    'classes/{class}/students/{student}',
+    [SchoolClassController::class, 'removeStudent']
+)
+    ->middleware('permission:classes.edit')
+    ->name('classes.students.remove');
 
     // ==============================
     // MATA PELAJARAN
