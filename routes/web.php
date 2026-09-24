@@ -1,18 +1,19 @@
 <?php
 
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\AchievementReportController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\RekapAbsensiController;
+use App\Http\Controllers\ReportCardGradeController;
+use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
-use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\SubjectController;
-use App\Http\Controllers\RekapAbsensiController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -461,4 +462,19 @@ Route::middleware('auth')->group(function () {
     )
         ->middleware('permission:employees.delete')
         ->name('pegawai.destroy');
+
+
+    // =================================================
+    // LOG AKTIVITAS
+    // =================================================
+
+    Route::get(
+        'activity-logs',
+        [ActivityLogController::class, 'index']
+    )->name('activity-logs.index');
+
+    Route::get(
+        'activity-logs/{activityLog}',
+        [ActivityLogController::class, 'show']
+    )->name('activity-logs.show');
 });

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
+use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -30,14 +32,17 @@ class AuthController extends Controller
         ]);
 
         // Cari user berdasarkan username terlebih dahulu.
-        $user = \App\Models\User::with(['employee', 'role'])
+        $user = User::with(['employee', 'role'])
             ->where('username', $credentials['login'])
             ->first();
 
         // Jika username tidak ditemukan,
         // cari melalui NIP pegawai yang terhubung dengan user.
         if (!$user) {
-            $employee = Employee::where('nip', $credentials['login'])->first();
+            $employee = Employee::where(
+                'nip',
+                $credentials['login']
+            )->first();
 
             if ($employee) {
                 $user = $employee->user;
@@ -50,7 +55,9 @@ class AuthController extends Controller
                 ->withErrors([
                     'login' => 'NIP atau username atau password yang dimasukkan salah.',
                 ])
-                ->withInput($request->only('login'));
+                ->withInput(
+                    $request->only('login')
+                );
         }
 
         // Pastikan akun user masih aktif.
@@ -59,17 +66,24 @@ class AuthController extends Controller
                 ->withErrors([
                     'login' => 'Akun Anda sedang tidak aktif.',
                 ])
-                ->withInput($request->only('login'));
+                ->withInput(
+                    $request->only('login')
+                );
         }
 
         // Jika user terhubung dengan pegawai,
         // pastikan data pegawai juga masih aktif.
-        if ($user->employee && $user->employee->status !== 'Aktif') {
+        if (
+            $user->employee &&
+            $user->employee->status !== 'Aktif'
+        ) {
             return back()
                 ->withErrors([
                     'login' => 'Data pegawai Anda sedang tidak aktif.',
                 ])
-                ->withInput($request->only('login'));
+                ->withInput(
+                    $request->only('login')
+                );
         }
 
         $remember = $request->boolean('remember');
@@ -83,7 +97,9 @@ class AuthController extends Controller
                 ->withErrors([
                     'login' => 'NIP atau username atau password yang dimasukkan salah.',
                 ])
-                ->withInput($request->only('login'));
+                ->withInput(
+                    $request->only('login')
+                );
         }
 
         // Regenerasi session setelah login berhasil.
@@ -94,13 +110,33 @@ class AuthController extends Controller
             'last_login_at' => now(),
         ]);
 
+        // Catat aktivitas login.
+        app(ActivityLogger::class)->log(
+            'login',
+            'authentication',
+            'User berhasil login ke sistem',
+            $user
+        );
+
         return redirect()->route('dashboard');
     }
+
     /**
      * Logout pengguna.
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+
+        if ($user) {
+            app(ActivityLogger::class)->log(
+                'logout',
+                'authentication',
+                'User berhasil logout dari sistem',
+                $user
+            );
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();
@@ -108,21 +144,25 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
+
     /**
- * Mengarahkan pengguna ke WhatsApp Super Admin untuk reset password.
- */
-public function forgotPassword()
-{
-    $whatsapp = env('SUPER_ADMIN_WHATSAPP');
+     * Mengarahkan pengguna ke WhatsApp Super Admin
+     * untuk reset password.
+     */
+    public function forgotPassword()
+    {
+        $whatsapp = env('SUPER_ADMIN_WHATSAPP');
 
-    $message = urlencode(
-        "Halo Admin BIDUK, saya ingin meminta bantuan untuk reset password akun BIDUK saya.\n\n" .
-        "Silakan masukkan data berikut:\n" .
-        "Username: \n" .
-        "Nama: \n" .
-        "Jabatan/Role: \n"
-    );
+        $message = urlencode(
+            "Halo Admin BIDUK, saya ingin meminta bantuan untuk reset password akun BIDUK saya.\n\n" .
+            "Silakan masukkan data berikut:\n" .
+            "Username: \n" .
+            "Nama: \n" .
+            "Jabatan/Role: \n"
+        );
 
-    return redirect("https://wa.me/{$whatsapp}?text={$message}");
-}
+        return redirect(
+            "https://wa.me/{$whatsapp}?text={$message}"
+        );
+    }
 }

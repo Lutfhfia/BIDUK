@@ -1,13 +1,15 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Support\Facades\Auth;
+
 use App\Models\AcademicYear;
 use App\Models\RekapAbsensi;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RekapAbsensiController extends Controller
 {
@@ -15,12 +17,13 @@ class RekapAbsensiController extends Controller
      * Menampilkan daftar rekap absensi.
      */
     public function index(Request $request)
-{
-    /** @var User $user */
-    $user = Auth::user();
+    {
+        /** @var User $user */
+        $user = Auth::user();
 
-    // Tahun ajaran untuk filter
-    $academicYears = AcademicYear::orderByDesc('start_date')->get();
+        // Tahun ajaran untuk filter
+        $academicYears = AcademicYear::orderByDesc('start_date')->get();
+
         // Ambil semester sesuai tahun ajaran yang dipilih
         $semesters = Semester::with('academicYear')
             ->when($request->academic_year_id, function ($query) use ($request) {
@@ -34,17 +37,17 @@ class RekapAbsensiController extends Controller
 
         if ($user->isGuru()) {
             $employee = $user->employee;
-        
+
             // Guru/Wali Kelas harus terhubung dengan data pegawai
             if (!$employee) {
                 abort(403, 'Akun guru belum terhubung dengan data pegawai.');
             }
-        
+
             // Guru hanya melihat kelas yang menjadi wali kelasnya
             $allowedClassIds = $employee->homeroomClasses()
                 ->pluck('id')
                 ->toArray();
-        
+
         } elseif (
             !$user->isSuperAdmin()
             && !$user->isAdmin()
@@ -95,6 +98,7 @@ class RekapAbsensiController extends Controller
             ->whereHas('student', function ($query) {
                 $query->where('status', 'Aktif');
             })
+
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -108,27 +112,27 @@ class RekapAbsensiController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form tambah rekap absensi.
      */
     public function create()
     {
         $user = Auth::user();
-    
+
         $academicYears = AcademicYear::orderByDesc('start_date')->get();
-    
+
         $allowedClassIds = null;
-    
+
         if ($user->isGuru()) {
             $employee = $user->employee;
-    
+
             if (!$employee) {
                 abort(403, 'Akun guru belum terhubung dengan data pegawai.');
             }
-    
+
             $allowedClassIds = $employee->homeroomClasses()
                 ->pluck('id')
                 ->toArray();
-    
+
         } elseif (
             !$user->isSuperAdmin()
             && !$user->isAdmin()
@@ -136,7 +140,7 @@ class RekapAbsensiController extends Controller
         ) {
             abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
         }
-    
+
         $classes = SchoolClass::with('academicYear')
             ->when($allowedClassIds !== null, function ($query) use ($allowedClassIds) {
                 $query->whereIn('id', $allowedClassIds);
@@ -144,293 +148,316 @@ class RekapAbsensiController extends Controller
             ->where('status', 'Aktif')
             ->orderBy('name')
             ->get();
-    
+
         $semesters = Semester::with('academicYear')
             ->orderBy('academic_year_id')
             ->orderBy('id')
             ->get();
-    
+
         return view('rekap-absensi.create', compact(
             'academicYears',
             'classes',
             'semesters'
         ));
     }
+
     /**
- * Mengambil daftar siswa berdasarkan kelas.
- */
-public function studentsByClass(SchoolClass $class)
-{
-    $user = Auth::user();
-
-    // Guru/Wali Kelas hanya boleh mengakses kelas yang diwalikannya
-    if ($user->isGuru()) {
-        $employee = $user->employee;
-
-        if (!$employee) {
-            abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-        }
-
-        $allowedClassIds = $employee->homeroomClasses()
-            ->pluck('id')
-            ->toArray();
-
-        if (!in_array($class->id, $allowedClassIds)) {
-            abort(403, 'Anda tidak memiliki akses ke kelas ini.');
-        }
-    } elseif (
-        !$user->isSuperAdmin()
-        && !$user->isAdmin()
-        && !$user->isKepalaSekolah()
-    ) {
-        abort(403, 'Anda tidak memiliki akses ke data siswa.');
-    }
-
-    $students = $class->students()
-        ->where('students.status', 'Aktif')
-        ->orderBy('students.name')
-        ->get([
-            'students.id',
-            'students.nisn',
-            'students.name',
-        ]);
-
-    return response()->json($students);
-}
-    /**
-     * Store a newly created resource in storage.
+     * Mengambil daftar siswa berdasarkan kelas.
      */
-    public function store(Request $request)
-{
-    $user = Auth::user();
-
-    // Hak akses
-    if (
-        !$user->isSuperAdmin()
-        && !$user->isAdmin()
-        && !$user->isGuru()
-        && !$user->isKepalaSekolah()
-    ) {
-        abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
-    }
-
-    $validated = $request->validate([
-        'student_id' => [
-            'required',
-            'integer',
-            'exists:students,id',
-        ],
-
-        'class_id' => [
-            'required',
-            'integer',
-            'exists:classes,id',
-        ],
-
-        'semester_id' => [
-            'required',
-            'integer',
-            'exists:semesters,id',
-        ],
-
-        'sakit' => [
-            'required',
-            'integer',
-            'min:0',
-        ],
-
-        'izin' => [
-            'required',
-            'integer',
-            'min:0',
-        ],
-
-        'tanpa_keterangan' => [
-            'required',
-            'integer',
-            'min:0',
-        ],
-    ]);
-
-    // Ambil kelas yang dipilih.
-    $schoolClass = SchoolClass::findOrFail($validated['class_id']);
-
-    // Guru/Wali Kelas hanya boleh mengelola kelas yang menjadi tanggung jawabnya.
-    if ($user->isGuru()) {
-        $employee = $user->employee;
-
-        if (!$employee) {
-            abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-        }
-
-        $isHomeroomTeacher = $employee->homeroomClasses()
-            ->whereKey($schoolClass->id)
-            ->exists();
-
-        if (!$isHomeroomTeacher) {
-            abort(403, 'Anda tidak memiliki akses ke kelas ini.');
-        }
-    }
-
-    // Pastikan siswa benar-benar terdaftar di kelas yang dipilih.
-    $studentBelongsToClass = $schoolClass->students()
-        ->where('students.id', $validated['student_id'])
-        ->wherePivot('status', 'Aktif')
-        ->exists();
-
-    if (!$studentBelongsToClass) {
-        return back()
-            ->withInput()
-            ->withErrors([
-                'student_id' => 'Siswa tidak terdaftar sebagai siswa aktif di kelas yang dipilih.',
-            ]);
-    }
-
-    // Cegah rekap ganda untuk siswa, kelas, dan semester yang sama.
-    $alreadyExists = RekapAbsensi::where('student_id', $validated['student_id'])
-        ->where('class_id', $validated['class_id'])
-        ->where('semester_id', $validated['semester_id'])
-        ->exists();
-
-    if ($alreadyExists) {
-        return back()
-            ->withInput()
-            ->withErrors([
-                'student_id' => 'Rekap absensi siswa untuk kelas dan semester tersebut sudah ada.',
-            ]);
-    }
-
-    RekapAbsensi::create([
-        'student_id' => $validated['student_id'],
-        'class_id' => $validated['class_id'],
-        'semester_id' => $validated['semester_id'],
-        'sakit' => $validated['sakit'],
-        'izin' => $validated['izin'],
-        'tanpa_keterangan' => $validated['tanpa_keterangan'],
-    ]);
-
-    return redirect()
-        ->route('rekap-absensi.index')
-        ->with('success', 'Rekap absensi berhasil ditambahkan.');
-}
-    /**
-     * Display the specified resource.
-     */
-    public function show(RekapAbsensi $rekapAbsensi)
-{
-    $user = Auth::user();
-
-    // Guru/Wali Kelas hanya boleh melihat rekap dari kelas yang diwalikannya.
-    if ($user->isGuru()) {
-        $employee = $user->employee;
-
-        if (!$employee) {
-            abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-        }
-
-        $hasAccess = $employee->homeroomClasses()
-            ->whereKey($rekapAbsensi->class_id)
-            ->exists();
-
-        if (!$hasAccess) {
-            abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
-        }
-    } elseif (
-        !$user->isSuperAdmin()
-        && !$user->isAdmin()
-        && !$user->isKepalaSekolah()
-    ) {
-        abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
-    }
-
-    $rekapAbsensi->load([
-        'student',
-        'schoolClass.academicYear',
-        'semester.academicYear',
-    ]);
-
-    return view('rekap-absensi.show', compact('rekapAbsensi'));
-}
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(RekapAbsensi $rekapAbsensi)
+    public function studentsByClass(SchoolClass $class)
     {
         $user = Auth::user();
-    
-        // Hanya Super Admin dan Guru/Wali Kelas yang boleh mengedit.
-        if (!$user->isSuperAdmin() && !$user->isGuru()) {
-            abort(403, 'Anda tidak memiliki izin untuk mengedit Rekap Absensi.');
-        }
-    
-        // Guru/Wali Kelas hanya boleh mengedit rekap dari kelas yang diwalikannya.
+
+        // Guru/Wali Kelas hanya boleh mengakses kelas yang diwalikannya
         if ($user->isGuru()) {
             $employee = $user->employee;
-    
+
             if (!$employee) {
                 abort(403, 'Akun guru belum terhubung dengan data pegawai.');
             }
-    
+
+            $allowedClassIds = $employee->homeroomClasses()
+                ->pluck('id')
+                ->toArray();
+
+            if (!in_array($class->id, $allowedClassIds)) {
+                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
+            }
+
+        } elseif (
+            !$user->isSuperAdmin()
+            && !$user->isAdmin()
+            && !$user->isKepalaSekolah()
+        ) {
+            abort(403, 'Anda tidak memiliki akses ke data siswa.');
+        }
+
+        $students = $class->students()
+            ->where('students.status', 'Aktif')
+            ->orderBy('students.name')
+            ->get([
+                'students.id',
+                'students.nisn',
+                'students.name',
+            ]);
+
+        return response()->json($students);
+    }
+
+    /**
+     * Menyimpan rekap absensi baru.
+     */
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+
+        // Hak akses
+        if (
+            !$user->isSuperAdmin()
+            && !$user->isAdmin()
+            && !$user->isGuru()
+            && !$user->isKepalaSekolah()
+        ) {
+            abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
+        }
+
+        $validated = $request->validate([
+            'student_id' => [
+                'required',
+                'integer',
+                'exists:students,id',
+            ],
+
+            'class_id' => [
+                'required',
+                'integer',
+                'exists:classes,id',
+            ],
+
+            'semester_id' => [
+                'required',
+                'integer',
+                'exists:semesters,id',
+            ],
+
+            'sakit' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
+
+            'izin' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
+
+            'tanpa_keterangan' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
+        ]);
+
+        // Ambil kelas yang dipilih.
+        $schoolClass = SchoolClass::findOrFail($validated['class_id']);
+
+        // Guru/Wali Kelas hanya boleh mengelola kelas yang menjadi tanggung jawabnya.
+        if ($user->isGuru()) {
+            $employee = $user->employee;
+
+            if (!$employee) {
+                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
+            }
+
+            $isHomeroomTeacher = $employee->homeroomClasses()
+                ->whereKey($schoolClass->id)
+                ->exists();
+
+            if (!$isHomeroomTeacher) {
+                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
+            }
+        }
+
+        // Pastikan siswa benar-benar terdaftar di kelas yang dipilih.
+        $studentBelongsToClass = $schoolClass->students()
+            ->where('students.id', $validated['student_id'])
+            ->wherePivot('status', 'Aktif')
+            ->exists();
+
+        if (!$studentBelongsToClass) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'student_id' => 'Siswa tidak terdaftar sebagai siswa aktif di kelas yang dipilih.',
+                ]);
+        }
+
+        // Cegah rekap ganda untuk siswa, kelas, dan semester yang sama.
+        $alreadyExists = RekapAbsensi::where('student_id', $validated['student_id'])
+            ->where('class_id', $validated['class_id'])
+            ->where('semester_id', $validated['semester_id'])
+            ->exists();
+
+        if ($alreadyExists) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'student_id' => 'Rekap absensi siswa untuk kelas dan semester tersebut sudah ada.',
+                ]);
+        }
+
+        $rekapAbsensi = RekapAbsensi::create([
+            'student_id' => $validated['student_id'],
+            'class_id' => $validated['class_id'],
+            'semester_id' => $validated['semester_id'],
+            'sakit' => $validated['sakit'],
+            'izin' => $validated['izin'],
+            'tanpa_keterangan' => $validated['tanpa_keterangan'],
+        ]);
+
+        // Ambil data relasi untuk deskripsi log.
+        $student = $rekapAbsensi->student;
+        $className = $schoolClass->name;
+
+        // Catat aktivitas penambahan rekap absensi.
+        app(ActivityLogger::class)->log(
+            'created',
+            'attendance',
+            'Menambahkan rekap absensi siswa: '
+                . ($student?->name ?? 'Siswa')
+                . ' - Kelas '
+                . $className,
+            $rekapAbsensi->fresh(),
+            null,
+            $rekapAbsensi->fresh()->getAttributes()
+        );
+
+        return redirect()
+            ->route('rekap-absensi.index')
+            ->with('success', 'Rekap absensi berhasil ditambahkan.');
+    }
+
+    /**
+     * Menampilkan detail rekap absensi.
+     */
+    public function show(RekapAbsensi $rekapAbsensi)
+    {
+        $user = Auth::user();
+
+        // Guru/Wali Kelas hanya boleh melihat rekap dari kelas yang diwalikannya.
+        if ($user->isGuru()) {
+            $employee = $user->employee;
+
+            if (!$employee) {
+                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
+            }
+
             $hasAccess = $employee->homeroomClasses()
                 ->whereKey($rekapAbsensi->class_id)
                 ->exists();
-    
+
             if (!$hasAccess) {
                 abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
             }
+
+        } elseif (
+            !$user->isSuperAdmin()
+            && !$user->isAdmin()
+            && !$user->isKepalaSekolah()
+        ) {
+            abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
         }
-    
+
         $rekapAbsensi->load([
             'student',
             'schoolClass.academicYear',
             'semester.academicYear',
         ]);
-    
-        return view('rekap-absensi.edit', compact('rekapAbsensi'));
+
+        return view('rekap-absensi.show', compact('rekapAbsensi'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Menampilkan form edit rekap absensi.
      */
-    public function update(Request $request, RekapAbsensi $rekapAbsensi)
+    public function edit(RekapAbsensi $rekapAbsensi)
     {
         $user = Auth::user();
-    
-        // Hanya Super Admin dan Guru/Wali Kelas yang boleh memperbarui.
+
+        // Hanya Super Admin dan Guru/Wali Kelas yang boleh mengedit.
         if (!$user->isSuperAdmin() && !$user->isGuru()) {
-            abort(403, 'Anda tidak memiliki izin untuk mengubah Rekap Absensi.');
+            abort(403, 'Anda tidak memiliki izin untuk mengedit Rekap Absensi.');
         }
-    
-        // Guru/Wali Kelas hanya boleh mengubah rekap dari kelas yang diwalikannya.
+
+        // Guru/Wali Kelas hanya boleh mengedit rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
             $employee = $user->employee;
-    
+
             if (!$employee) {
                 abort(403, 'Akun guru belum terhubung dengan data pegawai.');
             }
-    
+
             $hasAccess = $employee->homeroomClasses()
                 ->whereKey($rekapAbsensi->class_id)
                 ->exists();
-    
+
             if (!$hasAccess) {
                 abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
             }
         }
-    
+
+        $rekapAbsensi->load([
+            'student',
+            'schoolClass.academicYear',
+            'semester.academicYear',
+        ]);
+
+        return view('rekap-absensi.edit', compact('rekapAbsensi'));
+    }
+
+    /**
+     * Memperbarui rekap absensi.
+     */
+    public function update(Request $request, RekapAbsensi $rekapAbsensi)
+    {
+        $user = Auth::user();
+
+        // Hanya Super Admin dan Guru/Wali Kelas yang boleh memperbarui.
+        if (!$user->isSuperAdmin() && !$user->isGuru()) {
+            abort(403, 'Anda tidak memiliki izin untuk mengubah Rekap Absensi.');
+        }
+
+        // Guru/Wali Kelas hanya boleh mengubah rekap dari kelas yang diwalikannya.
+        if ($user->isGuru()) {
+            $employee = $user->employee;
+
+            if (!$employee) {
+                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
+            }
+
+            $hasAccess = $employee->homeroomClasses()
+                ->whereKey($rekapAbsensi->class_id)
+                ->exists();
+
+            if (!$hasAccess) {
+                abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
+            }
+        }
+
         $validated = $request->validate([
             'sakit' => [
                 'required',
                 'integer',
                 'min:0',
             ],
-    
+
             'izin' => [
                 'required',
                 'integer',
                 'min:0',
             ],
-    
+
             'tanpa_keterangan' => [
                 'required',
                 'integer',
@@ -443,50 +470,127 @@ public function studentsByClass(SchoolClass $class)
             '*.integer' => 'Jumlah ketidakhadiran harus berupa angka.',
             '*.min' => 'Jumlah ketidakhadiran tidak boleh kurang dari 0.',
         ]);
-    
+
+        // Simpan kondisi sebelum perubahan.
+        $oldAttendanceValues = [
+            'sakit' => $rekapAbsensi->sakit,
+            'izin' => $rekapAbsensi->izin,
+            'tanpa_keterangan' => $rekapAbsensi->tanpa_keterangan,
+        ];
+
         $rekapAbsensi->update([
             'sakit' => $validated['sakit'],
             'izin' => $validated['izin'],
             'tanpa_keterangan' => $validated['tanpa_keterangan'],
         ]);
-    
+
+        // Ambil kondisi setelah perubahan.
+        $newAttendanceValues = [
+            'sakit' => $rekapAbsensi->fresh()->sakit,
+            'izin' => $rekapAbsensi->fresh()->izin,
+            'tanpa_keterangan' => $rekapAbsensi->fresh()->tanpa_keterangan,
+        ];
+
+        // Cari field yang benar-benar berubah.
+        $changedOldValues = [];
+        $changedNewValues = [];
+
+        foreach ($newAttendanceValues as $key => $newValue) {
+            $oldValue = $oldAttendanceValues[$key] ?? null;
+
+            if ((string) $oldValue !== (string) $newValue) {
+                $changedOldValues[$key] = $oldValue;
+                $changedNewValues[$key] = $newValue;
+            }
+        }
+
+        // Catat hanya jika memang ada perubahan.
+        if (!empty($changedNewValues)) {
+            $rekapAbsensi->loadMissing('student', 'schoolClass');
+
+            app(ActivityLogger::class)->log(
+                'updated',
+                'attendance',
+                'Mengubah rekap absensi siswa: '
+                    . ($rekapAbsensi->student?->name ?? 'Siswa')
+                    . ' - Kelas '
+                    . ($rekapAbsensi->schoolClass?->name ?? '-'),
+                $rekapAbsensi->fresh(),
+                $changedOldValues,
+                $changedNewValues
+            );
+        }
+
         return redirect()
             ->route('rekap-absensi.index')
             ->with('success', 'Rekap absensi berhasil diperbarui.');
     }
+
     /**
-     * Remove the specified resource from storage.
+     * Menghapus rekap absensi.
      */
     public function destroy(RekapAbsensi $rekapAbsensi)
     {
         $user = Auth::user();
-    
+
         // Hanya Super Admin dan Guru/Wali Kelas yang boleh menghapus.
         if (!$user->isSuperAdmin() && !$user->isGuru()) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus Rekap Absensi.');
         }
-    
+
         // Guru/Wali Kelas hanya boleh menghapus rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
             $employee = $user->employee;
-    
+
             if (!$employee) {
                 abort(403, 'Akun guru belum terhubung dengan data pegawai.');
             }
-    
+
             $hasAccess = $employee->homeroomClasses()
                 ->whereKey($rekapAbsensi->class_id)
                 ->exists();
-    
+
             if (!$hasAccess) {
                 abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
             }
         }
-    
+
+        // Muat relasi sebelum record dihapus.
+        $rekapAbsensi->loadMissing(
+            'student',
+            'schoolClass'
+        );
+
+        $studentName = $rekapAbsensi->student?->name ?? 'Siswa';
+        $className = $rekapAbsensi->schoolClass?->name ?? '-';
+
+        // Simpan data sebelum dihapus.
+        $oldAttendanceValues = [
+            'student_id' => $rekapAbsensi->student_id,
+            'class_id' => $rekapAbsensi->class_id,
+            'semester_id' => $rekapAbsensi->semester_id,
+            'sakit' => $rekapAbsensi->sakit,
+            'izin' => $rekapAbsensi->izin,
+            'tanpa_keterangan' => $rekapAbsensi->tanpa_keterangan,
+        ];
+
         $rekapAbsensi->delete();
-    
+
+        // Catat aktivitas penghapusan.
+        app(ActivityLogger::class)->log(
+            'deleted',
+            'attendance',
+            'Menghapus rekap absensi siswa: '
+                . $studentName
+                . ' - Kelas '
+                . $className,
+            $rekapAbsensi,
+            $oldAttendanceValues,
+            null
+        );
+
         return redirect()
             ->route('rekap-absensi.index')
             ->with('success', 'Rekap absensi berhasil dihapus.');
-        } //
-    } //
+    }
+}

@@ -220,21 +220,35 @@
     @csrf
 
 
-        <div class="form-group">
-        <label for="login">NIP / Username</label>
+    <div class="form-group">
+    <label for="login">NIP / Username</label>
 
-            <div class="input-wrapper">
-            <input
+    <div class="input-wrapper">
+        <input
             type="text"
             id="login"
             name="login"
-            placeholder="Masukkan NIP atau username"
+            placeholder="Masukkan NIP atau Username"
             autocomplete="username"
+            value="{{ old('login') }}"
+        >
+    </div>
+</div>
+    <div class="form-group">
+    <label for="login">NIP / Username</label>
+ origin/feature/log-aktivitas
 
-                >
-            </div>
-        </div>
-
+    <div class="input-wrapper">
+        <input
+            type="text"
+            id="login"
+            name="login"
+            placeholder="Masukkan NIP atau Username"
+            autocomplete="username"
+            value="{{ old('login') }}"
+        >
+    </div>
+</div>
         <div class="form-group">
             <label for="password">Password</label>
 
