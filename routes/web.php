@@ -11,15 +11,20 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\SchoolProfileController;
+use App\Http\Controllers\SchoolAchievementController;
+use App\Http\Controllers\ExtracurricularController;
+use App\Http\Controllers\SchoolNewsController;
+use App\Http\Controllers\SchoolGalleryController;
 use Illuminate\Support\Facades\Route;
 
 // =====================================================
 // LANDING PAGE
 // =====================================================
 
-Route::get('/', function () {
-    return view('landing.index');
-});
+Route::get('/', [LandingController::class, 'index'])
+    ->name('landing');
 
 
 // =====================================================
@@ -193,5 +198,28 @@ Route::middleware('auth')->group(function () {
     )->name('pegawai.export.pdf');
 
     Route::resource('pegawai', EmployeeController::class);
+
+
+    // =================================================
+    // PROFIL SEKOLAH & PENGATURAN KONTEN
+    // =================================================
+
+    Route::get('/school-profile', [SchoolProfileController::class, 'index'])
+        ->name('school-profile.index');
+
+    Route::put('/school-profile', [SchoolProfileController::class, 'update'])
+        ->name('school-profile.update');
+
+    Route::resource('school-achievements', SchoolAchievementController::class)
+        ->only(['store', 'update', 'destroy']);
+
+    Route::resource('extracurriculars', ExtracurricularController::class)
+        ->only(['store', 'update', 'destroy']);
+
+    Route::resource('school-news', SchoolNewsController::class)
+        ->only(['store', 'update', 'destroy']);
+
+    Route::resource('school-galleries', SchoolGalleryController::class)
+        ->only(['store', 'update', 'destroy']);
 
 });

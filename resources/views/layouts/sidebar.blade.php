@@ -54,7 +54,8 @@
             {{-- Data Pegawai --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('pegawai.index') }}"
+                    class="nav-link {{ request()->routeIs('pegawai.*') ? 'active' : '' }}">
 
                     <i class="bi bi-person-badge-fill"></i>
                     <span>Data Pegawai</span>
@@ -222,7 +223,8 @@
             {{-- Profil Sekolah --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('school-profile.index') }}"
+                    class="nav-link {{ request()->routeIs('school-profile.*') || request()->routeIs('school-achievements.*') || request()->routeIs('extracurriculars.*') || request()->routeIs('school-news.*') || request()->routeIs('school-galleries.*') ? 'active' : '' }}">
 
                     <i class="bi bi-info-circle-fill"></i>
                     <span>Profil Sekolah</span>
@@ -235,7 +237,7 @@
             {{-- Berita Sekolah --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('school-profile.index') }}#tab-berita" class="nav-link">
 
                     <i class="bi bi-newspaper"></i>
                     <span>Berita Sekolah</span>

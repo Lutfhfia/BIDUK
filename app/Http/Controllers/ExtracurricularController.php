@@ -13,11 +13,11 @@ class ExtracurricularController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $validated['is_active'] = $request->boolean('is_active');
+        $validated['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('extracurriculars', 'public');
@@ -25,7 +25,9 @@ class ExtracurricularController extends Controller
 
         Extracurricular::create($validated);
 
-        return back()->with('success', 'Ekstrakurikuler berhasil ditambahkan.');
+        return redirect()->route('school-profile.index')
+            ->with('success', 'Ekstrakurikuler berhasil ditambahkan.')
+            ->with('active_tab', 'ekskul');
     }
 
     public function update(Request $request, Extracurricular $extracurricular)
@@ -33,7 +35,7 @@ class ExtracurricularController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -43,13 +45,16 @@ class ExtracurricularController extends Controller
             if ($extracurricular->image && Storage::disk('public')->exists($extracurricular->image)) {
                 Storage::disk('public')->delete($extracurricular->image);
             }
-
             $validated['image'] = $request->file('image')->store('extracurriculars', 'public');
+        } else {
+            unset($validated['image']);
         }
 
         $extracurricular->update($validated);
 
-        return back()->with('success', 'Ekstrakurikuler berhasil diperbarui.');
+        return redirect()->route('school-profile.index')
+            ->with('success', 'Ekstrakurikuler berhasil diperbarui.')
+            ->with('active_tab', 'ekskul');
     }
 
     public function destroy(Extracurricular $extracurricular)
@@ -60,6 +65,8 @@ class ExtracurricularController extends Controller
 
         $extracurricular->delete();
 
-        return back()->with('success', 'Ekstrakurikuler berhasil dihapus.');
+        return redirect()->route('school-profile.index')
+            ->with('success', 'Ekstrakurikuler berhasil dihapus.')
+            ->with('active_tab', 'ekskul');
     }
 }
