@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use App\Services\ActivityLogger;
 
 class StudentController extends Controller
 {
@@ -147,6 +148,15 @@ class StudentController extends Controller
                 'entry_date' => now()->toDateString(),
             ]);
         }
+        // Catat aktivitas penambahan siswa.
+app(ActivityLogger::class)->log(
+    'created',
+    'students',
+    'Menambahkan data siswa: ' . $student->name,
+    $student,
+    null,
+    $student->getAttributes()
+);
 
         return redirect()
             ->route('students.index')
@@ -199,6 +209,8 @@ class StudentController extends Controller
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
         $data = $request->validated();
+        // Simpan kondisi data siswa sebelum perubahan.
+$oldStudentValues = $student->getAttributes();
 
         // Handle upload foto
         if ($request->hasFile('photo')) {
@@ -304,7 +316,33 @@ class StudentController extends Controller
                 );
             }
         }
+        // Ambil kondisi terbaru data siswa setelah perubahan.
+$newStudentValues = $student->fresh()->getAttributes();
 
+// Ambil hanya field yang benar-benar berubah.
+$changedOldValues = [];
+$changedNewValues = [];
+
+foreach ($newStudentValues as $key => $newValue) {
+    $oldValue = $oldStudentValues[$key] ?? null;
+
+    if ((string) $oldValue !== (string) $newValue) {
+        $changedOldValues[$key] = $oldValue;
+        $changedNewValues[$key] = $newValue;
+    }
+}
+
+// Catat aktivitas jika memang ada perubahan.
+if (!empty($changedNewValues)) {
+    app(ActivityLogger::class)->log(
+        'updated',
+        'students',
+        'Mengubah data siswa: ' . $student->name,
+        $student,
+        $changedOldValues,
+        $changedNewValues
+    );
+}
         return redirect()
             ->route('students.index')
             ->with('success', 'Data siswa berhasil diperbarui.');
@@ -315,7 +353,16 @@ class StudentController extends Controller
      */
     public function destroy(Student $student): RedirectResponse
     {
+        $oldStudentValues = $student->getAttributes();
         $student->delete();
+        app(ActivityLogger::class)->log(
+            'deleted',
+            'students',
+            'Menghapus data siswa: ' . $student->name,
+            $student,
+            $oldStudentValues,
+            null
+        );
 
         return redirect()
             ->route('students.index')
