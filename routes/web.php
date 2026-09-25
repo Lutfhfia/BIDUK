@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\AcademicYearController;
@@ -7,14 +8,21 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ExtracurricularController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\RekapAbsensiController;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\SchoolAchievementController;
 use App\Http\Controllers\SchoolClassController;
+use App\Http\Controllers\SchoolGalleryController;
+use App\Http\Controllers\SchoolNewsController;
+use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
+
 use Illuminate\Support\Facades\Route;
 
 
@@ -22,9 +30,8 @@ use Illuminate\Support\Facades\Route;
 // LANDING PAGE
 // =====================================================
 
-Route::get('/', function () {
-    return view('landing.index');
-});
+Route::get('/', [LandingController::class, 'index'])
+    ->name('landing');
 
 
 // =====================================================
@@ -465,6 +472,77 @@ Route::middleware('auth')->group(function () {
 
 
     // =================================================
+    // PROFIL SEKOLAH & PENGATURAN KONTEN
+    // =================================================
+
+    Route::get(
+        '/school-profile',
+        [SchoolProfileController::class, 'index']
+    )->name('school-profile.index');
+
+    Route::put(
+        '/school-profile',
+        [SchoolProfileController::class, 'update']
+    )->name('school-profile.update');
+
+
+    // =================================================
+    // PRESTASI SEKOLAH
+    // =================================================
+
+    Route::resource(
+        'school-achievements',
+        SchoolAchievementController::class
+    )->only([
+        'store',
+        'update',
+        'destroy'
+    ]);
+
+
+    // =================================================
+    // EKSTRAKURIKULER
+    // =================================================
+
+    Route::resource(
+        'extracurriculars',
+        ExtracurricularController::class
+    )->only([
+        'store',
+        'update',
+        'destroy'
+    ]);
+
+
+    // =================================================
+    // BERITA SEKOLAH
+    // =================================================
+
+    Route::resource(
+        'school-news',
+        SchoolNewsController::class
+    )->only([
+        'store',
+        'update',
+        'destroy'
+    ]);
+
+
+    // =================================================
+    // GALERI SEKOLAH
+    // =================================================
+
+    Route::resource(
+        'school-galleries',
+        SchoolGalleryController::class
+    )->only([
+        'store',
+        'update',
+        'destroy'
+    ]);
+
+
+    // =================================================
     // LOG AKTIVITAS
     // =================================================
 
@@ -477,4 +555,5 @@ Route::middleware('auth')->group(function () {
         'activity-logs/{activityLog}',
         [ActivityLogController::class, 'show']
     )->name('activity-logs.show');
+
 });
