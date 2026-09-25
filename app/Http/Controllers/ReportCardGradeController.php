@@ -8,6 +8,7 @@ use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\RekapAbsensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -327,6 +328,27 @@ public function edit(
 
             });
     }
+    // Ambil rekap absensi semester ganjil.
+$attendanceGanjil = null;
+
+if ($semesterGanjil) {
+    $attendanceGanjil = RekapAbsensi::where([
+        'student_id' => $student->id,
+        'class_id' => $class->id,
+        'semester_id' => $semesterGanjil->id,
+    ])->first();
+}
+
+// Ambil rekap absensi semester genap.
+$attendanceGenap = null;
+
+if ($semesterGenap) {
+    $attendanceGenap = RekapAbsensi::where([
+        'student_id' => $student->id,
+        'class_id' => $class->id,
+        'semester_id' => $semesterGenap->id,
+    ])->first();
+}
 
     /*
      * ======================================================
@@ -393,6 +415,8 @@ public function edit(
             'semesterGanjil',
             'semesterGenap',
             'grades',
+            'attendanceGanjil',
+            'attendanceGenap',
             'achievementData'
         )
     );
@@ -529,14 +553,6 @@ public function update(
             'nullable',
             'string',
             'max:2000'
-        ],
-
-        /*
-         * Ketidakhadiran
-         */
-        'attendance' => [
-            'nullable',
-            'array'
         ],
 
         /*
