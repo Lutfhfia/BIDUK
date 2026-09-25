@@ -1020,7 +1020,8 @@
                 </h5>
 
                 <small class="text-muted">
-                    Masukkan ketidakhadiran dan keputusan kenaikan peserta didik.
+                    Data ketidakhadiran diambil otomatis dari Rekap Absensi.
+                    Keputusan kenaikan diisi pada bagian Kenaikan.
                 </small>
 
             </div>
@@ -1059,10 +1060,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[ganjil][sick]"
                                         class="form-control"
+                                        value="{{ $attendanceGanjil?->sakit ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
@@ -1085,10 +1086,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[ganjil][permission]"
                                         class="form-control"
+                                        value="{{ $attendanceGanjil?->izin ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
@@ -1111,10 +1112,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[ganjil][absence]"
                                         class="form-control"
+                                        value="{{ $attendanceGanjil?->tanpa_keterangan ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
@@ -1151,10 +1152,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[genap][sick]"
                                         class="form-control"
+                                        value="{{ $attendanceGenap?->sakit ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
@@ -1177,10 +1178,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[genap][permission]"
                                         class="form-control"
+                                        value="{{ $attendanceGenap?->izin ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
@@ -1203,10 +1204,10 @@
 
                                     <input
                                         type="number"
-                                        name="attendance[genap][absence]"
                                         class="form-control"
+                                        value="{{ $attendanceGenap?->tanpa_keterangan ?? 0 }}"
                                         min="0"
-                                        placeholder="0"
+                                        readonly
                                     >
 
                                     <span class="input-group-text">
