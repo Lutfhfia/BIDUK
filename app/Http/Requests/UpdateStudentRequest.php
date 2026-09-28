@@ -25,8 +25,23 @@ class UpdateStudentRequest extends FormRequest
         $studentId = $this->route('student');
 
         return [
-            'nis'                    => ['required', 'string', 'max:20', Rule::unique('students', 'nis')->ignore($studentId)],
-            'nisn'                   => ['required', 'string', 'max:20', Rule::unique('students', 'nisn')->ignore($studentId)],
+            'nis' => [
+    'required',
+    'string',
+    'max:20',
+    Rule::unique('students', 'nis')
+        ->ignore($studentId)
+        ->whereNull('deleted_at'),
+],
+
+'nisn' => [
+    'required',
+    'string',
+    'max:20',
+    Rule::unique('students', 'nisn')
+        ->ignore($studentId)
+        ->whereNull('deleted_at'),
+],
             'nik'                    => 'nullable|string|max:20',
             'school_code'            => 'nullable|string|max:50',
             'district_code'          => 'nullable|string|max:50',
