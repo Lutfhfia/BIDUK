@@ -156,6 +156,11 @@
             cursor: pointer;
             transition: 0.2s;
         }
+
+        .btn-login:hover {
+            background: #157347;
+        }
+
         .btn-back {
             display: block;
             width: 100%;
@@ -177,10 +182,6 @@
             background: #f4f4f4;
             color: #198754;
             border-color: #198754;
-}
-
-        .btn-login:hover {
-            background: #157347;
         }
 
         .footer {
@@ -217,38 +218,23 @@
     </div>
 
     <form action="{{ route('login.process') }}" method="POST">
-    @csrf
+        @csrf
 
+        <div class="form-group">
+            <label for="login">NIP / Username</label>
 
-    <div class="form-group">
-    <label for="login">NIP / Username</label>
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    id="login"
+                    name="login"
+                    placeholder="Masukkan NIP atau Username"
+                    autocomplete="username"
+                    value="{{ old('login') }}"
+                >
+            </div>
+        </div>
 
-    <div class="input-wrapper">
-        <input
-            type="text"
-            id="login"
-            name="login"
-            placeholder="Masukkan NIP atau Username"
-            autocomplete="username"
-            value="{{ old('login') }}"
-        >
-    </div>
-</div>
-    <div class="form-group">
-    <label for="login">NIP / Username</label>
- origin/feature/log-aktivitas
-
-    <div class="input-wrapper">
-        <input
-            type="text"
-            id="login"
-            name="login"
-            placeholder="Masukkan NIP atau Username"
-            autocomplete="username"
-            value="{{ old('login') }}"
-        >
-    </div>
-</div>
         <div class="form-group">
             <label for="password">Password</label>
 
@@ -265,6 +251,7 @@
                     type="button"
                     class="toggle-password"
                     onclick="togglePassword()"
+                    aria-label="Tampilkan atau sembunyikan password"
                 >
                     👁
                 </button>
@@ -274,7 +261,7 @@
         <div class="login-options">
 
             <label class="remember">
-                <input type="checkbox" name="remember">
+                <input type="checkbox" name="remember" value="1">
                 Ingat saya
             </label>
 
@@ -291,6 +278,7 @@
         <button type="submit" class="btn-login">
             Masuk
         </button>
+
         <a href="{{ url('/') }}" class="btn-back">
             ← Kembali ke Halaman Utama
         </a>
