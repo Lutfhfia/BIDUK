@@ -54,7 +54,8 @@
             {{-- Data Pegawai --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('pegawai.index') }}"
+                    class="nav-link {{ request()->routeIs('pegawai.*') ? 'active' : '' }}">
 
                     <i class="bi bi-person-badge-fill"></i>
                     <span>Data Pegawai</span>
@@ -87,6 +88,7 @@
 
             {{-- Tahun Ajaran --}}
             <li class="nav-item">
+
                 <a href="{{ route('academic-years.index') }}"
                     class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
@@ -94,6 +96,7 @@
                     <span>Tahun Ajaran</span>
 
                 </a>
+
             </li>
 
 
@@ -114,7 +117,8 @@
             {{-- Nilai Rapot --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('report-card-grades.index') }}"
+                    class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
 
                     <i class="bi bi-card-checklist"></i>
                     <span>Nilai Rapot</span>
@@ -174,11 +178,10 @@
             {{-- Rekap Prestasi --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
-
-                    <i class="bi bi-trophy-fill"></i>
+                <a href="{{ route('achievement-reports.index') }}"
+                    class="nav-link {{ request()->routeIs('achievement-reports.*') ? 'active' : '' }}">
+                    <i class="bi bi-trophy me-2"></i>
                     <span>Rekap Prestasi</span>
-
                 </a>
 
             </li>
@@ -220,7 +223,8 @@
             {{-- Profil Sekolah --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('school-profile.index') }}"
+                    class="nav-link {{ request()->routeIs('school-profile.*') || request()->routeIs('school-achievements.*') || request()->routeIs('extracurriculars.*') || request()->routeIs('school-news.*') || request()->routeIs('school-galleries.*') ? 'active' : '' }}">
 
                     <i class="bi bi-info-circle-fill"></i>
                     <span>Profil Sekolah</span>
@@ -233,7 +237,7 @@
             {{-- Berita Sekolah --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('school-profile.index') }}#tab-berita" class="nav-link">
 
                     <i class="bi bi-newspaper"></i>
                     <span>Berita Sekolah</span>
@@ -243,20 +247,48 @@
             </li>
 
 
-            {{-- Log Aktivitas --}}
-            <li class="nav-item">
+                  {{-- Log Aktivitas --}}
+@if(auth()->user()?->isSuperAdmin() || auth()->user()?->isKepalaSekolah())
+    <li class="nav-item">
 
-                <a href="#" class="nav-link">
+        <a href="{{ route('activity-logs.index') }}"
+           class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
 
-                    <i class="bi bi-clock-history"></i>
-                    <span>Log Aktivitas</span>
+            <i class="bi bi-clock-history"></i>
+            <span>Log Aktivitas</span>
 
-                </a>
+        </a>
 
-            </li>
+    </li>
+@endif
 
-        </ul>
+{{-- ==================== LOGOUT ==================== --}}
+<div class="mt-3 pt-2 border-top border-light border-opacity-25">
 
-    </nav>
+<ul class="sidebar-nav">
+
+<li class="nav-item">
+
+    <form action="{{ route('logout') }}" method="POST">
+        @csrf
+
+        <button type="submit"
+                class="nav-link w-100 border-0 bg-transparent text-start"
+                style="cursor: pointer;">
+
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Keluar</span>
+
+        </button>
+
+    </form>
+
+</li>
+
+</ul>
+
+</div>
+
+</nav>
 
 </aside>

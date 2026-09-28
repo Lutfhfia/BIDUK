@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Subject;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 
 class SchoolClass extends Model
@@ -55,6 +57,18 @@ class SchoolClass extends Model
         return $this->hasMany(ClassStudent::class, 'class_id');
     }
 
+
+    // mata pelajaran
+    public function subjects(): BelongsToMany
+{
+    return $this->belongsToMany(
+        Subject::class,
+        'class_subject',
+        'class_id',
+        'subject_id'
+    )->withTimestamps();
+}
+
     /**
      * Scope: hanya kelas aktif.
      */
@@ -80,4 +94,9 @@ class SchoolClass extends Model
     {
         return $this->students()->wherePivot('status', 'Aktif')->count();
     }
+
+    public function reportCardGrades(): HasMany
+{
+    return $this->hasMany(ReportCardGrade::class, 'class_id');
+}
 }

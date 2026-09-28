@@ -1,0 +1,9 @@
+[33mcommit a4f62013f032aa0eb0dbd8afc7dece5049e7284b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelop[m[33m, [m[1;31morigin/develop[m[33m)[m
+Merge: 043ea2f 092cf02
+Author: luthfi <153413302+Lutfhfia@users.noreply.github.com>
+Date:   Thu Sep 17 14:56:06 2026 +0700
+
+    Merge pull request #13 from Lutfhfia/feature/master-kelas
+    
+    feat: add class subjects and report card grades
+

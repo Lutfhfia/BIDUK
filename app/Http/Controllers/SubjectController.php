@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subject;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -98,7 +99,17 @@ class SubjectController extends Controller
             'status.in' => 'Status hanya boleh Aktif atau Nonaktif.',
         ]);
 
-        Subject::create($validated);
+        $subject = Subject::create($validated);
+
+        // Catat aktivitas penambahan mata pelajaran.
+        app(ActivityLogger::class)->log(
+            'created',
+            'subjects',
+            'Menambahkan mata pelajaran: ' . $subject->name,
+            $subject->fresh(),
+            null,
+            $subject->fresh()->getAttributes()
+        );
 
         return redirect()
             ->route('subjects.index')
@@ -158,7 +169,49 @@ class SubjectController extends Controller
             'status.in' => 'Status hanya boleh Aktif atau Nonaktif.',
         ]);
 
+        // Simpan kondisi sebelum perubahan.
+        $oldSubjectValues = $subject->getAttributes();
+
         $subject->update($validated);
+
+        // Ambil kondisi setelah perubahan.
+        $newSubjectValues = $subject->fresh()->getAttributes();
+
+        // Jangan catat timestamp sebagai perubahan.
+        unset(
+            $oldSubjectValues['created_at'],
+            $oldSubjectValues['updated_at']
+        );
+
+        unset(
+            $newSubjectValues['created_at'],
+            $newSubjectValues['updated_at']
+        );
+
+        // Cari field yang benar-benar berubah.
+        $changedOldValues = [];
+        $changedNewValues = [];
+
+        foreach ($newSubjectValues as $key => $newValue) {
+            $oldValue = $oldSubjectValues[$key] ?? null;
+
+            if ((string) $oldValue !== (string) $newValue) {
+                $changedOldValues[$key] = $oldValue;
+                $changedNewValues[$key] = $newValue;
+            }
+        }
+
+        // Catat aktivitas jika memang ada perubahan.
+        if (!empty($changedNewValues)) {
+            app(ActivityLogger::class)->log(
+                'updated',
+                'subjects',
+                'Mengubah mata pelajaran: ' . $subject->name,
+                $subject->fresh(),
+                $changedOldValues,
+                $changedNewValues
+            );
+        }
 
         return redirect()
             ->route('subjects.index')
@@ -170,7 +223,21 @@ class SubjectController extends Controller
      */
     public function destroy(Subject $subject)
     {
+        // Simpan data sebelum dihapus.
+        $oldSubjectValues = $subject->getAttributes();
+        $subjectName = $subject->name;
+
         $subject->delete();
+
+        // Catat aktivitas penghapusan.
+        app(ActivityLogger::class)->log(
+            'deleted',
+            'subjects',
+            'Menghapus mata pelajaran: ' . $subjectName,
+            $subject,
+            $oldSubjectValues,
+            null
+        );
 
         return redirect()
             ->route('subjects.index')

@@ -1,0 +1,26 @@
+[33mcommit a4f62013f032aa0eb0dbd8afc7dece5049e7284b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelop[m[33m, [m[1;31morigin/develop[m[33m)[m
+Merge: 043ea2f 092cf02
+Author: luthfi <153413302+Lutfhfia@users.noreply.github.com>
+Date:   Thu Sep 17 14:56:06 2026 +0700
+
+    Merge pull request #13 from Lutfhfia/feature/master-kelas
+    
+    feat: add class subjects and report card grades
+
+ app/Http/Controllers/ReportCardGradeController.php |  658 [32m++++++++++[m
+ app/Http/Controllers/SchoolClassController.php     |  320 [32m+++[m[31m--[m
+ app/Models/ReportCardGrade.php                     |   60 [32m+[m
+ app/Models/SchoolClass.php                         |   19 [32m+[m
+ app/Models/Semester.php                            |    9 [32m+[m
+ app/Models/Student.php                             |    6 [32m+[m
+ app/Models/Subject.php                             |   20 [32m+[m
+ ...026_09_17_052344_create_class_subject_table.php |   38 [32m+[m
+ ...9_17_064011_create_report_card_grades_table.php |   64 [32m+[m
+ ...earning_outcome_to_report_card_grades_table.php |   24 [32m+[m
+ resources/views/admin/classes/create.blade.php     |  187 [32m++[m[31m-[m
+ resources/views/admin/classes/edit.blade.php       |  331 [32m++++[m[31m-[m
+ resources/views/admin/classes/show.blade.php       |  507 [32m+++++[m[31m---[m
+ .../views/admin/report-card-grades/edit.blade.php  | 1370 [32m++++++++++++++++++++[m
+ .../views/admin/report-card-grades/index.blade.php |  546 [32m++++++++[m
+ routes/web.php                                     |  113 [32m+[m[31m-[m
+ 16 files changed, 3959 insertions(+), 313 deletions(-)
