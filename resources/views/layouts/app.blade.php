@@ -411,14 +411,20 @@
         /* ============ PAGINATION ============ */
         .pagination .page-link {
             color: var(--biduk-primary);
+            background-color: #fff;
             border-radius: 6px;
             margin: 0 2px;
             font-size: 0.85rem;
         }
 
         .pagination .page-item.active .page-link {
-            background: var(--biduk-primary);
+            color: #fff !important;
+            background-color: var(--biduk-primary);
             border-color: var(--biduk-primary);
+        }
+
+        .pagination .page-item.active .page-link:hover {
+            color: #fff !important;
         }
 
         /* ============ ACTION DROPDOWN ============ */
