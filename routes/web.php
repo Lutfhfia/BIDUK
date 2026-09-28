@@ -5,7 +5,6 @@ use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SchoolClassController;
-use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubjectController;
@@ -96,13 +95,6 @@ Route::middleware('auth')->group(function () {
     // =================================================
 
     Route::resource('academic-years', AcademicYearController::class);
-
-
-    // =================================================
-    // SEMESTER
-    // =================================================
-
-    Route::resource('semesters', SemesterController::class);
 
 
     // =================================================
