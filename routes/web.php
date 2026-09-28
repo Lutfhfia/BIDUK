@@ -77,18 +77,19 @@ Route::middleware('auth')->group(function () {
     Route::resource('students', StudentController::class);
 
 
-    // =================================================
+        // =================================================
     // DATA KELAS
     // =================================================
 
     Route::resource('classes', SchoolClassController::class);
 
-<<<<<<< HEAD
-    // Mata Pelajaran
+
+    // =================================================
+    // MATA PELAJARAN
+    // =================================================
+
     Route::resource('subjects', SubjectController::class);
 
-    // Pengelolaan siswa dalam kelas
-=======
 
     // =================================================
     // TAHUN AJARAN
@@ -108,7 +109,6 @@ Route::middleware('auth')->group(function () {
     // PENGELOLAAN SISWA DALAM KELAS
     // =================================================
 
->>>>>>> origin/develop
     Route::get('classes/{class}/students', [SchoolClassController::class, 'students'])
         ->name('classes.students');
 
@@ -120,26 +120,24 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('classes/{class}/students/{student}', [SchoolClassController::class, 'removeStudent'])
         ->name('classes.students.remove');
-<<<<<<< HEAD
-       
-// ==============================
-// DATA PEGAWAI
-// ==============================
 
-Route::get('pegawai/import/template', [EmployeeController::class, 'downloadTemplate'])
-->name('pegawai.import.template');
 
-Route::post('pegawai/import', [EmployeeController::class, 'import'])
-->name('pegawai.import');
+    // =================================================
+    // DATA PEGAWAI
+    // =================================================
 
-Route::get('pegawai/export/excel', [EmployeeController::class, 'exportExcel'])
-    ->name('pegawai.export.excel');
+    Route::get('pegawai/import/template', [EmployeeController::class, 'downloadTemplate'])
+        ->name('pegawai.import.template');
 
-Route::get('pegawai/export/pdf', [EmployeeController::class, 'exportPdf'])
-    ->name('pegawai.export.pdf');
+    Route::post('pegawai/import', [EmployeeController::class, 'import'])
+        ->name('pegawai.import');
 
-Route::resource('pegawai', EmployeeController::class);
+    Route::get('pegawai/export/excel', [EmployeeController::class, 'exportExcel'])
+        ->name('pegawai.export.excel');
+
+    Route::get('pegawai/export/pdf', [EmployeeController::class, 'exportPdf'])
+        ->name('pegawai.export.pdf');
+
+    Route::resource('pegawai', EmployeeController::class);
+
 });
-=======
-});
->>>>>>> origin/develop
