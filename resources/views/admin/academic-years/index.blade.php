@@ -22,7 +22,7 @@
         </div>
 
         <a href="{{ route('academic-years.create') }}"
-           class="btn btn-primary">
+           class="btn btn-biduk-primary">
             <i class="bi bi-plus-lg me-1"></i>
             Tambah Tahun Ajaran
         </a>
@@ -171,13 +171,13 @@
 
                                     @if($academicYear->current_semester === 'Ganjil')
 
-                                        <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                                        <span class="badge badge-aktif px-3 py-2">
                                             Ganjil
                                         </span>
 
                                     @elseif($academicYear->current_semester === 'Genap')
 
-                                        <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                                        <span class="badge badge-aktif px-3 py-2">
                                             Genap
                                         </span>
 
@@ -231,7 +231,7 @@
 
                                         {{-- Detail --}}
                                         <a href="{{ route('academic-years.show', $academicYear) }}"
-                                           class="btn btn-sm btn-outline-info"
+                                           class="btn btn-sm btn-biduk-outline"
                                            title="Detail">
 
                                             <i class="bi bi-eye"></i>
@@ -241,7 +241,7 @@
 
                                         {{-- Edit --}}
                                         <a href="{{ route('academic-years.edit', $academicYear) }}"
-                                           class="btn btn-sm btn-outline-warning"
+                                           class="btn btn-sm btn-biduk-outline"
                                            title="Edit">
 
                                             <i class="bi bi-pencil"></i>
@@ -274,7 +274,7 @@
                                         </p>
 
                                         <a href="{{ route('academic-years.create') }}"
-                                           class="btn btn-primary btn-sm">
+                                           class="btn btn-biduk-primary btn-sm">
 
                                             <i class="bi bi-plus-lg me-1"></i>
 

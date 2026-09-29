@@ -44,10 +44,10 @@ class SchoolProfileController extends Controller
             'hero_description' => 'nullable|string|max:5000',
             'organization_title' => 'nullable|string|max:255',
             'organization_description' => 'nullable|string|max:5000',
-            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:3072',
-            'cover_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'school_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'organization_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'logo' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg,ico|max:5120',
+            'cover_image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'school_image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'organization_image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         $fileFields = [
@@ -58,7 +58,13 @@ class SchoolProfileController extends Controller
         ];
 
         foreach ($fileFields as $field => $folder) {
-            if ($request->hasFile($field)) {
+            $removeField = 'remove_' . $field;
+            if ($request->boolean($removeField)) {
+                if ($school->$field && Storage::disk('public')->exists($school->$field)) {
+                    Storage::disk('public')->delete($school->$field);
+                }
+                $data[$field] = null;
+            } elseif ($request->hasFile($field)) {
                 if ($school->$field && Storage::disk('public')->exists($school->$field)) {
                     Storage::disk('public')->delete($school->$field);
                 }

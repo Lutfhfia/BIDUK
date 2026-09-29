@@ -234,17 +234,6 @@
             </li>
 
 
-            {{-- Berita Sekolah --}}
-            <li class="nav-item">
-
-                <a href="{{ route('school-profile.index') }}#tab-berita" class="nav-link">
-
-                    <i class="bi bi-newspaper"></i>
-                    <span>Berita Sekolah</span>
-
-                </a>
-
-            </li>
 
 
                   {{-- Log Aktivitas --}}
