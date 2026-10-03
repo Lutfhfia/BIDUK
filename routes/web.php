@@ -83,6 +83,11 @@ Route::middleware('auth')->group(function () {
     )->name('buku-induk.batch');
 
     Route::get(
+        '/laporan/buku-induk/cetak-batch-pdf',
+        [BukuIndukController::class, 'batchPdf']
+    )->name('buku-induk.batch-pdf');
+
+    Route::get(
         '/laporan/buku-induk/cetak/{student}',
         [BukuIndukController::class, 'print']
     )->name('buku-induk.print');

@@ -31,14 +31,9 @@
                     Kembali
                 </a>
 
-                <button type="button" class="btn btn-outline-primary" id="headerPrintButton">
-                    <i class="bi bi-printer me-1"></i> Print
-                </button>
-
-                <button type="button" class="btn btn-outline-danger" id="headerPdfButton">
+                <button type="button" class="btn btn-danger" id="headerPdfButton">
                     <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
                 </button>
-
 
             </div>
 
@@ -56,6 +51,7 @@
             <div class="col-lg-5">
 
                 <form method="GET" action="{{ route('buku-induk.index') }}" id="reportForm">
+                    <input type="hidden" name="print_type" id="printTypeInput" value="{{ request('print_type', 'individual') }}">
 
                     {{-- =================================================
                      1. PILIH PARAMETER LAPORAN
@@ -246,7 +242,7 @@
                                 {{-- PER INDIVIDU --}}
                                 <div class="col-md-4">
 
-                                    <div class="print-type-card active" data-print-type="individual">
+                                    <div class="print-type-card {{ request('print_type', 'individual') === 'individual' ? 'active' : '' }}" data-print-type="individual">
 
                                         <div class="radio-circle">
                                             <i class="bi bi-check"></i>
@@ -272,7 +268,7 @@
                                 {{-- PER KELAS --}}
                                 <div class="col-md-4">
 
-                                    <div class="print-type-card" data-print-type="class">
+                                    <div class="print-type-card {{ request('print_type') === 'class' ? 'active' : '' }}" data-print-type="class">
 
                                         <div class="radio-circle">
                                             <i class="bi bi-check"></i>
@@ -299,7 +295,7 @@
                                 {{-- SEMUA KELAS --}}
                                 <div class="col-md-4">
 
-                                    <div class="print-type-card" data-print-type="all">
+                                    <div class="print-type-card {{ request('print_type') === 'all' ? 'active' : '' }}" data-print-type="all">
 
                                         <div class="radio-circle">
                                             <i class="bi bi-check"></i>
@@ -455,10 +451,10 @@
                                 </div>
 
 
-                                <button type="button" class="btn btn-sm btn-primary" id="printPreviewButton">
+                                <button type="button" class="btn btn-sm btn-danger" id="previewPdfButton">
 
-                                    <i class="bi bi-printer me-1"></i>
-                                    Print
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>
+                                    Export PDF
 
                                 </button>
 
@@ -581,7 +577,7 @@
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
                         <button type="button" class="btn btn-success" id="downloadAllDocumentsButton">
-                            <i class="bi bi-download me-1"></i> Unduh Semua File
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Unduh 1 File PDF
                         </button>
                     </div>
                 </div>
@@ -790,7 +786,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            let selectedPrintType = 'individual';
+            let selectedPrintType = @json(request('print_type', 'individual'));
+            const printTypeInput = document.getElementById('printTypeInput');
 
 
             const printCards =
@@ -817,11 +814,8 @@
             const resetButton =
                 document.getElementById('resetButton');
 
-            const printPreviewButton =
-                document.getElementById('printPreviewButton');
-
-            const headerPrintButton =
-                document.getElementById('headerPrintButton');
+            const previewPdfButton =
+                document.getElementById('previewPdfButton');
 
             const headerPdfButton =
                 document.getElementById('headerPdfButton');
@@ -861,8 +855,11 @@
 
                     card.classList.add('active');
 
-                    selectedPrintType =
-                        card.dataset.printType;
+                    selectedPrintType = card.dataset.printType;
+
+                    if (printTypeInput) {
+                        printTypeInput.value = selectedPrintType;
+                    }
 
                     updatePrintType();
 
@@ -881,6 +878,9 @@
                     return;
                 }
 
+                printCards.forEach(function(item) {
+                    item.classList.toggle('active', item.dataset.printType === selectedPrintType);
+                });
 
                 if (selectedPrintType === 'individual') {
 
@@ -892,7 +892,7 @@
                     printTypeInfo.innerHTML =
                         '<i class="bi bi-info-circle me-2"></i>' +
                         'Mode <strong>Per Individu</strong> dipilih. ' +
-                        'Silakan pilih siswa yang akan dicetak.';
+                        'Silakan pilih siswa yang akan diexport PDF.';
 
                 } else if (selectedPrintType === 'class') {
 
@@ -906,7 +906,7 @@
                         'Mode <strong>Per Kelas</strong> dipilih. ' +
                         'Silakan pilih kelas pada parameter laporan. ' +
                         'Semua siswa pada kelas tersebut akan menjadi ' +
-                        'data cetak.';
+                        'data cetak / export PDF.';
 
                 } else if (selectedPrintType === 'all') {
 
@@ -966,7 +966,8 @@
 
 
                     const matchClass = !classId ||
-                        optionClassIds.includes(classId);
+                        optionClassIds.length === 0 ||
+                        optionClassIds.includes(String(classId));
 
 
                     const matchSearch = !keyword ||
@@ -1055,7 +1056,7 @@
                 });
 
                 const downloadLink = document.createElement('a');
-                downloadLink.href = '{{ route('buku-induk.download-all') }}?' + parameters.toString();
+                downloadLink.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 downloadLink.remove();
@@ -1090,17 +1091,8 @@
 
                 previewButton.addEventListener('click', function() {
 
-                    const academicYear =
-                        document.getElementById('academicYear')?.value || '';
-
-                    const semester =
-                        document.getElementById('semester')?.value || '';
-
                     const classId =
                         document.getElementById('classSelect')?.value || '';
-
-                    const status =
-                        document.getElementById('statusSelect')?.value || '';
 
                     const studentId =
                         studentSelect?.value || '';
@@ -1134,7 +1126,7 @@
                     ) {
 
                         alert(
-                            'Silakan pilih kelas terlebih dahulu.'
+                            'Silakan pilih kelas terlebih dahulu pada parameter laporan.'
                         );
 
                         return;
@@ -1143,27 +1135,8 @@
 
 
                     /* -----------------------------------------------
-                       SEMUA KELAS
+                       SEMUA KELAS / PER KELAS
                     ------------------------------------------------ */
-
-                    if (
-                        selectedPrintType === 'all'
-                    ) {
-
-                        /*
-                         * Tidak membutuhkan class_id.
-                         * Backend nantinya menentukan seluruh siswa
-                         * berdasarkan parameter laporan.
-                         */
-
-                    }
-
-
-                    /*
-                     * Untuk mode individu, kita submit form agar
-                     * controller menghasilkan selectedStudent dan
-                     * iframe preview menggunakan parameter terbaru.
-                     */
 
                     if (selectedPrintType === 'individual') {
 
@@ -1205,52 +1178,7 @@
 
 
             /* =========================================================
-               PRINT DARI PREVIEW
-            ========================================================== */
-
-            if (printPreviewButton) {
-
-                printPreviewButton.addEventListener(
-                    'click',
-                    function() {
-
-                        const frame =
-                            document.getElementById('previewFrame');
-
-
-                        if (!frame) {
-
-                            alert(
-                                'Preview Buku Induk belum tersedia.'
-                            );
-
-                            return;
-
-                        }
-
-
-                        try {
-
-                            frame.contentWindow.focus();
-                            frame.contentWindow.print();
-
-                        } catch (error) {
-
-                            window.open(
-                                frame.src,
-                                '_blank'
-                            );
-
-                        }
-
-                    }
-                );
-
-            }
-
-
-            /* =========================================================
-               AKSI CEPAT DI HEADER
+               EXPORT PDF
             ========================================================== */
 
             function reportParameters() {
@@ -1262,40 +1190,17 @@
                 return parameters;
             }
 
-            function printCurrentReport() {
-                const frame = document.getElementById('previewFrame');
-
-                if (selectedPrintType === 'individual') {
-                    if (!frame) {
-                        alert('Tampilkan preview laporan terlebih dahulu sebelum mencetak.');
+            function downloadCurrentDocument() {
+                if (selectedPrintType === 'class') {
+                    if (!classSelect?.value) {
+                        alert('Silakan pilih kelas terlebih dahulu pada parameter laporan.');
                         return;
                     }
-
-                    try {
-                        frame.contentWindow.focus();
-                        frame.contentWindow.print();
-                    } catch (error) {
-                        window.open(frame.src, '_blank');
-                    }
-
+                    showBulkStudentModal();
                     return;
                 }
 
-                if (selectedPrintType === 'class' && !classSelect?.value) {
-                    alert('Silakan pilih kelas terlebih dahulu.');
-                    return;
-                }
-
-                showBulkStudentModal();
-            }
-
-            function downloadCurrentDocument() {
-                if (selectedPrintType === 'class' && !classSelect?.value) {
-                    alert('Silakan pilih kelas terlebih dahulu.');
-                    return;
-                }
-
-                if (selectedPrintType !== 'individual') {
+                if (selectedPrintType === 'all') {
                     showBulkStudentModal();
                     return;
                 }
@@ -1305,12 +1210,69 @@
                     return;
                 }
 
-                printCurrentReport();
+                const parameters = reportParameters();
+                parameters.set('pdf', '1');
+                window.location.href = '{{ url('/laporan/buku-induk/cetak') }}/' + studentSelect.value + '?' + parameters.toString();
             }
 
-            headerPrintButton?.addEventListener('click', printCurrentReport);
-
             headerPdfButton?.addEventListener('click', downloadCurrentDocument);
+            previewPdfButton?.addEventListener('click', downloadCurrentDocument);
+
+
+            /* =========================================================
+               PARAMETER LAPORAN -> HUBUNGKAN DENGAN JENIS CETAK
+            ========================================================== */
+
+            function reloadWithParameters(changedField) {
+                const parameters = reportParameters();
+
+                // Siswa lama tidak boleh terbawa ketika parameter berubah.
+                parameters.delete('student_id');
+
+                // Jika tahun ajaran berubah, semester dan kelas harus dipilih ulang
+                // karena keduanya bergantung pada tahun ajaran tersebut.
+                if (changedField === 'academicYear') {
+                    parameters.delete('semester_id');
+                    parameters.delete('class_id');
+                }
+
+                if (changedField === 'classSelect') {
+                    const classVal = document.getElementById('classSelect')?.value;
+                    if (classVal) {
+                        // Jika memilih kelas tertentu di parameter 1, otomatis aktifkan Per Kelas di parameter 2
+                        selectedPrintType = 'class';
+                        parameters.set('print_type', 'class');
+                    } else {
+                        // Jika memilih Semua Kelas di parameter 1, otomatis aktifkan Semua Kelas di parameter 2
+                        if (selectedPrintType === 'class') {
+                            selectedPrintType = 'all';
+                            parameters.set('print_type', 'all');
+                        }
+                    }
+                }
+
+                window.location.href = '{{ route('buku-induk.index') }}?' + parameters.toString();
+            }
+
+            const parameterElements = [
+                ['academicYear', document.getElementById('academicYear')],
+                ['semester', document.getElementById('semester')],
+                ['classSelect', document.getElementById('classSelect')],
+                ['statusSelect', document.getElementById('statusSelect')]
+            ];
+
+            parameterElements.forEach(function([fieldName, element]) {
+                if (!element) return;
+
+                element.addEventListener('change', function() {
+                    reloadWithParameters(fieldName);
+                });
+            });
+
+            /* Saat parameter berubah, tipe cetak tetap dipertahankan. */
+            if (printTypeInput) {
+                printTypeInput.value = selectedPrintType;
+            }
 
 
             /* =========================================================

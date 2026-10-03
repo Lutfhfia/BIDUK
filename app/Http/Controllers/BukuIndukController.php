@@ -52,28 +52,60 @@ class BukuIndukController extends Controller
 
         $students = Student::query()
             ->when($studentStatus !== '', function ($query) use ($studentStatus) {
-                $query->where('status', $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif');
+                $query->where(
+                    'status',
+                    $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif'
+                );
             })
-            ->when($request->filled('search'), fn ($query) => $query->search($request->search))
-            ->whereHas('classAssignments', function ($query) use ($request, $selectedAcademicYear) {
+            ->when(
+                $request->filled('search'),
+                fn ($query) => $query->search($request->search)
+            )
+            ->whereHas('classAssignments', function ($query) use (
+                $request,
+                $selectedAcademicYear
+            ) {
                 $query->where('status', 'Aktif')
-                    ->when($request->filled('class_id'), function ($query) use ($request) {
-                        $query->where('class_id', $request->class_id);
-                    })
-                    ->whereHas('schoolClass', function ($query) use ($selectedAcademicYear) {
-                        $query->when($selectedAcademicYear, function ($query) use ($selectedAcademicYear) {
-                            $query->where('academic_year_id', $selectedAcademicYear);
-                        });
+                    ->when(
+                        $request->filled('class_id'),
+                        function ($query) use ($request) {
+                            $query->where('class_id', $request->class_id);
+                        }
+                    )
+                    ->whereHas('schoolClass', function ($query) use (
+                        $selectedAcademicYear
+                    ) {
+                        $query->when(
+                            $selectedAcademicYear,
+                            function ($query) use ($selectedAcademicYear) {
+                                $query->where(
+                                    'academic_year_id',
+                                    $selectedAcademicYear
+                                );
+                            }
+                        );
                     });
             })
-            ->with(['classAssignments' => function ($query) use ($selectedAcademicYear) {
-                $query->where('status', 'Aktif')
-                    ->whereHas('schoolClass', function ($query) use ($selectedAcademicYear) {
-                        $query->when($selectedAcademicYear, function ($query) use ($selectedAcademicYear) {
-                            $query->where('academic_year_id', $selectedAcademicYear);
+            ->with([
+                'classAssignments' => function ($query) use (
+                    $selectedAcademicYear
+                ) {
+                    $query->where('status', 'Aktif')
+                        ->whereHas('schoolClass', function ($query) use (
+                            $selectedAcademicYear
+                        ) {
+                            $query->when(
+                                $selectedAcademicYear,
+                                function ($query) use ($selectedAcademicYear) {
+                                    $query->where(
+                                        'academic_year_id',
+                                        $selectedAcademicYear
+                                    );
+                                }
+                            );
                         });
-                    });
-            }])
+                },
+            ])
             ->orderBy('name')
             ->get();
 
@@ -106,25 +138,48 @@ class BukuIndukController extends Controller
 
         $students = Student::query()
             ->when($studentStatus !== '', function ($query) use ($studentStatus) {
-                $query->where('status', $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif');
+                $query->where(
+                    'status',
+                    $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif'
+                );
             })
-            ->whereHas('classAssignments', function ($query) use ($request, $selectedAcademicYear) {
+            ->when(
+                $request->filled('search'),
+                fn ($query) => $query->search($request->search)
+            )
+            ->whereHas('classAssignments', function ($query) use (
+                $request,
+                $selectedAcademicYear
+            ) {
                 $query->where('status', 'Aktif')
-                    ->when($request->filled('class_id'), function ($query) use ($request) {
-                        $query->where('class_id', $request->class_id);
-                    })
-                    ->whereHas('schoolClass', function ($query) use ($selectedAcademicYear) {
-                        $query->when($selectedAcademicYear, function ($query) use ($selectedAcademicYear) {
-                            $query->where('academic_year_id', $selectedAcademicYear);
-                        });
+                    ->when(
+                        $request->filled('class_id'),
+                        function ($query) use ($request) {
+                            $query->where('class_id', $request->class_id);
+                        }
+                    )
+                    ->whereHas('schoolClass', function ($query) use (
+                        $selectedAcademicYear
+                    ) {
+                        $query->when(
+                            $selectedAcademicYear,
+                            function ($query) use ($selectedAcademicYear) {
+                                $query->where(
+                                    'academic_year_id',
+                                    $selectedAcademicYear
+                                );
+                            }
+                        );
                     });
             })
             ->orderBy('name')
             ->get();
 
         $class = $request->filled('class_id')
-            ? SchoolClass::where('academic_year_id', $selectedAcademicYear)
-                ->findOrFail($request->class_id)
+            ? SchoolClass::where(
+                'academic_year_id',
+                $selectedAcademicYear
+            )->findOrFail($request->class_id)
             : null;
 
         return view('reports.buku-induk.batch', compact(
@@ -145,8 +200,10 @@ class BukuIndukController extends Controller
 
         if ($request->boolean('pdf')) {
             return Pdf::loadHTML($view->render())
-                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
-                ->download('buku-induk-' . ($student->nis ?: $student->id) . '.pdf');
+                ->setPaper('a4', 'portrait')
+                ->download(
+                    'buku-induk-' . ($student->nis ?: $student->id) . '.pdf'
+                );
         }
 
         if ($request->boolean('download')) {
@@ -162,45 +219,226 @@ class BukuIndukController extends Controller
         return $view;
     }
 
+
+    /**
+     * Membuat SATU file PDF untuk semua siswa yang dipilih.
+     *
+     * Setiap siswa terdiri dari 2 halaman Buku Induk.
+     * Tidak membuat ZIP dan tidak membuat satu PDF per siswa.
+     */
+    public function batchPdf(Request $request)
+    {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
+        $studentIds = $request->input('student_ids', []);
+
+        if (is_array($studentIds) && count($studentIds)) {
+            $students = Student::query()
+                ->whereIn('id', $studentIds)
+                ->orderBy('name')
+                ->get();
+        } else {
+            $selectedAcademicYear = $request->input(
+                'academic_year_id',
+                AcademicYear::getActive()?->id
+            );
+
+            $studentStatus = $request->input('status', 'aktif');
+
+            $students = Student::query()
+                ->when($studentStatus !== '', function ($query) use ($studentStatus) {
+                    $query->where(
+                        'status',
+                        $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif'
+                    );
+                })
+                ->when(
+                    $request->filled('search'),
+                    fn ($query) => $query->search($request->search)
+                )
+                ->whereHas('classAssignments', function ($query) use (
+                    $request,
+                    $selectedAcademicYear
+                ) {
+                    $query->where('status', 'Aktif')
+                        ->when(
+                            $request->filled('class_id'),
+                            function ($query) use ($request) {
+                                $query->where('class_id', $request->class_id);
+                            }
+                        )
+                        ->whereHas('schoolClass', function ($query) use (
+                            $selectedAcademicYear
+                        ) {
+                            $query->when(
+                                $selectedAcademicYear,
+                                function ($query) use ($selectedAcademicYear) {
+                                    $query->where(
+                                        'academic_year_id',
+                                        $selectedAcademicYear
+                                    );
+                                }
+                            );
+                        });
+                })
+                ->orderBy('name')
+                ->get();
+        }
+
+        abort_if(
+            $students->isEmpty(),
+            404,
+            'Siswa tidak ditemukan.'
+        );
+
+        $style = '';
+        $studentPages = [];
+
+        foreach ($students as $student) {
+            $reportData = $this->reportData($request, $student);
+
+            $html = view(
+                'reports.buku-induk.print',
+                $reportData
+            )->render();
+
+            /*
+             * Ambil CSS satu kali dari template Buku Induk.
+             */
+            if ($style === '' &&
+                preg_match(
+                    '/<style[^>]*>(.*?)<\/style>/is',
+                    $html,
+                    $styleMatch
+                )
+            ) {
+                $style = $styleMatch[1];
+            }
+
+            /*
+             * Ambil isi BODY saja (yaitu div.page halaman 1 dan 2).
+             * Jangan menumpuk <html>, <head>, dan <body>
+             * untuk setiap siswa.
+             */
+            if (preg_match(
+                '/<body[^>]*>(.*?)<\/body>/is',
+                $html,
+                $bodyMatch
+            )) {
+                $body = trim($bodyMatch[1]);
+            } else {
+                $body = trim($html);
+            }
+
+            /*
+             * Setiap siswa menghasilkan 2 blok .page langsung sebagai
+             * child dari body. Tidak ada wrapper <div> per siswa agar
+             * layout dan page-break Dompdf 100% konsisten dengan
+             * cetak individual.
+             */
+            $studentPages[] = $body;
+        }
+
+        $combinedHtml = '<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Buku Induk</title>
+    <style>' . $style . '</style>
+</head>
+<body class="pdf-export">' . implode('', $studentPages) . '</body>
+</html>';
+
+        return Pdf::loadHTML($combinedHtml)
+            ->setPaper('a4', 'portrait')
+            ->download(
+                'buku-induk-' . now()->format('Y-m-d-His') . '.pdf'
+            );
+    }
+
+    /**
+     * Membuat ZIP yang berisi satu PDF untuk setiap siswa terpilih.
+     */
     public function downloadAll(Request $request)
     {
         $studentIds = $request->input('student_ids', []);
 
-        abort_unless(is_array($studentIds) && count($studentIds), 422, 'Tidak ada siswa yang dipilih.');
+        abort_unless(
+            is_array($studentIds) && count($studentIds),
+            422,
+            'Tidak ada siswa yang dipilih.'
+        );
 
-        $students = Student::whereIn('id', $studentIds)->get();
-        abort_if($students->isEmpty(), 404, 'Siswa tidak ditemukan.');
+        $students = Student::whereIn('id', $studentIds)
+            ->orderBy('name')
+            ->get();
 
-        $reports = $students->map(fn (Student $student) => [
-            'student' => $student,
-            ...$this->reportData($request, $student),
-        ]);
+        abort_if(
+            $students->isEmpty(),
+            404,
+            'Siswa tidak ditemukan.'
+        );
 
         if (!class_exists(\ZipArchive::class)) {
-            return Pdf::loadView('reports.buku-induk.bulk-pdf', compact('reports'))
-                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
-                ->download('buku-induk-semua-' . now()->format('Y-m-d-His') . '.pdf');
+            abort(
+                500,
+                'Ekstensi PHP ZipArchive belum aktif. Aktifkan extension=zip pada PHP yang digunakan Laragon.'
+            );
         }
 
-        $zipPath = tempnam(storage_path('app'), 'buku-induk-');
+        $zipPath = tempnam(
+            storage_path('app'),
+            'buku-induk-'
+        );
+
         $zip = new \ZipArchive();
 
-        abort_unless($zipPath && $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === true, 500, 'File ZIP tidak dapat dibuat.');
+        abort_unless(
+            $zipPath &&
+            $zip->open(
+                $zipPath,
+                \ZipArchive::CREATE | \ZipArchive::OVERWRITE
+            ) === true,
+            500,
+            'File ZIP tidak dapat dibuat.'
+        );
 
         try {
             foreach ($students as $student) {
-                $pdf = Pdf::loadView('reports.buku-induk.print', $this->reportData($request, $student))
-                    ->setPaper([0, 0, 609.45, 935.43], 'portrait')
+                $reportData = $this->reportData(
+                    $request,
+                    $student
+                );
+
+                /*
+                 * Gunakan render path yang sama dengan export PDF
+                 * per individu agar hasil PDF di dalam ZIP konsisten.
+                 */
+                $view = view(
+                    'reports.buku-induk.print',
+                    $reportData
+                );
+
+                $pdf = Pdf::loadHTML($view->render())
+                    ->setPaper('a4', 'portrait')
                     ->output();
 
-                $filename = 'buku-induk-' . ($student->nis ?: $student->id) . '.pdf';
-                $zip->addFromString($filename, $pdf);
+                $filename = 'buku-induk-' .
+                    ($student->nis ?: $student->id) .
+                    '.pdf';
+
+                $zip->addFromString(
+                    $filename,
+                    $pdf
+                );
             }
 
             $zip->close();
         } catch (\Throwable $exception) {
             $zip->close();
             @unlink($zipPath);
+
             throw $exception;
         }
 
@@ -211,8 +449,13 @@ class BukuIndukController extends Controller
         )->deleteFileAfterSend(true);
     }
 
-    private function reportData(Request $request, Student $student): array
-    {
+    /**
+     * Menyiapkan seluruh data yang digunakan oleh template Buku Induk.
+     */
+    private function reportData(
+        Request $request,
+        Student $student
+    ): array {
         $student->load([
             'classes.academicYear',
             'classes.homeroomTeacher',
@@ -243,7 +486,12 @@ class BukuIndukController extends Controller
             $class = SchoolClass::with([
                 'academicYear',
                 'homeroomTeacher',
-            ])->find($request->class_id);
+            ])->where(
+                'academic_year_id',
+                $academicYear?->id
+            )->find(
+                $request->class_id
+            );
         }
 
         if (!$class) {
@@ -260,7 +508,12 @@ class BukuIndukController extends Controller
         $semester = null;
 
         if ($request->filled('semester_id')) {
-            $semester = Semester::find($request->semester_id);
+            $semester = Semester::where(
+                'academic_year_id',
+                $academicYear?->id
+            )->find(
+                $request->semester_id
+            );
         }
 
         return compact(
@@ -270,7 +523,4 @@ class BukuIndukController extends Controller
             'class'
         );
     }
-
 }
-
-

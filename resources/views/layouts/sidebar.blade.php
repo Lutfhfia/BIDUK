@@ -1,16 +1,31 @@
 {{-- Sidebar BIDUK SDN 204 --}}
+
+@php
+    $schoolProfile = \App\Models\SchoolProfile::first();
+@endphp
+
 <aside class="biduk-sidebar" id="sidebar">
 
     {{-- Brand --}}
     <div class="sidebar-brand">
+
         <div class="sidebar-brand-icon">
-            <i class="bi bi-book-half"></i>
+            @if($schoolProfile && $schoolProfile->logo)
+                <img
+                    src="{{ asset('storage/' . $schoolProfile->logo) }}"
+                    alt="Logo Sekolah"
+                    class="school-logo"
+                >
+            @else
+                <i class="bi bi-book-half"></i>
+            @endif
         </div>
 
         <div>
             <h5>BIDUK</h5>
             <small>SDN 204</small>
         </div>
+
     </div>
 
 
@@ -21,7 +36,8 @@
         <ul class="sidebar-nav">
 
             <li class="nav-item">
-                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <a href="{{ route('dashboard') }}"
+                   class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
 
                     <i class="bi bi-grid-1x2-fill"></i>
                     <span>Dashboard</span>
@@ -41,7 +57,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('students.index') }}"
-                    class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}">
 
                     <i class="bi bi-people-fill"></i>
                     <span>Data Siswa</span>
@@ -55,7 +71,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('pegawai.index') }}"
-                    class="nav-link {{ request()->routeIs('pegawai.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('pegawai.*') ? 'active' : '' }}">
 
                     <i class="bi bi-person-badge-fill"></i>
                     <span>Data Pegawai</span>
@@ -69,7 +85,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('classes.index') }}"
-                    class="nav-link {{ request()->routeIs('classes.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('classes.*') ? 'active' : '' }}">
 
                     <i class="bi bi-building"></i>
                     <span>Data Kelas</span>
@@ -90,7 +106,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('academic-years.index') }}"
-                    class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('academic-years.*') ? 'active' : '' }}">
 
                     <i class="bi bi-calendar3"></i>
                     <span>Tahun Ajaran</span>
@@ -104,7 +120,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('subjects.index') }}"
-                    class="nav-link {{ request()->routeIs('subjects.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('subjects.*') ? 'active' : '' }}">
 
                     <i class="bi bi-journal-bookmark-fill"></i>
                     <span>Mata Pelajaran</span>
@@ -118,7 +134,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('report-card-grades.index') }}"
-                    class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
 
                     <i class="bi bi-card-checklist"></i>
                     <span>Nilai Rapot</span>
@@ -139,7 +155,7 @@
             <li class="nav-item">
 
                 <a href="{{ route('buku-induk.index') }}"
-                    class="nav-link {{ request()->routeIs('buku-induk.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('buku-induk.*') ? 'active' : '' }}">
 
                     <i class="bi bi-book-fill"></i>
                     <span>Buku Induk</span>
@@ -179,9 +195,11 @@
             <li class="nav-item">
 
                 <a href="{{ route('achievement-reports.index') }}"
-                    class="nav-link {{ request()->routeIs('achievement-reports.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('achievement-reports.*') ? 'active' : '' }}">
+
                     <i class="bi bi-trophy me-2"></i>
                     <span>Rekap Prestasi</span>
+
                 </a>
 
             </li>
@@ -224,7 +242,12 @@
             <li class="nav-item">
 
                 <a href="{{ route('school-profile.index') }}"
-                    class="nav-link {{ request()->routeIs('school-profile.*') || request()->routeIs('school-achievements.*') || request()->routeIs('extracurriculars.*') || request()->routeIs('school-news.*') || request()->routeIs('school-galleries.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('school-profile.*')
+                        || request()->routeIs('school-achievements.*')
+                        || request()->routeIs('extracurriculars.*')
+                        || request()->routeIs('school-news.*')
+                        || request()->routeIs('school-galleries.*')
+                        ? 'active' : '' }}">
 
                     <i class="bi bi-info-circle-fill"></i>
                     <span>Profil Sekolah</span>
@@ -234,50 +257,53 @@
             </li>
 
 
+            {{-- Log Aktivitas --}}
+            @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isKepalaSekolah())
+
+                <li class="nav-item">
+
+                    <a href="{{ route('activity-logs.index') }}"
+                       class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
+
+                        <i class="bi bi-clock-history"></i>
+                        <span>Log Aktivitas</span>
+
+                    </a>
+
+                </li>
+
+            @endif
+
+        </ul>
 
 
-                  {{-- Log Aktivitas --}}
-@if(auth()->user()?->isSuperAdmin() || auth()->user()?->isKepalaSekolah())
-    <li class="nav-item">
+        {{-- ==================== LOGOUT ==================== --}}
+        <div class="mt-3 pt-2 border-top border-light border-opacity-25">
 
-        <a href="{{ route('activity-logs.index') }}"
-           class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
+            <ul class="sidebar-nav">
 
-            <i class="bi bi-clock-history"></i>
-            <span>Log Aktivitas</span>
+                <li class="nav-item">
 
-        </a>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
 
-    </li>
-@endif
+                        <button type="submit"
+                                class="nav-link w-100 border-0 bg-transparent text-start"
+                                style="cursor: pointer;">
 
-{{-- ==================== LOGOUT ==================== --}}
-<div class="mt-3 pt-2 border-top border-light border-opacity-25">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Keluar</span>
 
-<ul class="sidebar-nav">
+                        </button>
 
-<li class="nav-item">
+                    </form>
 
-    <form action="{{ route('logout') }}" method="POST">
-        @csrf
+                </li>
 
-        <button type="submit"
-                class="nav-link w-100 border-0 bg-transparent text-start"
-                style="cursor: pointer;">
+            </ul>
 
-            <i class="bi bi-box-arrow-right"></i>
-            <span>Keluar</span>
+        </div>
 
-        </button>
-
-    </form>
-
-</li>
-
-</ul>
-
-</div>
-
-</nav>
+    </nav>
 
 </aside>
