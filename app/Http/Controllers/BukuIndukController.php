@@ -67,7 +67,7 @@ class BukuIndukController extends Controller
             ) {
                 $query->where('status', 'Aktif')
                     ->when(
-                        $request->filled('class_id'),
+                        $request->filled('class_id') && $request->input('print_type') !== 'all',
                         function ($query) use ($request) {
                             $query->where('class_id', $request->class_id);
                         }
@@ -245,6 +245,8 @@ class BukuIndukController extends Controller
             );
 
             $studentStatus = $request->input('status', 'aktif');
+            $printType = $request->input('print_type');
+            $classId = ($printType === 'all') ? null : $request->input('class_id');
 
             $students = Student::query()
                 ->when($studentStatus !== '', function ($query) use ($studentStatus) {
@@ -258,14 +260,14 @@ class BukuIndukController extends Controller
                     fn ($query) => $query->search($request->search)
                 )
                 ->whereHas('classAssignments', function ($query) use (
-                    $request,
+                    $classId,
                     $selectedAcademicYear
                 ) {
                     $query->where('status', 'Aktif')
                         ->when(
-                            $request->filled('class_id'),
-                            function ($query) use ($request) {
-                                $query->where('class_id', $request->class_id);
+                            $classId,
+                            function ($query) use ($classId) {
+                                $query->where('class_id', $classId);
                             }
                         )
                         ->whereHas('schoolClass', function ($query) use (

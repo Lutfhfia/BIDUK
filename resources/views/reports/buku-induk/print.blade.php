@@ -1391,7 +1391,14 @@
                     <div class="photo-box">
 
                         @if ($student->photo)
-                            <img src="{{ asset('storage/' . $student->photo) }}" alt="Pas Photo">
+                            @php
+                                $photoDisk = public_path('storage/' . $student->photo);
+                            @endphp
+                            @if (request()->boolean('pdf') && file_exists($photoDisk))
+                                <img src="{{ $photoDisk }}" alt="Pas Photo">
+                            @else
+                                <img src="{{ asset('storage/' . $student->photo) }}" alt="Pas Photo">
+                            @endif
                         @else
                             Pas Photo
                             <br>

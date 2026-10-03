@@ -861,6 +861,11 @@
                         printTypeInput.value = selectedPrintType;
                     }
 
+                    if (selectedPrintType === 'all' && classSelect) {
+                        classSelect.value = '';
+                        filterStudents();
+                    }
+
                     updatePrintType();
 
                 });
@@ -1045,21 +1050,13 @@
             }
 
             downloadAllDocumentsButton?.addEventListener('click', function() {
-                if (!bulkStudents.length) {
-                    return;
-                }
-
                 const parameters = reportParameters();
                 parameters.set('pdf', '1');
-                bulkStudents.forEach(function(student) {
-                    parameters.append('student_ids[]', student.id);
-                });
-
-                const downloadLink = document.createElement('a');
-                downloadLink.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                downloadLink.remove();
+                if (selectedPrintType === 'all') {
+                    parameters.delete('class_id');
+                }
+                parameters.delete('student_id');
+                window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
             });
 
 
@@ -1196,12 +1193,19 @@
                         alert('Silakan pilih kelas terlebih dahulu pada parameter laporan.');
                         return;
                     }
-                    showBulkStudentModal();
+                    const parameters = reportParameters();
+                    parameters.set('pdf', '1');
+                    parameters.delete('student_id');
+                    window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
                     return;
                 }
 
                 if (selectedPrintType === 'all') {
-                    showBulkStudentModal();
+                    const parameters = reportParameters();
+                    parameters.set('pdf', '1');
+                    parameters.delete('class_id');
+                    parameters.delete('student_id');
+                    window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
                     return;
                 }
 
