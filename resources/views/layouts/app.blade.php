@@ -76,18 +76,26 @@
         }
 
         .sidebar-brand-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            font-weight: 700;
-            flex-shrink: 0;
-            backdrop-filter: blur(10px);
-        }
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    backdrop-filter: blur(10px);
+}
+
+.school-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 6px;
+    display: block;
+}
 
         .sidebar-brand h5 {
             margin: 0;
@@ -411,14 +419,20 @@
         /* ============ PAGINATION ============ */
         .pagination .page-link {
             color: var(--biduk-primary);
+            background-color: #fff;
             border-radius: 6px;
             margin: 0 2px;
             font-size: 0.85rem;
         }
 
         .pagination .page-item.active .page-link {
-            background: var(--biduk-primary);
+            color: #fff !important;
+            background-color: var(--biduk-primary);
             border-color: var(--biduk-primary);
+        }
+
+        .pagination .page-item.active .page-link:hover {
+            color: #fff !important;
         }
 
         /* ============ ACTION DROPDOWN ============ */

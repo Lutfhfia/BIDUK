@@ -5,61 +5,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Beranda') — BIDUK {{ $school->name ?? 'SDN 204' }}</title>
+    <title>@yield('title', 'Beranda') — BIDUK {{ $school->name ?? 'SDN 204 Palembang' }}</title>
 
     {{-- Bootstrap 5 CSS --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     {{-- Bootstrap Icons --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     {{-- Google Fonts --}}
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --biduk-primary: #1a7a4c;
-            --biduk-primary-dark: #145e3a;
-            --biduk-primary-light: #e8f5ee;
-            --biduk-primary-gradient: linear-gradient(135deg, #1a7a4c 0%, #2ecc71 100%);
-            --biduk-secondary: #16a085;
-            --biduk-accent: #f39c12;
-            --biduk-bg: #f8faf9;
-            --biduk-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            --biduk-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --biduk-primary: #15803d;
+            --biduk-primary-dark: #14532d;
+            --biduk-primary-light: #f0fdf4;
+            --biduk-primary-subtle: #dcfce7;
+            --biduk-primary-gradient: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+            --biduk-secondary: #0f766e;
+            --biduk-accent: #f59e0b;
+            --biduk-bg: #f8fafc;
+            --biduk-text-main: #0f172a;
+            --biduk-text-muted: #475569;
+            --biduk-card-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+            --biduk-card-hover: 0 16px 36px rgba(21, 128, 61, 0.12);
+            --biduk-transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         * {
             font-family: 'Inter', sans-serif;
         }
 
+        h1, h2, h3, h4, h5, h6, .hero-title, .section-title, .title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: -0.025em;
+        }
+
         html {
             scroll-behavior: smooth;
-            scroll-padding-top: 80px;
+            scroll-padding-top: 85px;
         }
 
         body {
             background-color: #ffffff;
-            color: #1f2937;
+            color: var(--biduk-text-main);
             overflow-x: hidden;
+        }
+
+        /* ============ SCROLL PROGRESS BAR ============ */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3.5px;
+            background: var(--biduk-primary-gradient);
+            width: 0%;
+            z-index: 1060;
+            transition: width 0.1s ease-out;
         }
 
         /* ============ NAVBAR ============ */
         .landing-navbar {
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            padding: 0.85rem 0;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            padding: 0.9rem 0;
             transition: var(--biduk-transition);
             z-index: 1040;
         }
 
         .landing-navbar.scrolled {
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            padding: 0.6rem 0;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            padding: 0.65rem 0;
+            border-bottom-color: rgba(226, 232, 240, 1);
         }
 
         .brand-logo-wrap {
-            width: 46px;
-            height: 46px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             background: var(--biduk-primary-gradient);
             display: flex;
@@ -69,8 +94,9 @@
             font-size: 1.35rem;
             font-weight: 700;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(26, 122, 76, 0.2);
+            box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
             flex-shrink: 0;
+            transition: var(--biduk-transition);
         }
 
         .brand-logo-wrap img {
@@ -80,29 +106,28 @@
         }
 
         .brand-name-wrap {
-            line-height: 1.15;
+            line-height: 1.2;
         }
 
         .brand-name-wrap .title {
             font-size: 1.25rem;
             font-weight: 800;
             color: var(--biduk-primary);
-            letter-spacing: -0.02em;
             display: block;
         }
 
         .brand-name-wrap .subtitle {
-            font-size: 0.75rem;
-            color: #6b7280;
+            font-size: 0.775rem;
+            color: var(--biduk-text-muted);
             font-weight: 500;
             display: block;
         }
 
         .navbar-nav .nav-link {
-            color: #374151;
+            color: #334155;
             font-weight: 500;
             font-size: 0.925rem;
-            padding: 0.5rem 0.85rem !important;
+            padding: 0.5rem 0.9rem !important;
             border-radius: 8px;
             transition: var(--biduk-transition);
         }
@@ -113,28 +138,70 @@
             background: var(--biduk-primary-light);
         }
 
+        a {
+            color: var(--biduk-primary);
+            text-decoration: none;
+            transition: var(--biduk-transition);
+        }
+
+        a:hover, a:focus {
+            color: var(--biduk-primary-dark);
+        }
+
         .dropdown-menu {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            padding: 0.5rem;
-            min-width: 220px;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+            padding: 0.6rem;
+            min-width: 240px;
+            animation: fadeInDropdown 0.25s ease-out;
+        }
+
+        @keyframes fadeInDropdown {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .dropdown-item {
-            border-radius: 8px;
-            padding: 0.55rem 0.85rem;
-            font-size: 0.875rem;
-            color: #374151;
+            border-radius: 9px;
+            padding: 0.65rem 0.95rem;
+            font-size: 0.885rem;
+            color: #334155;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.65rem;
             font-weight: 500;
+            transition: var(--biduk-transition);
+        }
+
+        .dropdown-item i {
+            color: var(--biduk-primary) !important;
+            font-size: 1.05rem;
+            transition: var(--biduk-transition);
         }
 
         .dropdown-item:hover {
-            background: var(--biduk-primary-light);
-            color: var(--biduk-primary);
+            background: var(--biduk-primary-light) !important;
+            color: var(--biduk-primary) !important;
+            transform: translateX(4px);
+        }
+
+        .dropdown-item:hover i {
+            color: var(--biduk-primary) !important;
+        }
+
+        .dropdown-item:focus, .dropdown-item:active, .dropdown-item.active {
+            background: var(--biduk-primary-gradient) !important;
+            color: #ffffff !important;
+        }
+
+        .dropdown-item:focus i, .dropdown-item:active i, .dropdown-item.active i {
+            color: #ffffff !important;
+        }
+
+        .dropdown-toggle:focus, .dropdown-toggle:active, .dropdown-toggle.show {
+            color: var(--biduk-primary) !important;
+            background: var(--biduk-primary-light) !important;
         }
 
         /* ============ BUTTONS ============ */
@@ -143,19 +210,20 @@
             border: none;
             color: #fff;
             font-weight: 600;
-            border-radius: 10px;
-            padding: 0.65rem 1.35rem;
+            border-radius: 11px;
+            padding: 0.7rem 1.45rem;
             transition: var(--biduk-transition);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
             text-decoration: none;
+            box-shadow: 0 4px 14px rgba(21, 128, 61, 0.22);
         }
 
         .btn-biduk-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(26, 122, 76, 0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(21, 128, 61, 0.35);
             color: #fff;
         }
 
@@ -164,30 +232,32 @@
             border: 1.5px solid var(--biduk-primary);
             color: var(--biduk-primary);
             font-weight: 600;
-            border-radius: 10px;
-            padding: 0.65rem 1.35rem;
+            border-radius: 11px;
+            padding: 0.7rem 1.45rem;
             transition: var(--biduk-transition);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
             text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         }
 
         .btn-biduk-outline:hover {
             background: var(--biduk-primary-light);
             color: var(--biduk-primary-dark);
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(21, 128, 61, 0.15);
         }
 
         /* ============ SECTION BASE ============ */
         .landing-section {
-            padding: 90px 0;
+            padding: 95px 0;
             position: relative;
         }
 
         .section-light {
-            background-color: #f8faf9;
+            background-color: var(--biduk-bg);
         }
 
         .section-header {
@@ -199,63 +269,66 @@
         .section-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 0.9rem;
+            gap: 0.45rem;
+            padding: 0.42rem 1rem;
             border-radius: 30px;
             background: var(--biduk-primary-light);
             color: var(--biduk-primary);
+            border: 1px solid var(--biduk-primary-subtle);
             font-size: 0.825rem;
             font-weight: 700;
-            margin-bottom: 0.85rem;
-            letter-spacing: 0.02em;
+            margin-bottom: 0.95rem;
+            letter-spacing: 0.03em;
             text-transform: uppercase;
         }
 
         .section-title {
-            font-size: 2.25rem;
+            font-size: 2.35rem;
             font-weight: 800;
-            color: #111827;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.85rem;
+            color: var(--biduk-text-main);
+            letter-spacing: -0.025em;
+            margin-bottom: 0.95rem;
+            line-height: 1.25;
         }
 
         .section-description {
-            color: #6b7280;
+            color: var(--biduk-text-muted);
             font-size: 1.05rem;
-            line-height: 1.7;
+            line-height: 1.75;
             margin: 0;
         }
 
         /* ============ CARDS ============ */
         .biduk-feature-card {
             background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            padding: 1.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 1.85rem;
             box-shadow: var(--biduk-card-shadow);
             transition: var(--biduk-transition);
             height: 100%;
         }
 
         .biduk-feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(26, 122, 76, 0.12);
-            border-color: #a7f3d0;
+            transform: translateY(-6px);
+            box-shadow: var(--biduk-card-hover);
+            border-color: #86efac;
         }
 
         /* ============ FOOTER ============ */
         .footer-biduk {
-            background: #111827;
-            color: #9ca3af;
-            padding: 70px 0 30px;
+            background: #090e17;
+            color: #94a3b8;
+            padding: 75px 0 35px;
             border-top: 4px solid var(--biduk-primary);
+            position: relative;
         }
 
         .footer-title {
             color: #ffffff;
             font-size: 1.05rem;
             font-weight: 700;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.35rem;
         }
 
         .footer-links {
@@ -265,27 +338,119 @@
         }
 
         .footer-links li {
-            margin-bottom: 0.65rem;
+            margin-bottom: 0.75rem;
         }
 
         .footer-links a {
-            color: #9ca3af;
+            color: #94a3b8;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.915rem;
             transition: var(--biduk-transition);
+            display: inline-block;
         }
 
         .footer-links a:hover {
-            color: #34d399;
-            padding-left: 4px;
+            color: #4ade80;
+            transform: translateX(4px);
         }
 
         .footer-bottom {
-            margin-top: 50px;
+            margin-top: 55px;
             padding-top: 25px;
-            border-top: 1px solid #1f2937;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.865rem;
+        }
+
+        /* ============ BIDIRECTIONAL SCROLL REVEAL ANIMATIONS ============ */
+        .reveal {
+            opacity: 0;
+            transform: translateY(35px);
+            transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-45px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal-left.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .reveal-right {
+            opacity: 0;
+            transform: translateX(45px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal-right.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.93);
+            transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal-scale.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .delay-100 { transition-delay: 0.1s; }
+        .delay-200 { transition-delay: 0.2s; }
+        .delay-300 { transition-delay: 0.3s; }
+        .delay-400 { transition-delay: 0.4s; }
+        .delay-500 { transition-delay: 0.5s; }
+
+        /* ============ BACK TO TOP BUTTON ============ */
+        #btn-back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--biduk-primary);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 8px 24px rgba(21, 128, 61, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            z-index: 1030;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: var(--biduk-transition);
+        }
+
+        #btn-back-to-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        #btn-back-to-top:hover {
+            background: var(--biduk-primary-dark);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 12px 28px rgba(21, 128, 61, 0.45);
         }
     </style>
     @stack('styles')
@@ -293,14 +458,17 @@
 
 <body>
 
+    {{-- Scroll Progress Indicator --}}
+    <div id="scroll-progress"></div>
+
     {{-- ==================== NAVBAR ==================== --}}
-    <nav class="navbar navbar-expand-lg landing-navbar sticky-top">
+    <nav class="landing-navbar navbar navbar-expand-lg sticky-top">
         <div class="container">
             {{-- Brand Logo & Name --}}
             <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="#beranda">
                 <div class="brand-logo-wrap">
-                    @if($school->logo && file_exists(public_path('storage/' . $school->logo)))
-                        <img src="{{ asset('storage/' . $school->logo) }}" alt="Logo {{ $school->name }}">
+                    @if($school->logo_url)
+                        <img src="{{ $school->logo_url }}" alt="Logo {{ $school->name }}">
                     @else
                         <i class="bi bi-book-half"></i>
                     @endif
@@ -332,7 +500,7 @@
                         <ul class="dropdown-menu shadow">
                             <li>
                                 <a class="dropdown-item" href="#informasi-sekolah">
-                                    <i class="bi bi-building text-success"></i> Informasi Sekolah
+                                    <i class="bi bi-building text-success"></i> Identitas Sekolah
                                 </a>
                             </li>
                             <li>
@@ -347,12 +515,12 @@
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#prestasi">
-                                    <i class="bi bi-trophy text-success"></i> Prestasi Sekolah
+                                    <i class="bi bi-trophy text-success"></i> Prestasi Siswa & Sekolah
                                 </a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#ekstrakurikuler">
-                                    <i class="bi bi-people text-success"></i> Ekstrakurikuler
+                                    <i class="bi bi-people text-success"></i> Kegiatan Ekstrakurikuler
                                 </a>
                             </li>
                         </ul>
@@ -373,17 +541,10 @@
 
                 {{-- Action / Login CTA --}}
                 <div class="d-flex align-items-center gap-2">
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="btn btn-biduk-primary">
-                            <i class="bi bi-grid-1x2-fill"></i>
-                            Dashboard Admin
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="btn btn-biduk-primary">
-                            <i class="bi bi-box-arrow-in-right"></i>
-                            Login Petugas
-                        </a>
-                    @endauth
+                    <a href="{{ route('login') }}" class="btn btn-biduk-primary">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Login
+                    </a>
                 </div>
             </div>
         </div>
@@ -391,6 +552,11 @@
 
     {{-- ==================== MAIN CONTENT ==================== --}}
     @yield('content')
+
+    {{-- Floating Back to Top Button --}}
+    <button id="btn-back-to-top" aria-label="Kembali ke atas">
+        <i class="bi bi-arrow-up"></i>
+    </button>
 
     {{-- ==================== FOOTER ==================== --}}
     <footer class="footer-biduk">
@@ -400,8 +566,8 @@
                 <div class="col-lg-5">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <div class="brand-logo-wrap" style="width: 42px; height: 42px;">
-                            @if($school->logo && file_exists(public_path('storage/' . $school->logo)))
-                                <img src="{{ asset('storage/' . $school->logo) }}" alt="Logo {{ $school->name }}">
+                            @if($school->logo_url)
+                                <img src="{{ $school->logo_url }}" alt="Logo {{ $school->name }}">
                             @else
                                 <i class="bi bi-book-half fs-5"></i>
                             @endif
@@ -411,7 +577,7 @@
                             <small class="text-secondary">{{ $school->name ?? 'SD Negeri 204 Palembang' }}</small>
                         </div>
                     </div>
-                    <p class="text-secondary" style="font-size: 0.9rem; line-height: 1.7;">
+                    <p class="text-secondary" style="font-size: 0.9rem; line-height: 1.75;">
                         {{ $school->description ? Str::limit($school->description, 210) : 'Sistem Informasi Buku Induk dan Portal Resmi SD Negeri 204 Palembang dalam mendukung tata kelola pendidikan yang modern, transparan, dan terpercaya.' }}
                     </p>
                 </div>
@@ -421,7 +587,7 @@
                     <h6 class="footer-title">Navigasi Profil</h6>
                     <ul class="footer-links">
                         <li><a href="#beranda"><i class="bi bi-chevron-right me-1"></i> Beranda</a></li>
-                        <li><a href="#informasi-sekolah"><i class="bi bi-chevron-right me-1"></i> Informasi Sekolah</a></li>
+                        <li><a href="#informasi-sekolah"><i class="bi bi-chevron-right me-1"></i> Identitas Sekolah</a></li>
                         <li><a href="#visi-misi"><i class="bi bi-chevron-right me-1"></i> Visi & Misi</a></li>
                         <li><a href="#struktur-organisasi"><i class="bi bi-chevron-right me-1"></i> Struktur Organisasi</a></li>
                         <li><a href="#prestasi"><i class="bi bi-chevron-right me-1"></i> Prestasi & Ekskul</a></li>
@@ -471,30 +637,76 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Navbar shadow on scroll
-        window.addEventListener('scroll', function() {
-            const nav = document.querySelector('.landing-navbar');
-            if (window.scrollY > 20) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Scroll Progress Indicator
+            const progressBar = document.getElementById('scroll-progress');
+            window.addEventListener('scroll', function() {
+                const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (height > 0) ? (winScroll / height) * 100 : 0;
+                if (progressBar) progressBar.style.width = scrolled + '%';
+            });
 
-        // Highlight active navbar link on scroll
-        const sections = document.querySelectorAll('section[id]');
-        window.addEventListener('scroll', function() {
-            const scrollY = window.pageYOffset;
-            sections.forEach(current => {
-                const sectionHeight = current.offsetHeight;
-                const sectionTop = current.offsetTop - 100;
-                const sectionId = current.getAttribute('id');
-                const link = document.querySelector('.navbar-nav a[href*=' + sectionId + ']');
-                if (link && scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                    document.querySelectorAll('.navbar-nav .nav-link').forEach(n => n.classList.remove('active'));
-                    link.classList.add('active');
+            // Navbar shadow & back to top visibility
+            const nav = document.querySelector('.landing-navbar');
+            const backToTopBtn = document.getElementById('btn-back-to-top');
+
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 25) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+
+                if (window.scrollY > 350) {
+                    backToTopBtn.classList.add('show');
+                } else {
+                    backToTopBtn.classList.remove('show');
                 }
             });
+
+            if (backToTopBtn) {
+                backToTopBtn.addEventListener('click', function() {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            // Highlight active navbar link on scroll
+            const sections = document.querySelectorAll('section[id]');
+            window.addEventListener('scroll', function() {
+                const scrollY = window.pageYOffset;
+                sections.forEach(current => {
+                    const sectionHeight = current.offsetHeight;
+                    const sectionTop = current.offsetTop - 120;
+                    const sectionId = current.getAttribute('id');
+                    const link = document.querySelector('.navbar-nav a[href*=' + sectionId + ']');
+                    if (link && scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+                        document.querySelectorAll('.navbar-nav .nav-link').forEach(n => n.classList.remove('active'));
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Bidirectional Scroll Reveal Observer (triggers on scroll down & up)
+            const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+            
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                    } else {
+                        // Re-trigger animation when scrolled out and back in
+                        if (entry.boundingClientRect.top > 0) {
+                            entry.target.classList.remove('active');
+                        }
+                    }
+                });
+            }, {
+                threshold: 0.12,
+                rootMargin: '0px 0px -40px 0px'
+            });
+
+            revealElements.forEach(el => revealObserver.observe(el));
         });
     </script>
     @stack('scripts')

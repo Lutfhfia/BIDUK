@@ -20,8 +20,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
         <div>
             <h4 class="fw-bold mb-1">
-                <i class="bi bi-journal-bookmark-fill me-2"
-                    style="color: var(--biduk-primary);"></i>
+                <i class="bi bi-journal-bookmark-fill me-2" style="color: var(--biduk-primary);"></i>
                 Mata Pelajaran
             </h4>
 
@@ -56,14 +55,8 @@
                                 <i class="bi bi-search text-muted"></i>
                             </span>
 
-                            <input
-                                type="text"
-                                name="search"
-                                id="search"
-                                class="form-control"
-                                placeholder="Cari kode atau nama mata pelajaran..."
-                                value="{{ request('search') }}"
-                            >
+                            <input type="text" name="search" id="search" class="form-control"
+                                placeholder="Cari kode atau nama mata pelajaran..." value="{{ request('search') }}">
                         </div>
                     </div>
 
@@ -78,10 +71,8 @@
                             <option value="">Semua Kategori</option>
 
                             @foreach ($categories as $category)
-                                <option
-                                    value="{{ $category }}"
-                                    {{ request('category') == $category ? 'selected' : '' }}
-                                >
+                                <option value="{{ $category }}"
+                                    {{ request('category') == $category ? 'selected' : '' }}>
                                     {{ $category }}
                                 </option>
                             @endforeach
@@ -98,17 +89,11 @@
                         <select name="status" id="status" class="form-select">
                             <option value="">Semua Status</option>
 
-                            <option
-                                value="Aktif"
-                                {{ request('status') == 'Aktif' ? 'selected' : '' }}
-                            >
+                            <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>
                                 Aktif
                             </option>
 
-                            <option
-                                value="Nonaktif"
-                                {{ request('status') == 'Nonaktif' ? 'selected' : '' }}
-                            >
+                            <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>
                                 Nonaktif
                             </option>
                         </select>
@@ -124,11 +109,7 @@
                                 Cari
                             </button>
 
-                            <a
-                                href="{{ route('subjects.index') }}"
-                                class="btn btn-biduk-outline"
-                                title="Reset Filter"
-                            >
+                            <a href="{{ route('subjects.index') }}" class="btn btn-biduk-outline" title="Reset Filter">
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </a>
 
@@ -149,8 +130,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
 
             <div>
-                <i class="bi bi-list-ul me-2"
-                    style="color: var(--biduk-primary);"></i>
+                <i class="bi bi-list-ul me-2" style="color: var(--biduk-primary);"></i>
 
                 Daftar Mata Pelajaran
             </div>
@@ -202,7 +182,6 @@
                         <tbody>
 
                             @foreach ($subjects as $subject)
-
                                 <tr>
 
                                     {{-- Nomor --}}
@@ -245,19 +224,15 @@
                                     <td class="text-center">
 
                                         @if ($subject->status === 'Aktif')
-
                                             <span class="badge badge-aktif rounded-pill px-3 py-2">
                                                 <i class="bi bi-check-circle-fill me-1"></i>
                                                 Aktif
                                             </span>
-
                                         @else
-
                                             <span class="badge badge-nonaktif rounded-pill px-3 py-2">
                                                 <i class="bi bi-x-circle-fill me-1"></i>
                                                 Nonaktif
                                             </span>
-
                                         @endif
 
                                     </td>
@@ -268,13 +243,8 @@
 
                                         <div class="dropdown action-dropdown">
 
-                                            <button
-                                                class="btn btn-sm btn-light"
-                                                type="button"
-                                                data-bs-toggle="dropdown"
-                                                aria-expanded="false"
-                                                title="Aksi"
-                                            >
+                                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown"
+                                                aria-expanded="false" title="Aksi">
                                                 <i class="bi bi-three-dots-vertical"></i>
                                             </button>
 
@@ -283,10 +253,7 @@
 
                                                 {{-- Detail --}}
                                                 <li>
-                                                    <a
-                                                        class="dropdown-item"
-                                                        href="{{ route('subjects.show', $subject) }}"
-                                                    >
+                                                    <a class="dropdown-item" href="{{ route('subjects.show', $subject) }}">
                                                         <i class="bi bi-eye"></i>
                                                         Lihat Detail
                                                     </a>
@@ -295,10 +262,7 @@
 
                                                 {{-- Edit --}}
                                                 <li>
-                                                    <a
-                                                        class="dropdown-item"
-                                                        href="{{ route('subjects.edit', $subject) }}"
-                                                    >
+                                                    <a class="dropdown-item" href="{{ route('subjects.edit', $subject) }}">
                                                         <i class="bi bi-pencil-square"></i>
                                                         Edit
                                                     </a>
@@ -312,19 +276,14 @@
 
                                                 {{-- Hapus --}}
                                                 <li>
-                                                    <form
-                                                        action="{{ route('subjects.destroy', $subject) }}"
+                                                    <form action="{{ route('subjects.destroy', $subject) }}"
                                                         method="POST"
-                                                        onsubmit="return confirm('Yakin ingin menghapus mata pelajaran ini?');"
-                                                    >
+                                                        onsubmit="return confirm('Yakin ingin menghapus mata pelajaran ini?');">
 
                                                         @csrf
                                                         @method('DELETE')
 
-                                                        <button
-                                                            type="submit"
-                                                            class="dropdown-item text-danger"
-                                                        >
+                                                        <button type="submit" class="dropdown-item text-danger">
                                                             <i class="bi bi-trash"></i>
                                                             Hapus
                                                         </button>
@@ -339,7 +298,6 @@
                                     </td>
 
                                 </tr>
-
                             @endforeach
 
                         </tbody>
@@ -351,9 +309,9 @@
 
                 {{-- Pagination --}}
                 @if ($subjects->hasPages())
-
                     <div class="d-flex justify-content-between align-items-center px-4 py-3">
 
+                        {{-- Informasi jumlah data --}}
                         <div class="text-muted" style="font-size: 0.8rem;">
                             Menampilkan
                             <strong>{{ $subjects->firstItem() }}</strong>
@@ -364,16 +322,14 @@
                             data
                         </div>
 
+                        {{-- Pagination --}}
                         <div>
-                            {{ $subjects->links() }}
+                            {{ $subjects->onEachSide(1)->links('pagination::bootstrap-5') }}
                         </div>
 
                     </div>
-
                 @endif
-
             @else
-
                 {{-- Empty State --}}
                 <div class="empty-state">
 
@@ -387,10 +343,7 @@
                         Belum ada mata pelajaran yang tersedia.
                     </p>
 
-                    <a
-                        href="{{ route('subjects.create') }}"
-                        class="btn btn-biduk-primary"
-                    >
+                    <a href="{{ route('subjects.create') }}" class="btn btn-biduk-primary">
                         <i class="bi bi-plus-lg me-1"></i>
                         Tambah Mata Pelajaran
                     </a>

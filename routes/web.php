@@ -1,4 +1,3 @@
-
 <?php
 
 use App\Http\Controllers\AcademicYearController;
@@ -18,7 +17,6 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolGalleryController;
 use App\Http\Controllers\SchoolNewsController;
 use App\Http\Controllers\SchoolProfileController;
-use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
@@ -83,6 +81,11 @@ Route::middleware('auth')->group(function () {
         '/laporan/buku-induk/cetak-batch',
         [BukuIndukController::class, 'batch']
     )->name('buku-induk.batch');
+
+    Route::get(
+        '/laporan/buku-induk/cetak-batch-pdf',
+        [BukuIndukController::class, 'batchPdf']
+    )->name('buku-induk.batch-pdf');
 
     Route::get(
         '/laporan/buku-induk/cetak/{student}',
@@ -301,6 +304,16 @@ Route::middleware('auth')->group(function () {
 
 
     // =================================================
+    // TAHUN AJARAN
+    // =================================================
+
+    Route::resource(
+        'academic-years',
+        AcademicYearController::class
+    );
+
+
+    // =================================================
     // REKAP ABSENSI
     // =================================================
 
@@ -312,26 +325,6 @@ Route::middleware('auth')->group(function () {
     Route::resource(
         'rekap-absensi',
         RekapAbsensiController::class
-    );
-
-
-    // =================================================
-    // TAHUN AJARAN
-    // =================================================
-
-    Route::resource(
-        'academic-years',
-        AcademicYearController::class
-    );
-
-
-    // =================================================
-    // SEMESTER
-    // =================================================
-
-    Route::resource(
-        'semesters',
-        SemesterController::class
     );
 
 

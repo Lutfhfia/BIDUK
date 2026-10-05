@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -10,7 +10,7 @@
 
     <style>
         @page {
-            size: 215mm 330mm;
+            size: A4 portrait;
             margin: 0;
         }
 
@@ -66,8 +66,8 @@
 
         .top-information {
             display: grid;
-            grid-template-columns: 1fr 1fr 70px;
-            column-gap: 18px;
+            grid-template-columns: 1fr 1fr 65px;
+            column-gap: 12px;
             margin-bottom: 4px;
         }
 
@@ -77,9 +77,14 @@
 
         .top-row {
             display: grid;
-            grid-template-columns: 145px 10px minmax(0, 1fr);
+            grid-template-columns: 140px 8px minmax(0, 1fr);
             align-items: baseline;
             min-height: 15px;
+            line-height: 1.2;
+        }
+
+        .top-column:nth-child(2) .top-row {
+            grid-template-columns: 125px 8px minmax(0, 1fr);
         }
 
         .top-label {
@@ -94,22 +99,23 @@
             flex: 1;
             border-bottom: 1px dotted #000;
             min-height: 13px;
+            padding-left: 4px;
         }
 
         .nomor-urut {
             border: 1px solid #000;
             text-align: center;
-            height: 38px;
+            height: 36px;
             font-size: 7.5pt;
         }
 
         .nomor-urut-title {
-            padding: 5px 2px 3px;
+            padding: 4px 2px 2px;
             font-weight: bold;
         }
 
         .nomor-urut-value {
-            height: 17px;
+            height: 16px;
         }
 
         /* =====================================================
@@ -119,55 +125,102 @@
         .section-title {
             font-weight: bold;
             margin-top: 4px;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         /* =====================================================
-           BARIS DATA TANPA TABEL
+           BARIS DATA TANPA TABEL (BAGIAN A, B, C)
         ===================================================== */
 
-        .data-row {
+        .data-row,
+        .parent-row,
+        .development-row {
             display: grid;
-            grid-template-columns: 19px 125px 10px minmax(0, 1fr);
+            grid-template-columns: 22px 195px 8px minmax(0, 1fr);
             align-items: flex-start;
-            min-height: 16px;
-            line-height: 1.15;
+            min-height: 15px;
+            line-height: 1.25;
+            margin-bottom: 1px;
         }
 
-        .data-number {
-            width: 19px;
+        .data-number,
+        .parent-number,
+        .development-number {
+            width: 22px;
             flex-shrink: 0;
+            text-align: left;
+            white-space: nowrap;
         }
 
-        .data-label {
-            width: 125px;
+        .data-label,
+        .parent-label,
+        .development-label {
+            width: 195px;
             flex-shrink: 0;
+            white-space: nowrap;
         }
 
-        .data-colon {
-            width: 10px;
+        .data-colon,
+        .parent-colon,
+        .development-colon {
+            width: 8px;
             flex-shrink: 0;
             text-align: center;
         }
 
-        .data-value {
+        .data-value,
+        .parent-value,
+        .development-value {
             flex: 1;
-            min-height: 15px;
+            min-height: 14px;
             border-bottom: 1px dotted #000;
-            padding-left: 2px;
+            padding-left: 4px;
+            word-wrap: break-word;
         }
 
-        .data-value.no-line {
+        .data-value.no-line,
+        .parent-value.no-line,
+        .development-value.no-line {
             border-bottom: none;
         }
 
-        .sub-row {
-            padding-left: 19px;
-            grid-template-columns: 19px 106px 10px minmax(0, 1fr);
+        /* Sub-item a, b, c (Level 2) indent 12px, sub-label 191px -> Colons remain locked at 217px */
+        .sub-row,
+        .parent-sub,
+        .development-sub {
+            grid-template-columns: 26px 191px 8px minmax(0, 1fr);
         }
 
-        .sub-row .data-label {
-            width: 106px;
+        .sub-row .data-number,
+        .parent-sub .parent-number,
+        .development-sub .development-number {
+            width: 26px;
+            padding-left: 12px;
+            box-sizing: border-box;
+        }
+
+        .sub-row .data-label,
+        .parent-sub .parent-label,
+        .development-sub .development-label {
+            width: 191px;
+        }
+
+        /* Sub-sub-item 1, 2, 3 under a, b (Level 3) indent 24px, sub-label 179px -> Colons remain locked at 217px */
+        .sub-sub-row,
+        .development-sub-sub {
+            grid-template-columns: 38px 179px 8px minmax(0, 1fr);
+        }
+
+        .sub-sub-row .data-number,
+        .development-sub-sub .development-number {
+            width: 38px;
+            padding-left: 24px;
+            box-sizing: border-box;
+        }
+
+        .sub-sub-row .data-label,
+        .development-sub-sub .development-label {
+            width: 179px;
         }
 
         /* =====================================================
@@ -175,7 +228,8 @@
         ===================================================== */
 
         .student-section {
-            padding-right: 42mm;
+            position: relative;
+            padding-right: 36mm;
         }
 
         .student-data {
@@ -184,9 +238,9 @@
 
         .photo-column {
             position: absolute;
-            top: 44mm;
+            top: 2px;
             right: 0;
-            width: 38mm;
+            width: 30mm;
         }
 
         .photo-box {
@@ -209,7 +263,7 @@
         }
 
         .photo-caption {
-            width: 34mm;
+            width: 30mm;
             margin: 2mm auto 7mm;
             text-align: center;
             font-size: 6pt;
@@ -217,104 +271,24 @@
         }
 
         /* =====================================================
-           BAGIAN B
+           BAGIAN B & C
         ===================================================== */
 
         .parent-section {
-            margin-top: 3px;
-            padding-right: 42mm;
+            margin-top: 2px;
+            padding-right: 36mm;
         }
-
-        .parent-row {
-            display: grid;
-            grid-template-columns: 19px 125px 10px minmax(0, 1fr);
-            min-height: 16px;
-            line-height: 1.15;
-        }
-
-        .parent-number {
-            width: 19px;
-            flex-shrink: 0;
-        }
-
-        .parent-label {
-            width: 125px;
-            flex-shrink: 0;
-        }
-
-        .parent-colon {
-            width: 10px;
-            flex-shrink: 0;
-            text-align: center;
-        }
-
-        .parent-value {
-            flex: 1;
-            border-bottom: 1px dotted #000;
-            min-height: 15px;
-        }
-
-        .parent-sub {
-            padding-left: 19px;
-            grid-template-columns: 19px 106px 10px minmax(0, 1fr);
-        }
-
-        .parent-sub .parent-label {
-            width: 106px;
-        }
-
-        /* =====================================================
-           BAGIAN C
-        ===================================================== */
 
         .development {
-            padding-right: 42mm;
-        }
-
-        .development-row {
-            display: grid;
-            grid-template-columns: 19px 125px 10px minmax(0, 1fr);
-            min-height: 16px;
-            line-height: 1.15;
-        }
-
-        .development-number {
-            width: 19px;
-            flex-shrink: 0;
-        }
-
-        .development-label {
-            width: 125px;
-            flex-shrink: 0;
-        }
-
-        .development-colon {
-            width: 10px;
-            flex-shrink: 0;
-            text-align: center;
-        }
-
-        .development-value {
-            flex: 1;
-            border-bottom: 1px dotted #000;
-            min-height: 15px;
-        }
-
-        .development-sub {
-            padding-left: 19px;
-            grid-template-columns: 19px 106px 10px minmax(0, 1fr);
-        }
-
-        .development-sub .development-label {
-            width: 106px;
+            padding-right: 36mm;
         }
 
         /* =====================================================
-           HALAMAN 2
+           HALAMAN 2 (BAGIAN D)
         ===================================================== */
 
         .page-two-section {
-            margin-bottom: 7px;
+            margin-bottom: 5px;
         }
 
         .school-leaving {
@@ -323,23 +297,27 @@
 
         .school-row {
             display: grid;
-            grid-template-columns: 19px 185px 10px minmax(0, 1fr);
-            min-height: 17px;
-            line-height: 1.15;
+            grid-template-columns: 22px 190px 8px minmax(0, 1fr);
+            min-height: 15px;
+            line-height: 1.25;
+            margin-bottom: 1px;
         }
 
         .school-number {
-            width: 19px;
+            width: 22px;
             flex-shrink: 0;
+            text-align: left;
+            white-space: nowrap;
         }
 
         .school-label {
-            width: 185px;
+            width: 190px;
             flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .school-colon {
-            width: 10px;
+            width: 8px;
             flex-shrink: 0;
             text-align: center;
         }
@@ -347,16 +325,28 @@
         .school-value {
             flex: 1;
             border-bottom: 1px dotted #000;
-            min-height: 15px;
+            min-height: 14px;
+            padding-left: 4px;
+            word-wrap: break-word;
         }
 
+        .school-value.no-line {
+            border-bottom: none;
+        }
+
+        /* Sub-item a, b, c indent 12px, sub-label 186px -> Colons remain locked at 212px */
         .school-sub {
-            padding-left: 19px;
-            grid-template-columns: 19px 166px 10px minmax(0, 1fr);
+            grid-template-columns: 26px 186px 8px minmax(0, 1fr);
+        }
+
+        .school-sub .school-number {
+            width: 26px;
+            padding-left: 12px;
+            box-sizing: border-box;
         }
 
         .school-sub .school-label {
-            width: 166px;
+            width: 186px;
         }
 
         /* =====================================================
@@ -513,389 +503,574 @@
             }
         }
 
-        /* =====================================================
-   PDF EXPORT - DOMPDF
-   Preview browser TIDAK DIUBAH
-===================================================== */
 
-        .pdf-export {
-            background: #fff !important;
-            margin: 0 !important;
-            padding: 0 !important;
+        /* =====================================================
+           PDF EXPORT - DOMPDF
+           A4 PORTRAIT
+        ===================================================== */
+
+        @page {
+            size: A4 portrait;
+            margin: 0;
         }
 
-        /* Margin dibuat pada halaman agar konsisten di Dompdf. */
-        .pdf-export .page {
-            width: 100% !important;
-            min-height: 330mm !important;
-            height: 330mm !important;
-
+        .pdf-export {
+            width: 210mm !important;
             margin: 0 !important;
-            padding: 14mm !important;
+            padding: 0 !important;
+            background: #fff !important;
+        }
+
+        /*
+         * SATU .page = SATU halaman A4.
+         * Lebar 190mm dengan margin: 0 auto memberikan margin kertas 10mm di kiri dan kanan
+         * sehingga tidak ada elemen yang terpotong di tepi kanan.
+         */
+        .pdf-export .page {
+            box-sizing: border-box !important;
+
+            width: 190mm !important;
+            max-width: 190mm !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: 297mm !important;
+
+            margin: 0 auto !important;
+            padding: 6mm 0 !important;
 
             background: #fff !important;
             box-shadow: none !important;
 
-            page-break-after: always;
-            page-break-inside: avoid;
+            position: relative !important;
+
+            page-break-before: auto !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+
+            overflow: hidden !important;
         }
 
         .pdf-export .page:last-child {
-            page-break-after: auto;
+            page-break-after: auto !important;
         }
 
+        /* =====================================================
+           BATAS KONTEN
+        ===================================================== */
+
+        .pdf-export .page > * {
+            max-width: 100% !important;
+        }
+
+        .pdf-export table {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            table-layout: fixed !important;
+        }
+
+        .pdf-export th,
+        .pdf-export td {
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
+            word-wrap: break-word !important;
+        }
 
         /* =====================================================
-   IDENTITAS ATAS
-===================================================== */
+           IDENTITAS ATAS
+        ===================================================== */
 
         .pdf-export .top-information {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            margin-bottom: 4px;
+            width: 100% !important;
+            max-width: 100% !important;
+            display: table !important;
+            table-layout: fixed !important;
+            margin-bottom: 3mm !important;
         }
 
         .pdf-export .top-column,
         .pdf-export .nomor-urut {
-            display: table-cell;
-            vertical-align: top;
+            display: table-cell !important;
+            vertical-align: top !important;
+            box-sizing: border-box !important;
         }
 
         .pdf-export .top-column:first-child {
-            width: 43%;
-            padding-right: 4mm;
+            width: 44% !important;
+            padding-right: 2mm !important;
         }
 
         .pdf-export .top-column:nth-child(2) {
-            width: 43%;
-            padding-right: 4mm;
+            width: 42% !important;
+            padding-right: 2mm !important;
         }
 
         .pdf-export .nomor-urut {
-            width: 14%;
+            width: 14% !important;
+            max-width: 14% !important;
+            border: 1px solid #000 !important;
+            text-align: center !important;
+            height: 36px !important;
+            font-size: 7.5pt !important;
+            overflow: hidden !important;
         }
 
         .pdf-export .top-row {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-            min-height: 15px;
-        }
-
-        .pdf-export .top-label,
-        .pdf-export .top-colon,
-        .pdf-export .top-value {
-            display: table-cell;
-            vertical-align: baseline;
+            display: block !important;
+            clear: both !important;
+            width: 100% !important;
+            min-height: 14px !important;
+            line-height: 1.2 !important;
+            margin-bottom: 1px !important;
         }
 
         .pdf-export .top-label {
-            width: 145px;
-            white-space: nowrap;
+            display: inline-block !important;
+            float: left !important;
+            width: 140px !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+        }
+
+        .pdf-export .top-column:nth-child(2) .top-label {
+            width: 125px !important;
         }
 
         .pdf-export .top-colon {
-            width: 10px;
-            text-align: center;
+            display: inline-block !important;
+            float: left !important;
+            width: 8px !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
         }
 
         .pdf-export .top-value {
-            width: auto;
+            display: block !important;
+            margin-left: 148px !important;
+            border-bottom: 1px dotted #000 !important;
+            min-height: 13px !important;
+            padding-left: 4px !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
         }
 
+        .pdf-export .top-column:nth-child(2) .top-value {
+            margin-left: 133px !important;
+        }
 
         /* =====================================================
-   BARIS DATA
-===================================================== */
+           DATA SISWA (HALAMAN 1: BAGIAN A, B, C)
+           Photo column menggunakan position:absolute relatif
+           ke .page sehingga KELUAR dari document flow.
+           Data dibatasi 154mm agar tidak masuk area foto.
+        ===================================================== */
+
+        /*
+         * .student-section = position:static → photo di dalamnya
+         *   akan di-resolve relatif ke .page (position:relative).
+         * .student-data = display:block, width 154mm → data
+         *   dan garis titik-titik BERHENTI di 154mm.
+         * .photo-column = position:absolute, top:26mm, right:0
+         *   → sejajar NOMOR URUT, TIDAK mempengaruhi tinggi.
+         */
+        .pdf-export .student-section {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            padding-right: 0 !important;
+            margin-bottom: 1mm !important;
+            position: static !important;
+        }
+
+        .pdf-export .student-data {
+            display: block !important;
+            width: 154mm !important;
+            max-width: 154mm !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+        }
+
+        /* Bagian B dan C: lebar sama dengan area data Bagian A
+           agar konsisten. Margin rapat supaya muat di halaman 1. */
+        .pdf-export .parent-section,
+        .pdf-export .development {
+            width: 154mm !important;
+            max-width: 154mm !important;
+            box-sizing: border-box !important;
+            padding-right: 0 !important;
+            margin-bottom: 1mm !important;
+        }
 
         .pdf-export .data-row,
         .pdf-export .parent-row,
-        .pdf-export .development-row,
-        .pdf-export .school-row {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
+        .pdf-export .development-row {
+            display: block !important;
+            clear: both !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 14px !important;
+            line-height: 1.25 !important;
+            margin-bottom: 0.5mm !important;
+            box-sizing: border-box !important;
         }
 
-        .pdf-export .data-number,
-        .pdf-export .data-label,
-        .pdf-export .data-colon,
-        .pdf-export .data-value,
-
-        .pdf-export .parent-number,
-        .pdf-export .parent-label,
-        .pdf-export .parent-colon,
-        .pdf-export .parent-value,
-
-        .pdf-export .development-number,
-        .pdf-export .development-label,
-        .pdf-export .development-colon,
-        .pdf-export .development-value,
-
-        .pdf-export .school-number,
-        .pdf-export .school-label,
-        .pdf-export .school-colon,
-        .pdf-export .school-value {
-            display: table-cell;
-            vertical-align: top;
-        }
-
+        /* Kolom nomor rapat */
         .pdf-export .data-number,
         .pdf-export .parent-number,
-        .pdf-export .development-number,
-        .pdf-export .school-number {
-            width: 19px;
+        .pdf-export .development-number {
+            display: inline-block !important;
+            float: left !important;
+            width: 22px !important;
+            max-width: 22px !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
+        /* Kolom label pas untuk label terpanjang */
         .pdf-export .data-label,
         .pdf-export .parent-label,
         .pdf-export .development-label {
-            width: 125px;
+            display: inline-block !important;
+            float: left !important;
+            width: 195px !important;
+            max-width: 195px !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
-        .pdf-export .school-label {
-            width: 185px;
-        }
-
+        /* Kolom titik dua sejajar */
         .pdf-export .data-colon,
         .pdf-export .parent-colon,
-        .pdf-export .development-colon,
-        .pdf-export .school-colon {
-            width: 10px;
-            text-align: center;
+        .pdf-export .development-colon {
+            display: inline-block !important;
+            float: left !important;
+            width: 8px !important;
+            max-width: 8px !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
+        /* Kolom data/nilai — mengikuti lebar kolom induk */
         .pdf-export .data-value,
         .pdf-export .parent-value,
-        .pdf-export .development-value,
-        .pdf-export .school-value {
-            width: auto;
+        .pdf-export .development-value {
+            display: block !important;
+            margin-left: 225px !important;
+            border-bottom: 1px dotted #000 !important;
+            min-height: 13px !important;
+            padding-left: 4px !important;
+            box-sizing: border-box !important;
+            word-wrap: break-word !important;
         }
 
+        .pdf-export .data-value.no-line,
+        .pdf-export .parent-value.no-line,
+        .pdf-export .development-value.no-line {
+            border-bottom: none !important;
+        }
 
-        /* =====================================================
-   BARIS SUB
-===================================================== */
-
-        .pdf-export .sub-row,
-        .pdf-export .parent-sub,
-        .pdf-export .development-sub,
-        .pdf-export .school-sub {
-            padding-left: 19px;
+        /* Sub-nomor a, b, c (Level 2) indent 12px, label 191px -> Titik dua tetap terkunci di 225px */
+        .pdf-export .sub-row .data-number,
+        .pdf-export .parent-sub .parent-number,
+        .pdf-export .development-sub .development-number {
+            width: 26px !important;
+            max-width: 26px !important;
+            padding-left: 12px !important;
         }
 
         .pdf-export .sub-row .data-label,
         .pdf-export .parent-sub .parent-label,
         .pdf-export .development-sub .development-label {
-            width: 106px;
+            width: 191px !important;
+            max-width: 191px !important;
         }
 
-        .pdf-export .school-sub .school-label {
-            width: 166px;
+        /* Sub-sub-nomor 1, 2, 3 under a, b (Level 3) indent 24px, label 179px -> Titik dua tetap terkunci di 225px */
+        .pdf-export .sub-sub-row .data-number,
+        .pdf-export .development-sub-sub .development-number {
+            width: 38px !important;
+            max-width: 38px !important;
+            padding-left: 24px !important;
         }
 
+        .pdf-export .sub-sub-row .data-label,
+        .pdf-export .development-sub-sub .development-label {
+            width: 179px !important;
+            max-width: 179px !important;
+        }
 
         /* =====================================================
-   FOTO
-===================================================== */
+           FOTO — position:absolute relative to .page
+           Berada di kanan atas, sejajar NOMOR URUT.
+           TIDAK mempengaruhi tinggi konten halaman.
+        ===================================================== */
 
         .pdf-export .photo-column {
-            position: absolute;
-            top: 44mm;
-            right: 0;
-            width: 38mm;
+            position: absolute !important;
+            top: 26mm !important;
+            right: 2mm !important;
+
+            width: 30mm !important;
+            max-width: 30mm !important;
+
+            box-sizing: border-box !important;
         }
 
         .pdf-export .photo-box {
-            width: 30mm;
-            height: 40mm;
+            width: 30mm !important;
+            height: 40mm !important;
+            max-width: 30mm !important;
 
-            border: 1px solid #000;
-
-            margin: 0 auto;
-
-            display: table;
-            table-layout: fixed;
-
-            text-align: center;
+            box-sizing: border-box !important;
+            border: 1px solid #000 !important;
+            margin: 0 auto !important;
+            text-align: center !important;
+            font-size: 7pt !important;
+            line-height: 1.2 !important;
         }
 
         .pdf-export .photo-box img {
-            width: 30mm;
-            height: 40mm;
-            object-fit: cover;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
         }
 
         .pdf-export .photo-caption {
-            width: 34mm;
-            margin: 2mm auto 7mm;
+            width: 30mm !important;
+            max-width: 30mm !important;
+            margin: 2mm auto 7mm !important;
 
-            text-align: center;
-            font-size: 6pt;
-            line-height: 1.15;
+            text-align: center !important;
+            font-size: 6pt !important;
+            line-height: 1.15 !important;
         }
 
-
         /* =====================================================
-   HALAMAN 2
-===================================================== */
+           HALAMAN 2 (BAGIAN D & E)
+        ===================================================== */
 
         .pdf-export .page-two-section {
-            margin-bottom: 5mm;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 4mm !important;
+        }
+
+        .pdf-export .school-leaving {
+            width: 100% !important;
+            max-width: 100% !important;
         }
 
         .pdf-export .school-row {
-            min-height: 5.2mm;
-            line-height: 1.2;
+            display: block !important;
+            clear: both !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 14px !important;
+            line-height: 1.25 !important;
+            margin-bottom: 0.5mm !important;
+            box-sizing: border-box !important;
         }
 
+        .pdf-export .school-number {
+            display: inline-block !important;
+            float: left !important;
+            width: 22px !important;
+            max-width: 22px !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+        }
+
+        .pdf-export .school-label {
+            display: inline-block !important;
+            float: left !important;
+            width: 190px !important;
+            max-width: 190px !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
+        }
+
+        .pdf-export .school-colon {
+            display: inline-block !important;
+            float: left !important;
+            width: 8px !important;
+            max-width: 8px !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+        }
+
+        .pdf-export .school-value {
+            display: block !important;
+            margin-left: 220px !important;
+            border-bottom: 1px dotted #000 !important;
+            min-height: 13px !important;
+            padding-left: 4px !important;
+            box-sizing: border-box !important;
+            word-wrap: break-word !important;
+        }
+
+        .pdf-export .school-value.no-line {
+            border-bottom: none !important;
+        }
+
+        .pdf-export .school-sub .school-number {
+            width: 26px !important;
+            max-width: 26px !important;
+            padding-left: 12px !important;
+        }
+
+        .pdf-export .school-sub .school-label {
+            width: 186px !important;
+            max-width: 186px !important;
+        }
 
         /* =====================================================
-   BAGIAN LAIN-LAIN
-===================================================== */
+           BAGIAN LAIN-LAIN
+        ===================================================== */
 
         .pdf-export .other-title {
-            margin-top: 5mm;
-            margin-bottom: 5mm;
+            margin-top: 5mm !important;
+            margin-bottom: 5mm !important;
         }
 
         .pdf-export .other-subtitle {
-            margin-bottom: 2.5mm;
+            margin-bottom: 2.5mm !important;
         }
 
-
         /* =====================================================
-   TABEL TINGGI / BERAT
-===================================================== */
+           TABEL TINGGI / BERAT
+        ===================================================== */
 
         .pdf-export .health-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            font-size: 7pt;
+            width: 100% !important;
+            max-width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            font-size: 7pt !important;
         }
 
         .pdf-export .health-table th,
         .pdf-export .health-table td {
-            border: 1px solid #000;
-            padding: 0.7mm 0.35mm;
-
-            text-align: center;
-            vertical-align: middle;
-
-            page-break-inside: avoid;
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+            border: 1px solid #000 !important;
+            padding: 0.7mm 0.35mm !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            page-break-inside: avoid !important;
         }
 
         .pdf-export .health-table .no-column {
-            width: 5%;
+            width: 5% !important;
         }
 
         .pdf-export .health-table .aspect-column {
-            width: 13%;
+            width: 13% !important;
         }
 
         .pdf-export .health-table .year-column {
-            width: 13.666%;
+            width: 13.666% !important;
         }
 
         .pdf-export .health-table .semester-cell {
-            width: 50%;
+            width: 50% !important;
         }
 
         .pdf-export .year-title {
-            height: 12mm;
-            line-height: 1.1;
+            height: 12mm !important;
+            line-height: 1.1 !important;
         }
 
         .pdf-export .semester-row {
-            height: 10mm;
+            height: 10mm !important;
         }
 
         .pdf-export .body-row {
-            height: 10.5mm;
+            height: 10.5mm !important;
         }
-
-        .pdf-export .body-value {
-            line-height: 1.1;
-        }
-
 
         /* =====================================================
-   TABEL KONDISI KESEHATAN
-===================================================== */
+           TABEL KONDISI KESEHATAN
+        ===================================================== */
 
         .pdf-export .condition-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            font-size: 7pt;
+            width: 100% !important;
+            max-width: 100% !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            font-size: 7pt !important;
         }
 
         .pdf-export .condition-table th,
         .pdf-export .condition-table td {
-            border: 1px solid #000;
-            padding: 0.7mm 0.35mm;
-
-            text-align: center;
-            vertical-align: middle;
-
-            page-break-inside: avoid;
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+            border: 1px solid #000 !important;
+            padding: 0.7mm 0.35mm !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            page-break-inside: avoid !important;
         }
 
         .pdf-export .condition-table .no-column {
-            width: 5%;
+            width: 5% !important;
         }
 
         .pdf-export .condition-table .aspect-column {
-            width: 13%;
+            width: 13% !important;
         }
 
         .pdf-export .condition-table .year-column {
-            width: 13.666%;
+            width: 13.666% !important;
         }
 
         .pdf-export .condition-year {
-            height: 10mm;
-            line-height: 1.1;
+            height: 10mm !important;
+            line-height: 1.1 !important;
         }
 
         .pdf-export .condition-subheader {
-            height: 6mm;
-            line-height: 1;
+            height: 6mm !important;
+            line-height: 1 !important;
         }
 
         .pdf-export .condition-body {
-            height: 8mm;
+            height: 8mm !important;
         }
-
-
-        /* =====================================================
-   JARAK TABEL
-===================================================== */
 
         .pdf-export .table-gap {
-            height: 3mm;
+            height: 3mm !important;
         }
 
-
         /* =====================================================
-   JANGAN PECAH BLOK
-===================================================== */
+           JANGAN PECAH BLOK
+        ===================================================== */
 
         .pdf-export table {
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
         }
 
         .pdf-export tr {
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
         }
 
         .pdf-export .section-title,
         .pdf-export .other-title,
         .pdf-export .other-subtitle {
-            page-break-after: avoid;
+            page-break-after: avoid !important;
         }
+
+
+
     </style>
 </head>
 
@@ -1216,11 +1391,18 @@
                     <div class="photo-box">
 
                         @if ($student->photo)
-                            <img src="{{ asset('storage/' . $student->photo) }}" alt="Pas Photo">
+                            @php
+                                $photoDisk = public_path('storage/' . $student->photo);
+                            @endphp
+                            @if (request()->boolean('pdf') && file_exists($photoDisk))
+                                <img src="{{ $photoDisk }}" alt="Pas Photo">
+                            @else
+                                <img src="{{ asset('storage/' . $student->photo) }}" alt="Pas Photo">
+                            @endif
                         @else
                             Pas Photo
                             <br>
-                            3 Ã— 4
+                            3 x 4
                         @endif
 
                     </div>
@@ -1401,7 +1583,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">1.</div>
                 <div class="development-label">Asal Sekolah</div>
                 <div class="development-colon">:</div>
@@ -1411,7 +1593,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">2.</div>
                 <div class="development-label">Nama Sekolah</div>
                 <div class="development-colon">:</div>
@@ -1421,7 +1603,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">3.</div>
                 <div class="development-label">
                     Tanggal dan Nomor Ijazah / STTB
@@ -1443,7 +1625,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">1.</div>
                 <div class="development-label">
                     Nama Sekolah asal
@@ -1455,7 +1637,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">2.</div>
                 <div class="development-label">
                     Dari Tingkat
@@ -1467,7 +1649,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">3.</div>
                 <div class="development-label">
                     Diterima Tanggal
@@ -1479,7 +1661,7 @@
             </div>
 
 
-            <div class="development-row development-sub">
+            <div class="development-row development-sub-sub">
                 <div class="development-number">4.</div>
                 <div class="development-label">
                     No. Surat Keterangan

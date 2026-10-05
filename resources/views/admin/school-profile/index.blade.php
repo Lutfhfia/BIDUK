@@ -428,14 +428,29 @@
                             <div class="col-md-6">
                                 <label class="form-label">Foto Utama Beranda (Hero Image)</label>
                                 <div class="sp-upload-box">
-                                    <input class="form-control" type="file" name="school_image" accept="image/*">
+                                    <input class="form-control @error('school_image') is-invalid @enderror" type="file" name="school_image" id="input_school_image" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
                                     <div class="form-text">Format: JPG, PNG, WEBP. Maks 5MB.</div>
+                                    @error('school_image')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                     @if($school->school_image)
-                                        <div class="mt-2">
+                                        <div class="mt-2 d-flex align-items-center gap-3">
                                             <span class="badge bg-light text-dark border">Foto Saat Ini:</span>
                                             <img class="sp-preview-img" src="{{ asset('storage/'.$school->school_image) }}" alt="Foto hero">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_school_image" value="1" id="remove_school_image">
+                                                <label class="form-check-label text-danger small" for="remove_school_image">
+                                                    <i class="bi bi-trash me-1"></i>Hapus Foto
+                                                </label>
+                                            </div>
                                         </div>
                                     @endif
+                                    <div id="preview_school_image_box" class="mt-2 d-none">
+                                        <span class="badge bg-info-subtle text-info border">Pratinjau Baru:</span>
+                                        <div class="mt-1">
+                                            <img id="preview_school_image" class="sp-preview-img" src="" alt="Pratinjau Foto Hero">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -481,28 +496,58 @@
                             <div class="col-md-6">
                                 <label class="form-label">Logo Sekolah</label>
                                 <div class="sp-upload-box">
-                                    <input class="form-control" type="file" name="logo" accept="image/*">
-                                    <div class="form-text">Ditampilkan pada navbar dan header dokumen resmi.</div>
+                                    <input class="form-control @error('logo') is-invalid @enderror" type="file" name="logo" id="input_logo" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg,.png,.jpg,.jpeg,.webp,.ico">
+                                    <div class="form-text">Format: PNG, JPG, JPEG, WEBP, SVG. Maks 5MB. Ditampilkan pada navbar dan dokumen.</div>
+                                    @error('logo')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                     @if($school->logo)
-                                        <div class="mt-2">
+                                        <div class="mt-2 d-flex align-items-center gap-3">
                                             <span class="badge bg-light text-dark border">Logo Saat Ini:</span>
                                             <img class="sp-preview-img" src="{{ asset('storage/'.$school->logo) }}" alt="Logo sekolah">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_logo" value="1" id="remove_logo">
+                                                <label class="form-check-label text-danger small" for="remove_logo">
+                                                    <i class="bi bi-trash me-1"></i>Hapus Logo
+                                                </label>
+                                            </div>
                                         </div>
                                     @endif
+                                    <div id="preview_logo_box" class="mt-2 d-none">
+                                        <span class="badge bg-info-subtle text-info border">Pratinjau Baru:</span>
+                                        <div class="mt-1">
+                                            <img id="preview_logo" class="sp-preview-img" src="" alt="Pratinjau Logo">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label">Foto Gedung / Cover Sekolah</label>
                                 <div class="sp-upload-box">
-                                    <input class="form-control" type="file" name="cover_image" accept="image/*">
-                                    <div class="form-text">Ditampilkan pada bagian Profil Informasi Sekolah.</div>
+                                    <input class="form-control @error('cover_image') is-invalid @enderror" type="file" name="cover_image" id="input_cover_image" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
+                                    <div class="form-text">Ditampilkan pada bagian Profil Informasi Sekolah. Maks 5MB.</div>
+                                    @error('cover_image')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                     @if($school->cover_image)
-                                        <div class="mt-2">
+                                        <div class="mt-2 d-flex align-items-center gap-3">
                                             <span class="badge bg-light text-dark border">Cover Saat Ini:</span>
                                             <img class="sp-preview-img" src="{{ asset('storage/'.$school->cover_image) }}" alt="Cover sekolah">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_cover_image" value="1" id="remove_cover_image">
+                                                <label class="form-check-label text-danger small" for="remove_cover_image">
+                                                    <i class="bi bi-trash me-1"></i>Hapus Cover
+                                                </label>
+                                            </div>
                                         </div>
                                     @endif
+                                    <div id="preview_cover_image_box" class="mt-2 d-none">
+                                        <span class="badge bg-info-subtle text-info border">Pratinjau Baru:</span>
+                                        <div class="mt-1">
+                                            <img id="preview_cover_image" class="sp-preview-img" src="" alt="Pratinjau Cover">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -514,14 +559,29 @@
                             <div class="col-md-6">
                                 <label class="form-label">Bagan Gambar Struktur Organisasi</label>
                                 <div class="sp-upload-box">
-                                    <input class="form-control" type="file" name="organization_image" accept="image/*">
-                                    <div class="form-text">Upload bagan struktur organisasi (JPG/PNG/WEBP).</div>
+                                    <input class="form-control @error('organization_image') is-invalid @enderror" type="file" name="organization_image" id="input_organization_image" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp">
+                                    <div class="form-text">Upload bagan struktur organisasi (JPG/PNG/WEBP). Maks 5MB.</div>
+                                    @error('organization_image')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
                                     @if($school->organization_image)
-                                        <div class="mt-2">
+                                        <div class="mt-2 d-flex align-items-center gap-3">
                                             <span class="badge bg-light text-dark border">Bagan Saat Ini:</span>
                                             <img class="sp-preview-img" src="{{ asset('storage/'.$school->organization_image) }}" alt="Struktur organisasi">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="remove_organization_image" value="1" id="remove_organization_image">
+                                                <label class="form-check-label text-danger small" for="remove_organization_image">
+                                                    <i class="bi bi-trash me-1"></i>Hapus Bagan
+                                                </label>
+                                            </div>
                                         </div>
                                     @endif
+                                    <div id="preview_organization_image_box" class="mt-2 d-none">
+                                        <span class="badge bg-info-subtle text-info border">Pratinjau Baru:</span>
+                                        <div class="mt-1">
+                                            <img id="preview_organization_image" class="sp-preview-img" src="" alt="Pratinjau Struktur Organisasi">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -869,6 +929,35 @@
                 }
             });
         });
+
+        // Setup live preview for file inputs
+        function setupLivePreview(inputId, previewBoxId, previewImgId) {
+            const input = document.getElementById(inputId);
+            const box = document.getElementById(previewBoxId);
+            const img = document.getElementById(previewImgId);
+
+            if (!input || !box || !img) return;
+
+            input.addEventListener('change', function(e) {
+                const file = e.target.files && e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        img.src = evt.target.result;
+                        box.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    box.classList.add('d-none');
+                    img.src = '';
+                }
+            });
+        }
+
+        setupLivePreview('input_logo', 'preview_logo_box', 'preview_logo');
+        setupLivePreview('input_school_image', 'preview_school_image_box', 'preview_school_image');
+        setupLivePreview('input_cover_image', 'preview_cover_image_box', 'preview_cover_image');
+        setupLivePreview('input_organization_image', 'preview_organization_image_box', 'preview_organization_image');
     });
 </script>
 @endpush
