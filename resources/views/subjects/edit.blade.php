@@ -132,6 +132,11 @@
                                 Muatan Lokal
                             </option>
 
+                            <option value="Seni dan Budaya"
+                                {{ old('category', $subject->category) == 'Seni dan Budaya' ? 'selected' : '' }}>
+                                Seni dan Budaya
+                            </option>
+
                         </select>
 
                         @error('category')
