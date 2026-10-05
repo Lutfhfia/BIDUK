@@ -99,4 +99,14 @@ class SchoolClass extends Model
 {
     return $this->hasMany(ReportCardGrade::class, 'class_id');
 }
+
+public function getFaseAttribute(): string
+{
+    return match ((int) $this->grade_level) {
+        1, 2 => 'A',
+        3, 4 => 'B',
+        5, 6 => 'C',
+        default => '-',
+    };
+}
 }
