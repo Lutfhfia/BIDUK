@@ -33,7 +33,7 @@ class StudentController extends Controller
             ->with(['classes' => function ($query) {
                 $query->whereHas('academicYear', fn($q) => $q->where('status', 'active'));
             }])
-            ->orderBy('name', 'asc')
+            ->orderByRaw('CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC')
             ->paginate(10)
             ->withQueryString();
 
@@ -46,7 +46,14 @@ class StudentController extends Controller
 
         $statuses = ['Aktif', 'Pindah', 'Lulus', 'Alumni', 'Nonaktif'];
 
-        return view('students.index', compact('students', 'classes', 'statuses', 'search', 'classId', 'status'));
+        $stats = [
+            'total'  => Student::count(),
+            'active' => Student::where('status', 'Aktif')->count(),
+            'male'   => Student::where('gender', 'L')->count(),
+            'female' => Student::where('gender', 'P')->count(),
+        ];
+
+        return view('students.index', compact('students', 'classes', 'statuses', 'search', 'classId', 'status', 'stats'));
     }
 
     /**
@@ -72,6 +79,12 @@ class StudentController extends Controller
     public function store(StoreStudentRequest $request): RedirectResponse
     {
         $data = $request->validated();
+
+        // Tetapkan 4 kode administratif sebagai template resmi sekolah
+        $data['school_code'] = Student::DEFAULT_SCHOOL_CODE;
+        $data['district_code'] = Student::DEFAULT_DISTRICT_CODE;
+        $data['city_code'] = Student::DEFAULT_CITY_CODE;
+        $data['province_code'] = Student::DEFAULT_PROVINCE_CODE;
 
         // Handle upload foto
         if ($request->hasFile('photo')) {
@@ -166,8 +179,12 @@ app(ActivityLogger::class)->log(
     /**
      * Menampilkan detail siswa.
      */
-    public function show(Student $student): View
+    public function show(Request $request, Student $student): View
     {
+        $search  = $request->input('search');
+        $classId = $request->input('class_id');
+        $status  = $request->input('status');
+
         $student->load([
             'classes.academicYear',
             'classes.homeroomTeacher',
@@ -180,7 +197,30 @@ app(ActivityLogger::class)->log(
             'healths.semester',
         ]);
 
-        return view('students.show', compact('student'));
+        $baseQuery = Student::query()
+            ->search($search)
+            ->filterStatus($status)
+            ->filterClass($classId);
+
+        // Ambil urutan ID siswa berdasarkan NIS (sama persis dengan daftar tabel)
+        $studentIds = (clone $baseQuery)
+            ->orderByRaw('CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC, id ASC')
+            ->pluck('id')
+            ->toArray();
+
+        $currentIndex = array_search($student->id, $studentIds);
+
+        $previousStudent = null;
+        if ($currentIndex !== false && $currentIndex > 0) {
+            $previousStudent = Student::find($studentIds[$currentIndex - 1]);
+        }
+
+        $nextStudent = null;
+        if ($currentIndex !== false && isset($studentIds[$currentIndex + 1])) {
+            $nextStudent = Student::find($studentIds[$currentIndex + 1]);
+        }
+
+        return view('students.show', compact('student', 'previousStudent', 'nextStudent', 'search', 'classId', 'status'));
     }
 
     /**
@@ -209,8 +249,15 @@ app(ActivityLogger::class)->log(
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
         $data = $request->validated();
+
+        // Tetapkan 4 kode administratif sebagai template resmi sekolah
+        $data['school_code'] = Student::DEFAULT_SCHOOL_CODE;
+        $data['district_code'] = Student::DEFAULT_DISTRICT_CODE;
+        $data['city_code'] = Student::DEFAULT_CITY_CODE;
+        $data['province_code'] = Student::DEFAULT_PROVINCE_CODE;
+
         // Simpan kondisi data siswa sebelum perubahan.
-$oldStudentValues = $student->getAttributes();
+        $oldStudentValues = $student->getAttributes();
 
         // Handle upload foto
         if ($request->hasFile('photo')) {

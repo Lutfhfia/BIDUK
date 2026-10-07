@@ -11,7 +11,7 @@
 @section('content')
     <div class="fade-in-up">
         {{-- Page Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
             <div>
                 <h4 class="fw-bold text-dark mb-1">
                     <i class="bi bi-person-lines-fill text-primary me-2"></i>Detail Data Siswa
@@ -20,8 +20,35 @@
                     Informasi lengkap peserta didik
                 </p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route('students.index') }}" class="btn btn-outline-secondary">
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                {{-- Prev / Next Navigation --}}
+                <div class="btn-group me-1" role="group">
+                    @if ($previousStudent)
+                        <a href="{{ route('students.show', array_merge(['student' => $previousStudent], request()->only(['search', 'class_id', 'status']))) }}"
+                           class="btn btn-outline-secondary"
+                           title="Sebelumnya: {{ $previousStudent->name }}">
+                            <i class="bi bi-chevron-left me-1"></i> Prev
+                        </a>
+                    @else
+                        <button class="btn btn-outline-secondary opacity-50" disabled>
+                            <i class="bi bi-chevron-left me-1"></i> Prev
+                        </button>
+                    @endif
+
+                    @if ($nextStudent)
+                        <a href="{{ route('students.show', array_merge(['student' => $nextStudent], request()->only(['search', 'class_id', 'status']))) }}"
+                           class="btn btn-outline-secondary"
+                           title="Berikutnya: {{ $nextStudent->name }}">
+                            Next <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    @else
+                        <button class="btn btn-outline-secondary opacity-50" disabled>
+                            Next <i class="bi bi-chevron-right ms-1"></i>
+                        </button>
+                    @endif
+                </div>
+
+                <a href="{{ route('students.index', request()->only(['search', 'class_id', 'status'])) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
                 <a href="{{ route('students.edit', $student) }}" class="btn btn-biduk-primary">

@@ -20,6 +20,7 @@ use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StudentImportExportController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -133,6 +134,28 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:students.create')
         ->name('students.store');
 
+    // Import & Export harus SEBELUM students/{student} agar tidak tertangkap wildcard
+    Route::get(
+        'students/import',
+        [StudentImportExportController::class, 'form']
+    )
+        ->middleware('permission:students.view')
+        ->name('students.import.form');
+
+    Route::post(
+        'students/import',
+        [StudentImportExportController::class, 'import']
+    )
+        ->middleware('permission:students.create')
+        ->name('students.import');
+
+    Route::get(
+        'students/export/excel',
+        [StudentImportExportController::class, 'exportExcel']
+    )
+        ->middleware('permission:students.view')
+        ->name('students.export.excel');
+
     Route::get(
         'students/{student}',
         [StudentController::class, 'show']
@@ -160,6 +183,8 @@ Route::middleware('auth')->group(function () {
     )
         ->middleware('permission:students.delete')
         ->name('students.destroy');
+
+
 
 
     // =================================================
