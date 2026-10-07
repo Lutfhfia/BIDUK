@@ -168,7 +168,8 @@
             {{-- Rekap Absensi --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('rekap-absensi.index') }}"
+                   class="nav-link {{ request()->routeIs('rekap-absensi.*') ? 'active' : '' }}">
 
                     <i class="bi bi-clipboard2-check-fill"></i>
                     <span>Rekap Absensi</span>
@@ -181,7 +182,8 @@
             {{-- Rekap Rapot --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('report-card-grades.index') }}"
+                   class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
 
                     <i class="bi bi-file-earmark-bar-graph-fill"></i>
                     <span>Rekap Rapot</span>
@@ -215,7 +217,8 @@
             {{-- Manajemen User --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('users.index') }}"
+                   class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
 
                     <i class="bi bi-person-gear"></i>
                     <span>Manajemen User</span>
@@ -228,7 +231,8 @@
             {{-- Hak Akses Role --}}
             <li class="nav-item">
 
-                <a href="#" class="nav-link">
+                <a href="{{ route('role-permissions.index') }}"
+                   class="nav-link {{ request()->routeIs('role-permissions.*') ? 'active' : '' }}">
 
                     <i class="bi bi-shield-lock-fill"></i>
                     <span>Hak Akses Role</span>
