@@ -123,34 +123,24 @@
                             Kategori
                         </label>
 
-                        <select
-                            name="category"
-                            id="category"
-                            class="form-select @error('category') is-invalid @enderror"
-                        >
-                            <option value="">Pilih Kategori</option>
+                        <select name="category" class="form-select" required>
+    <option value="">Pilih Kategori</option>
 
-                            <option
-                                value="Intrakurikuler"
-                                {{ old('category') == 'Intrakurikuler' ? 'selected' : '' }}
-                            >
-                                Intrakurikuler
-                            </option>
+    <option value="Intrakurikuler"
+    @selected(old('category') === 'Intrakurikuler')>
+    Intrakurikuler
+</option>
 
-                            <option
-                                value="Muatan Lokal"
-                                {{ old('category') == 'Muatan Lokal' ? 'selected' : '' }}
-                            >
-                                Muatan Lokal
-                            </option>
+    <option value="Ekstrakurikuler"
+        @selected(old('category', $subject->category ?? '') === 'Ekstrakurikuler')>
+        Ekstrakurikuler
+    </option>
 
-                            <option
-                                value="Seni dan Budaya"
-                                {{ old('category') == 'Seni dan Budaya' ? 'selected' : '' }}
-                            >
-                                Seni dan Budaya
-                            </option>
-                        </select>
+    <option value="Kokurikuler"
+        @selected(old('category', $subject->category ?? '') === 'Kokurikuler')>
+        Kokurikuler
+    </option>
+</select>
 
                         @error('category')
                             <div class="invalid-feedback">
