@@ -4,196 +4,482 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Login - BIDUK</title>
+    <title>Login | BIDUK - SDN 204 Palembang</title>
 
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: Arial, sans-serif;
+        }
+
+        html,
+        body {
+            min-height: 100%;
         }
 
         body {
-            min-height: 100vh;
-            background: #f4f8f5;
+            font-family:
+                "Segoe UI",
+                Arial,
+                Helvetica,
+                sans-serif;
+            background: #f3f6f4;
+            color: #1f2937;
+
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+
+            padding: 32px 20px;
         }
 
-        .login-container {
+        /* =====================================================
+           CONTAINER
+        ====================================================== */
+
+        .login-wrapper {
             width: 100%;
-            max-width: 430px;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+            max-width: 920px;
+            min-height: 560px;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            background: #ffffff;
+
+            border: 1px solid #e2e8e4;
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 8px 30px rgba(31, 41, 55, 0.07);
         }
 
-        .logo {
-            text-align: center;
-            margin-bottom: 25px;
-        }
+        /* =====================================================
+           LEFT / BRANDING
+        ====================================================== */
 
-        .logo-icon {
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 15px;
-            border-radius: 18px;
+        .brand-panel {
             background: #198754;
-            color: white;
+            color: #ffffff;
+
+            padding: 52px 48px;
+
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .brand-top {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-mark {
+            width: 58px;
+            height: 58px;
+
+            display: flex;
             align-items: center;
-            font-size: 28px;
-            font-weight: bold;
+            justify-content: center;
+
+            margin-bottom: 24px;
+
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 10px;
+
+            font-size: 23px;
+            font-weight: 700;
+
+            background: rgba(255, 255, 255, 0.08);
         }
 
-        .logo h1 {
-            color: #198754;
-            font-size: 28px;
-            margin-bottom: 7px;
+        .brand-title {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+
+            margin-bottom: 8px;
         }
 
-        .logo p {
-            color: #777;
+        .brand-subtitle {
             font-size: 14px;
+            line-height: 1.6;
+
+            color: rgba(255, 255, 255, 0.88);
+
+            max-width: 280px;
         }
 
-        .welcome {
-            margin-bottom: 25px;
+        .brand-divider {
+            width: 45px;
+            height: 2px;
+
+            background: rgba(255, 255, 255, 0.55);
+
+            margin: 28px 0;
         }
 
-        .welcome h2 {
-            font-size: 22px;
-            color: #222;
-            margin-bottom: 7px;
-        }
+        .brand-description {
+            max-width: 300px;
 
-        .welcome p {
-            color: #777;
             font-size: 14px;
+            line-height: 1.7;
+
+            color: rgba(255, 255, 255, 0.86);
         }
+
+        .brand-bottom {
+            font-size: 12px;
+
+            color: rgba(255, 255, 255, 0.7);
+
+            padding-top: 32px;
+        }
+
+        /* =====================================================
+           RIGHT / FORM
+        ====================================================== */
+
+        .form-panel {
+            padding: 52px 48px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-size: 25px;
+            font-weight: 700;
+
+            color: #1f2937;
+
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #6b7280;
+
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* =====================================================
+           ERROR
+        ====================================================== */
+
+        .alert-error {
+            margin-bottom: 20px;
+
+            padding: 12px 14px;
+
+            background: #fff4f4;
+            border: 1px solid #f1caca;
+            border-radius: 7px;
+
+            color: #b42318;
+
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* =====================================================
+           FORM
+        ====================================================== */
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 19px;
         }
 
         .form-group label {
             display: block;
+
             margin-bottom: 8px;
-            font-size: 14px;
+
+            font-size: 13px;
             font-weight: 600;
-            color: #333;
+
+            color: #374151;
         }
 
         .input-wrapper {
             position: relative;
         }
 
-        .input-wrapper input {
+        .form-control {
             width: 100%;
-            padding: 13px 45px 13px 14px;
-            border: 1px solid #d9d9d9;
-            border-radius: 10px;
+
+            height: 46px;
+
+            padding: 0 14px;
+
+            border: 1px solid #d5ddd8;
+            border-radius: 7px;
+
             outline: none;
+
+            background: #ffffff;
+
+            color: #1f2937;
+
             font-size: 14px;
-            transition: 0.2s;
+
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
         }
 
-        .input-wrapper input:focus {
-            border-color: #198754;
-            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
+        .form-control.password-input {
+            padding-right: 45px;
         }
+
+        .form-control::placeholder {
+            color: #9ca3af;
+        }
+
+        .form-control:focus {
+            border-color: #198754;
+
+            box-shadow:
+                0 0 0 3px rgba(25, 135, 84, 0.10);
+        }
+
+        /* =====================================================
+           PASSWORD TOGGLE
+        ====================================================== */
 
         .toggle-password {
             position: absolute;
-            right: 14px;
+
             top: 50%;
+            right: 12px;
+
             transform: translateY(-50%);
+
+            width: 30px;
+            height: 30px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
             border: none;
             background: transparent;
+
+            color: #6b7280;
+
             cursor: pointer;
-            color: #777;
+
+            border-radius: 5px;
+
+            transition:
+                background 0.2s ease,
+                color 0.2s ease;
         }
+
+        .toggle-password:hover {
+            background: #f0f4f1;
+            color: #198754;
+        }
+
+        .toggle-password svg {
+            width: 17px;
+            height: 17px;
+        }
+
+        /* =====================================================
+           OPTIONS
+        ====================================================== */
 
         .login-options {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin: 5px 0 25px;
-            font-size: 13px;
+            justify-content: space-between;
+
+            margin-top: 4px;
+            margin-bottom: 24px;
         }
 
         .remember {
             display: flex;
             align-items: center;
             gap: 7px;
-            color: #666;
+
+            font-size: 13px;
+            color: #6b7280;
+
+            cursor: pointer;
+        }
+
+        .remember input {
+            width: 14px;
+            height: 14px;
+
+            accent-color: #198754;
+
+            cursor: pointer;
         }
 
         .forgot {
             color: #198754;
-            text-decoration: none;
+
+            font-size: 13px;
             font-weight: 600;
+
+            text-decoration: none;
         }
 
         .forgot:hover {
             text-decoration: underline;
         }
 
+        /* =====================================================
+           BUTTON
+        ====================================================== */
+
         .btn-login {
             width: 100%;
-            padding: 14px;
+            height: 46px;
+
             border: none;
-            border-radius: 10px;
+            border-radius: 7px;
+
             background: #198754;
-            color: white;
-            font-size: 15px;
+            color: #ffffff;
+
+            font-size: 14px;
             font-weight: 600;
+
             cursor: pointer;
-            transition: 0.2s;
+
+            transition:
+                background 0.2s ease,
+                transform 0.1s ease;
         }
 
         .btn-login:hover {
             background: #157347;
         }
 
+        .btn-login:active {
+            transform: translateY(1px);
+        }
+
         .btn-back {
             display: block;
+
             width: 100%;
-            margin-top: 12px;
-            padding: 12px;
-            border: 1px solid #d9d9d9;
-            border-radius: 10px;
-            background: white;
-            color: #555;
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
+            height: 44px;
+
+            margin-top: 11px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border: 1px solid #d5ddd8;
+            border-radius: 7px;
+
+            background: #ffffff;
+            color: #4b5563;
+
+            font-size: 13px;
+            font-weight: 500;
+
             text-decoration: none;
-            cursor: pointer;
-            transition: 0.2s;
+
+            transition:
+                border-color 0.2s ease,
+                color 0.2s ease,
+                background 0.2s ease;
         }
 
         .btn-back:hover {
-            background: #f4f4f4;
-            color: #198754;
             border-color: #198754;
+            color: #198754;
+            background: #f7faf8;
         }
 
-        .footer {
+        /* =====================================================
+           FOOTER
+        ====================================================== */
+
+        .form-footer {
+            margin-top: 28px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #edf0ee;
+
             text-align: center;
-            margin-top: 25px;
-            font-size: 12px;
-            color: #999;
+
+            font-size: 11px;
+
+            color: #9ca3af;
         }
 
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 30px 25px;
+        /* =====================================================
+           RESPONSIVE
+        ====================================================== */
+
+        @media (max-width: 760px) {
+
+            body {
+                padding: 20px;
+            }
+
+            .login-wrapper {
+                max-width: 460px;
+                min-height: auto;
+
+                grid-template-columns: 1fr;
+            }
+
+            .brand-panel {
+                padding: 32px;
+            }
+
+            .brand-description,
+            .brand-divider {
+                display: none;
+            }
+
+            .brand-bottom {
+                padding-top: 26px;
+            }
+
+            .form-panel {
+                padding: 34px 32px;
+            }
+        }
+
+        @media (max-width: 420px) {
+
+            body {
+                padding: 12px;
+            }
+
+            .brand-panel {
+                padding: 28px 24px;
+            }
+
+            .form-panel {
+                padding: 30px 24px;
+            }
+
+            .brand-title {
+                font-size: 26px;
+            }
+
+            .form-header h2 {
+                font-size: 23px;
             }
         }
     </style>
@@ -201,104 +487,262 @@
 
 <body>
 
-<div class="login-container">
+<div class="login-wrapper">
 
-    <div class="logo">
-        <div class="logo-icon">
-            B
+    {{-- =====================================================
+         BRANDING
+    ====================================================== --}}
+    <div class="brand-panel">
+
+        <div class="brand-top">
+
+            <div class="brand-mark">
+                B
+            </div>
+
+            <div class="brand-title">
+                BIDUK
+            </div>
+
+            <div class="brand-subtitle">
+                Buku Induk Digital Sekolah
+            </div>
+
+            <div class="brand-divider"></div>
+
+            <div class="brand-description">
+                Sistem informasi untuk membantu pengelolaan
+                data peserta didik dan administrasi sekolah
+                secara terintegrasi.
+            </div>
+
         </div>
 
-        <h1>BIDUK</h1>
-        <p>Buku Induk Digital Sekolah</p>
+        <div class="brand-bottom">
+            SDN 204 Palembang
+        </div>
+
     </div>
 
-    <div class="welcome">
-        <h2>Selamat Datang 👋</h2>
-        <p>Silakan masuk untuk mengakses sistem BIDUK.</p>
-    </div>
 
-    <form action="{{ route('login.process') }}" method="POST">
-        @csrf
+    {{-- =====================================================
+         LOGIN FORM
+    ====================================================== --}}
+    <div class="form-panel">
 
-        <div class="form-group">
-            <label for="login">NIP / Username</label>
+        <div class="form-header">
 
-            <div class="input-wrapper">
-                <input
-                    type="text"
-                    id="login"
-                    name="login"
-                    placeholder="Masukkan NIP atau Username"
-                    autocomplete="username"
-                    value="{{ old('login') }}"
-                >
-            </div>
+            <h2>
+                Masuk ke Sistem
+            </h2>
+
+            <p>
+                Gunakan NIP atau username yang telah terdaftar
+                untuk mengakses BIDUK.
+            </p>
+
         </div>
 
-        <div class="form-group">
-            <label for="password">Password</label>
 
-            <div class="input-wrapper">
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Masukkan password"
-                    autocomplete="current-password"
-                >
+        {{-- =================================================
+             ERROR
+        ================================================== --}}
+        @if($errors->any())
 
-                <button
-                    type="button"
-                    class="toggle-password"
-                    onclick="togglePassword()"
-                    aria-label="Tampilkan atau sembunyikan password"
-                >
-                    👁
-                </button>
+            <div class="alert-error">
+                {{ $errors->first() }}
             </div>
-        </div>
 
-        <div class="login-options">
+        @endif
 
-            <label class="remember">
-                <input type="checkbox" name="remember" value="1">
-                Ingat saya
-            </label>
 
-            <a
-                href="{{ route('password.forgot') }}"
-                class="forgot"
-                target="_blank"
+        {{-- =================================================
+             FORM
+        ================================================== --}}
+        <form
+            action="{{ route('login.process') }}"
+            method="POST"
+        >
+
+            @csrf
+
+
+            {{-- NIP / USERNAME --}}
+            <div class="form-group">
+
+                <label for="login">
+                    NIP / Username
+                </label>
+
+                <div class="input-wrapper">
+
+                    <input
+                        type="text"
+                        id="login"
+                        name="login"
+                        class="form-control"
+                        placeholder="Masukkan NIP atau username"
+                        autocomplete="username"
+                        value="{{ old('login') }}"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            {{-- PASSWORD --}}
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <div class="input-wrapper">
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control password-input"
+                        placeholder="Masukkan password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+
+                    <button
+                        type="button"
+                        class="toggle-password"
+                        onclick="togglePassword()"
+                        aria-label="Tampilkan password"
+                        id="togglePasswordButton"
+                    >
+
+                        {{-- Eye --}}
+                        <svg
+                            id="eyeIcon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/>
+                            <circle cx="12" cy="12" r="2.7"/>
+                        </svg>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            {{-- OPTIONS --}}
+            <div class="login-options">
+
+                <label class="remember">
+
+                    <input
+                        type="checkbox"
+                        name="remember"
+                        value="1"
+                        {{ old('remember') ? 'checked' : '' }}
+                    >
+
+                    <span>
+                        Ingat saya
+                    </span>
+
+                </label>
+
+
+                <a
+                    href="{{ route('password.forgot') }}"
+                    class="forgot"
+                >
+                    Lupa Password?
+                </a>
+
+            </div>
+
+
+            {{-- LOGIN --}}
+            <button
+                type="submit"
+                class="btn-login"
             >
-                Lupa Password?
+                Masuk
+            </button>
+
+
+            {{-- BACK --}}
+            <a
+                href="{{ url('/') }}"
+                class="btn-back"
+            >
+                Kembali ke Halaman Utama
             </a>
 
+        </form>
+
+
+        {{-- FOOTER --}}
+        <div class="form-footer">
+            © {{ date('Y') }} SDN 204 Palembang · BIDUK
         </div>
 
-        <button type="submit" class="btn-login">
-            Masuk
-        </button>
-
-        <a href="{{ url('/') }}" class="btn-back">
-            ← Kembali ke Halaman Utama
-        </a>
-
-    </form>
-
-    <div class="footer">
-        © {{ date('Y') }} BIDUK - SDN 204
     </div>
 
 </div>
 
+
 <script>
     function togglePassword() {
-        const password = document.getElementById('password');
+
+        const password =
+            document.getElementById('password');
+
+        const button =
+            document.getElementById('togglePasswordButton');
+
+        const icon =
+            document.getElementById('eyeIcon');
+
 
         if (password.type === 'password') {
+
             password.type = 'text';
+
+            button.setAttribute(
+                'aria-label',
+                'Sembunyikan password'
+            );
+
+            icon.innerHTML = `
+                <path d="M3 3l18 18"/>
+                <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+                <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a16.7 16.7 0 0 1-3.2 4.3"/>
+                <path d="M6.2 6.2C3.7 7.7 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.3 4-.8"/>
+            `;
+
         } else {
+
             password.type = 'password';
+
+            button.setAttribute(
+                'aria-label',
+                'Tampilkan password'
+            );
+
+            icon.innerHTML = `
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/>
+                <circle cx="12" cy="12" r="2.7"/>
+            `;
         }
     }
 </script>
