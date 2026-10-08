@@ -521,6 +521,7 @@ public function edit(
 
      $subjects = $class->subjects()
      ->where('subjects.status', 'Aktif')
+     ->orderBy('subjects.sort_order')
      ->orderBy('subjects.name')
      ->get();
 
