@@ -287,10 +287,10 @@ public function edit(
      * ======================================================
      */
 
-    $subjects = $class->subjects()
-        ->where('subjects.status', 'Aktif')
-        ->orderBy('subjects.name')
-        ->get();
+     $subjects = $class->subjects()
+     ->where('subjects.status', 'Aktif')
+     ->orderBy('subjects.name')
+     ->get();
 
     /*
      * ======================================================
