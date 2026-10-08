@@ -170,6 +170,14 @@ public function scopeFilterClass($query, ?int $classId)
 }
 
 /**
+ * Seluruh nilai rapot siswa (semua kelas & semester).
+ */
+public function reportCardGrades(): HasMany
+{
+    return $this->hasMany(ReportCardGrade::class);
+}
+
+/**
  * Scope: hanya siswa aktif.
  */
 public function scopeActive($query)

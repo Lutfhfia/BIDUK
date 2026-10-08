@@ -6,9 +6,11 @@ use App\Models\AcademicYear;
 use App\Models\Achievement;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
+use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
 use App\Models\RekapAbsensi;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -28,186 +30,206 @@ class ReportCardGradeController extends Controller
     public function index(Request $request)
     {
         /*
-         * Tahun ajaran.
+         * Daftar Tahun Ajaran.
          */
         $academicYears = AcademicYear::orderByDesc('id')->get();
 
         /*
-         * Tahun ajaran aktif sebagai default.
+         * Parameter filter.
          */
-        $selectedAcademicYearId = $request->academic_year_id
-            ?? AcademicYear::getActive()?->id;
-
-        $classes = collect();
-        $students = collect();
+        $search = $request->input('search');
+        $selectedAcademicYearId = $request->input('academic_year_id');
+        $selectedClassId = $request->input('class_id');
 
         /*
-         * Semester tahun ajaran yang dipilih.
+         * Ambil daftar kelas untuk dropdown filter.
          */
-        $semesterGanjil = null;
-        $semesterGenap = null;
+        $classesQuery = SchoolClass::with('academicYear')
+            ->where('status', 'Aktif')
+            ->orderBy('grade_level')
+            ->orderBy('name');
 
         if ($selectedAcademicYearId) {
-
-            /*
-             * Ambil kelas berdasarkan tahun ajaran.
-             */
-            $classes = SchoolClass::with('academicYear')
-                ->where(
-                    'academic_year_id',
-                    $selectedAcademicYearId
-                )
-                ->where(
-                    'status',
-                    'Aktif'
-                )
-                ->withCount('subjects')
-                ->orderBy('grade_level')
-                ->orderBy('name')
-                ->get();
-
-            /*
-             * Ambil semester tahun ajaran tersebut.
-             */
-            $semesters = Semester::where(
-                'academic_year_id',
-                $selectedAcademicYearId
-            )
-                ->orderBy('id')
-                ->get();
-
-            /*
-             * Semester Ganjil.
-             */
-            $semesterGanjil = $semesters->first(
-                fn ($semester) =>
-                    strtolower($semester->name) === 'ganjil'
-            );
-
-            /*
-             * Semester Genap.
-             */
-            $semesterGenap = $semesters->first(
-                fn ($semester) =>
-                    strtolower($semester->name) === 'genap'
-            );
+            $classesQuery->where('academic_year_id', $selectedAcademicYearId);
         }
 
-        /*
-         * Kelas yang dipilih.
-         */
-        $selectedClassId = $request->class_id;
+        $classes = $classesQuery->get();
 
-        /*
-         * Pastikan kelas benar-benar milik tahun ajaran yang dipilih.
-         */
         $selectedClass = null;
+        $students = collect();
+        $searched = false;
 
-        if (
-            $selectedClassId &&
-            $selectedAcademicYearId
-        ) {
+        /*
+         * Cek apakah ada filter yang aktif.
+         */
+        if ($search || $selectedAcademicYearId || $selectedClassId) {
 
-            $selectedClass = SchoolClass::with([
-                'academicYear',
-                'subjects'
-            ])
-                ->where(
-                    'id',
-                    $selectedClassId
-                )
-                ->where(
-                    'academic_year_id',
-                    $selectedAcademicYearId
-                )
-                ->where(
-                    'status',
-                    'Aktif'
-                )
-                ->first();
+            $searched = true;
 
-            /*
-             * Jika kelas ditemukan, ambil siswanya.
-             */
-            if ($selectedClass) {
-
-                $students = $selectedClass->students()
-                    ->wherePivot(
-                        'status',
-                        'Aktif'
-                    )
-                    ->orderBy('name')
-                    ->get();
+            if ($selectedClassId) {
 
                 /*
-                 * Ambil seluruh nilai siswa di kelas tersebut
-                 * untuk semester Ganjil dan Genap.
+                 * ------------------------------------------------------
+                 * FILTER BERDASARKAN KELAS SPESIFIK
+                 * ------------------------------------------------------
                  */
-                $semesterIds = collect([
-                    $semesterGanjil?->id,
-                    $semesterGenap?->id,
-                ])->filter();
+                $selectedClass = SchoolClass::with([
+                    'academicYear.semesters',
+                    'subjects'
+                ])
+                ->where('status', 'Aktif')
+                ->find($selectedClassId);
 
-                if ($semesterIds->isNotEmpty()) {
+                if ($selectedClass) {
 
-                    $grades = ReportCardGrade::where(
-                        'class_id',
-                        $selectedClass->id
-                    )
-                        ->whereIn(
-                            'semester_id',
-                            $semesterIds
-                        )
-                        ->get()
-                        ->groupBy('student_id');
+                    $studentsQuery = $selectedClass->students()
+                        ->wherePivot('status', 'Aktif');
 
-                    /*
-                     * Tambahkan informasi jumlah nilai
-                     * Ganjil dan Genap ke masing-masing siswa.
-                     */
-                    $students = $students->map(
-                        function ($student) use (
-                            $grades,
-                            $semesterGanjil,
-                            $semesterGenap
-                        ) {
+                    if ($search) {
+                        $studentsQuery->where(function ($q) use ($search) {
+                            $q->where('students.name', 'like', "%{$search}%")
+                                ->orWhere('students.nis', 'like', "%{$search}%")
+                                ->orWhere('students.nisn', 'like', "%{$search}%");
+                        });
+                    }
 
-                            $studentGrades =
-                                $grades->get(
-                                    $student->id,
-                                    collect()
-                                );
+                    $semesters = $selectedClass->academicYear?->semesters ?? collect();
+                    $semesterGanjil = $semesters->first(fn ($s) => strtolower($s->name) === 'ganjil');
+                    $semesterGenap = $semesters->first(fn ($s) => strtolower($s->name) === 'genap');
 
-                            /*
-                             * Jumlah nilai Ganjil.
-                             */
-                            $student->ganjil_grades_count =
-                                $semesterGanjil
-                                    ? $studentGrades
-                                        ->where(
-                                            'semester_id',
-                                            $semesterGanjil->id
-                                        )
-                                        ->count()
-                                    : 0;
+                    $semesterIds = collect([
+                        $semesterGanjil?->id,
+                        $semesterGenap?->id,
+                    ])->filter();
 
-                            /*
-                             * Jumlah nilai Genap.
-                             */
-                            $student->genap_grades_count =
-                                $semesterGenap
-                                    ? $studentGrades
-                                        ->where(
-                                            'semester_id',
-                                            $semesterGenap->id
-                                        )
-                                        ->count()
-                                    : 0;
+                    $studentsList = $studentsQuery->orderBy('students.name')->get();
 
+                    if ($semesterIds->isNotEmpty() && $studentsList->isNotEmpty()) {
+
+                        $grades = ReportCardGrade::where('class_id', $selectedClass->id)
+                            ->whereIn('semester_id', $semesterIds)
+                            ->whereIn('student_id', $studentsList->pluck('id'))
+                            ->get()
+                            ->groupBy('student_id');
+
+                        $studentsList->transform(function ($student) use ($grades, $semesterGanjil, $semesterGenap, $selectedClass) {
+                            $studentGrades = $grades->get($student->id, collect());
+                            $student->target_class = $selectedClass;
+                            $student->has_ganjil = (bool) $semesterGanjil;
+                            $student->has_genap = (bool) $semesterGenap;
+                            $student->ganjil_grades_count = $semesterGanjil
+                                ? $studentGrades->where('semester_id', $semesterGanjil->id)->count()
+                                : 0;
+                            $student->genap_grades_count = $semesterGenap
+                                ? $studentGrades->where('semester_id', $semesterGenap->id)->count()
+                                : 0;
                             return $student;
-                        }
-                    );
+                        });
+
+                    } else {
+
+                        $studentsList->transform(function ($student) use ($semesterGanjil, $semesterGenap, $selectedClass) {
+                            $student->target_class = $selectedClass;
+                            $student->has_ganjil = (bool) $semesterGanjil;
+                            $student->has_genap = (bool) $semesterGenap;
+                            $student->ganjil_grades_count = 0;
+                            $student->genap_grades_count = 0;
+                            return $student;
+                        });
+
+                    }
+
+                    $students = $studentsList;
                 }
+
+            } else {
+
+                /*
+                 * ------------------------------------------------------
+                 * PENCARIAN SISWA (TANPA PILIH KELAS SPESIFIK)
+                 * ------------------------------------------------------
+                 */
+                $query = Student::query();
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('nis', 'like', "%{$search}%")
+                            ->orWhere('nisn', 'like', "%{$search}%");
+                    });
+                }
+
+                if ($selectedAcademicYearId) {
+                    $query->whereHas('classes', function ($q) use ($selectedAcademicYearId) {
+                        $q->where('academic_year_id', $selectedAcademicYearId);
+                    });
+                }
+
+                $query->with([
+                    'classes' => function ($q) use ($selectedAcademicYearId) {
+                        if ($selectedAcademicYearId) {
+                            $q->where('academic_year_id', $selectedAcademicYearId);
+                        }
+                        $q->with('academicYear.semesters')
+                            ->orderByDesc('academic_year_id');
+                    },
+                    'reportCardGrades'
+                ]);
+
+                $paginatedStudents = $query->orderBy('name')->paginate(20)->withQueryString();
+
+                $paginatedStudents->getCollection()->transform(function ($student) use ($selectedAcademicYearId) {
+                    $targetClass = null;
+
+                    if ($selectedAcademicYearId) {
+                        $targetClass = $student->classes
+                            ->where('academic_year_id', $selectedAcademicYearId)
+                            ->first(fn ($c) => ($c->pivot->status ?? '') === 'Aktif')
+                            ?? $student->classes
+                                ->where('academic_year_id', $selectedAcademicYearId)
+                                ->first();
+                    }
+
+                    if (!$targetClass) {
+                        $targetClass = $student->classes
+                            ->first(fn ($c) => ($c->pivot->status ?? '') === 'Aktif')
+                            ?? $student->classes->first();
+                    }
+
+                    $student->target_class = $targetClass;
+
+                    if ($targetClass) {
+                        $semesters = $targetClass->academicYear?->semesters ?? collect();
+                        $semesterGanjil = $semesters->first(fn ($s) => strtolower($s->name) === 'ganjil');
+                        $semesterGenap = $semesters->first(fn ($s) => strtolower($s->name) === 'genap');
+
+                        $student->has_ganjil = (bool) $semesterGanjil;
+                        $student->has_genap = (bool) $semesterGenap;
+
+                        $student->ganjil_grades_count = $semesterGanjil
+                            ? $student->reportCardGrades
+                                ->where('class_id', $targetClass->id)
+                                ->where('semester_id', $semesterGanjil->id)
+                                ->count()
+                            : 0;
+
+                        $student->genap_grades_count = $semesterGenap
+                            ? $student->reportCardGrades
+                                ->where('class_id', $targetClass->id)
+                                ->where('semester_id', $semesterGenap->id)
+                                ->count()
+                            : 0;
+                    } else {
+                        $student->has_ganjil = false;
+                        $student->has_genap = false;
+                        $student->ganjil_grades_count = 0;
+                        $student->genap_grades_count = 0;
+                    }
+
+                    return $student;
+                });
+
+                $students = $paginatedStudents;
             }
         }
 
@@ -220,10 +242,220 @@ class ReportCardGradeController extends Controller
                 'selectedAcademicYearId',
                 'selectedClassId',
                 'selectedClass',
-                'semesterGanjil',
-                'semesterGenap'
+                'searched',
+                'search'
             )
         );
+    }
+
+    /**
+     * ==========================================================
+     * RIWAYAT NILAI RAPOT SISWA (KELAS 1 - 6)
+     * ==========================================================
+     *
+     * Menampilkan riwayat nilai rapot satu siswa dari kelas 1 sampai 6
+     * berdasarkan kelas dan tahun ajaran yang pernah ditempuh siswa.
+     */
+    public function history(Student $student)
+    {
+        $student->load([
+            'classes' => function ($q) {
+                $q->with([
+                    'academicYear.semesters',
+                    'subjects'
+                ])->orderBy('grade_level')->orderByDesc('academic_year_id');
+            },
+            'reportCardGrades'
+        ]);
+
+        $classesByGradeLevel = $student->classes->groupBy('grade_level');
+
+        $gradeLevelsData = [];
+
+        for ($level = 1; $level <= 6; $level++) {
+            $matchingClasses = $classesByGradeLevel->get($level, collect());
+
+            // Ambil kelas aktif atau kelas terbaru untuk grade level ini
+            $levelClass = $matchingClasses->first(fn($c) => ($c->pivot->status ?? '') === 'Aktif')
+                ?? $matchingClasses->first();
+
+            if ($levelClass) {
+                $semesters = $levelClass->academicYear?->semesters ?? collect();
+                $semGanjil = $semesters->first(fn($s) => strtolower($s->name) === 'ganjil');
+                $semGenap = $semesters->first(fn($s) => strtolower($s->name) === 'genap');
+
+                $ganjilCount = $semGanjil
+                    ? $student->reportCardGrades
+                        ->where('class_id', $levelClass->id)
+                        ->where('semester_id', $semGanjil->id)
+                        ->count()
+                    : 0;
+
+                $genapCount = $semGenap
+                    ? $student->reportCardGrades
+                        ->where('class_id', $levelClass->id)
+                        ->where('semester_id', $semGenap->id)
+                        ->count()
+                    : 0;
+
+                $gradeLevelsData[$level] = [
+                    'level' => $level,
+                    'has_class' => true,
+                    'class' => $levelClass,
+                    'academic_year' => $levelClass->academicYear,
+                    'has_ganjil' => (bool)$semGanjil,
+                    'has_genap' => (bool)$semGenap,
+                    'ganjil_count' => $ganjilCount,
+                    'genap_count' => $genapCount,
+                    'has_data' => ($ganjilCount > 0 || $genapCount > 0),
+                ];
+            } else {
+                $gradeLevelsData[$level] = [
+                    'level' => $level,
+                    'has_class' => false,
+                    'class' => null,
+                    'academic_year' => null,
+                    'has_ganjil' => false,
+                    'has_genap' => false,
+                    'ganjil_count' => 0,
+                    'genap_count' => 0,
+                    'has_data' => false,
+                ];
+            }
+        }
+
+        return view(
+            'admin.report-card-grades.history',
+            compact(
+                'student',
+                'gradeLevelsData'
+            )
+        );
+    }
+
+
+    /**
+     * ==========================================================
+     * CETAK RAPOT PDF (RIWAYAT)
+     * ==========================================================
+     *
+     * Menghasilkan file PDF rapot untuk satu siswa,
+     * pada satu kelas & satu semester tertentu.
+     *
+     * URL: /report-card-grades/{class}/{student}/print?semester={ganjil|genap}
+     */
+    public function printHistory(
+        Request $request,
+        SchoolClass $class,
+        Student $student
+    ) {
+        /*
+         * Validasi: siswa harus pernah terdaftar di kelas ini.
+         */
+        $isStudentInClass = $class->students()
+            ->where('students.id', $student->id)
+            ->exists();
+
+        if (!$isStudentInClass) {
+            abort(404, 'Siswa tidak ditemukan di kelas ini.');
+        }
+
+        /*
+         * Tentukan semester.
+         */
+        $semesterName = $request->input('semester', 'ganjil');
+
+        $semester = Semester::where('academic_year_id', $class->academic_year_id)
+            ->whereRaw('LOWER(name) = ?', [strtolower($semesterName)])
+            ->first();
+
+        if (!$semester) {
+            abort(404, 'Semester tidak ditemukan untuk tahun ajaran ini.');
+        }
+
+        /*
+         * Ambil tahun ajaran.
+         */
+        $academicYear = $class->academicYear;
+
+        /*
+         * Ambil nilai rapot siswa pada kelas + semester.
+         */
+        $grades = ReportCardGrade::where('student_id', $student->id)
+            ->where('class_id', $class->id)
+            ->where('semester_id', $semester->id)
+            ->with('subject')
+            ->get()
+            ->sortBy(fn ($g) => $g->subject->name ?? '');
+
+        /*
+         * Ambil rekap absensi.
+         */
+        $attendance = RekapAbsensi::where([
+            'student_id' => $student->id,
+            'class_id'   => $class->id,
+            'semester_id' => $semester->id,
+        ])->first();
+
+        /*
+         * Ambil prestasi pada kelas + tahun ajaran.
+         */
+        $achievements = Achievement::where('student_id', $student->id)
+            ->where('class_id', $class->id)
+            ->where('academic_year_id', $class->academic_year_id)
+            ->orderBy('id')
+            ->get();
+
+        /*
+         * Wali kelas.
+         */
+        $homeroomTeacher = $class->homeroomTeacher;
+
+        /*
+         * Data sekolah.
+         */
+        $school = SchoolProfile::first();
+
+        /*
+         * Kepala sekolah (ambil dari data pegawai jika tersedia).
+         */
+        $headmaster = null;
+        $headmasterNip = null;
+
+        $kepalaSekolah = \App\Models\Employee::where('position', 'like', '%Kepala Sekolah%')
+            ->first();
+
+        if ($kepalaSekolah) {
+            $headmaster = $kepalaSekolah->name;
+            $headmasterNip = $kepalaSekolah->nip;
+        }
+
+        /*
+         * Render view lalu generate PDF.
+         */
+        $view = view('reports.rapot.print', compact(
+            'student',
+            'class',
+            'semester',
+            'academicYear',
+            'grades',
+            'attendance',
+            'achievements',
+            'homeroomTeacher',
+            'school',
+            'headmaster',
+            'headmasterNip'
+        ));
+
+        $filename = 'rapot-'
+            . ($student->nis ?: $student->id)
+            . '-kelas-' . $class->grade_level
+            . '-' . strtolower($semester->name)
+            . '.pdf';
+
+        return Pdf::loadHTML($view->render())
+            ->setPaper('a4', 'portrait')
+            ->download($filename);
     }
 
 

@@ -166,7 +166,7 @@
                                 <th>JK</th>
                                 <th>Kelas</th>
                                 <th>Status</th>
-                                <th style="width: 80px;">Aksi</th>
+                                <th style="width: 140px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -192,7 +192,7 @@
                                                     {{ strtoupper(substr($student->name, 0, 1)) }}
                                                 </div>
                                             @endif
-                                            <a href="{{ route('students.show', array_merge(['student' => $student], request()->only(['search', 'class_id', 'status']))) }}"
+                                            <a href="{{ route('students.show', $student->id) }}"
                                                class="fw-medium text-dark text-decoration-none hover-primary">
                                                 {{ $student->name }}
                                             </a>
@@ -230,38 +230,29 @@
                                             {{ $student->status }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="action-dropdown dropdown">
-                                            <button class="btn btn-sm btn-light border-0" type="button"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('students.show', array_merge(['student' => $student], request()->only(['search', 'class_id', 'status']))) }}">
-                                                        <i class="bi bi-eye text-primary"></i> Lihat Detail
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('students.edit', $student) }}">
-                                                        <i class="bi bi-pencil-square text-warning"></i> Edit
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="{{ route('students.destroy', $student) }}" method="POST"
-                                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="bi bi-trash3"></i> Hapus
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            </ul>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center align-items-center gap-1">
+                                            <a href="{{ route('students.show', $student->id) }}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Lihat Detail">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('students.edit', $student->id) }}"
+                                               class="btn btn-sm btn-outline-warning"
+                                               title="Edit Data">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <form action="{{ route('students.destroy', $student->id) }}" method="POST" class="d-inline"
+                                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Data">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
-                                </tr>
+                                </tr>r>
                             @endforeach
                         </tbody>
                     </table>

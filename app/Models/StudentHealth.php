@@ -25,4 +25,14 @@ class StudentHealth extends Model
     {
         return $this->belongsTo(Student::class);
     }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class);
+    }
 }

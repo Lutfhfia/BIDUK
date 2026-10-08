@@ -363,6 +363,16 @@ Route::middleware('auth')->group(function () {
     )->name('report-card-grades.index');
 
     Route::get(
+        'report-card-grades/{student}/history',
+        [ReportCardGradeController::class, 'history']
+    )->name('report-card-grades.history');
+
+    Route::get(
+        'report-card-grades/{class}/{student}/print',
+        [ReportCardGradeController::class, 'printHistory']
+    )->name('report-card-grades.print');
+
+    Route::get(
         'report-card-grades/{class}/{student}/edit',
         [ReportCardGradeController::class, 'edit']
     )->name('report-card-grades.edit');

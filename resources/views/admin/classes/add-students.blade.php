@@ -68,17 +68,111 @@
     @endif
 
 
+    {{-- Pencarian Siswa --}}
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-body">
+
+            <form method="GET" action="{{ route('classes.students.add', $class) }}">
+
+                <div class="row g-2 align-items-end">
+
+                    <div class="col-md-6 col-lg-5">
+
+                        <label class="form-label fw-semibold small text-muted mb-1">
+                            Cari Siswa
+                        </label>
+
+                        <input
+                            type="text"
+                            name="search"
+                            class="form-control"
+                            value="{{ $search ?? '' }}"
+                            placeholder="Ketik Nama Siswa / NIS..."
+                        >
+
+                    </div>
+
+                    <div class="col-md-4 d-flex gap-2">
+
+                        <button type="submit" class="btn btn-success">
+
+                            <i class="bi bi-search me-1"></i>
+
+                            Cari
+
+                        </button>
+
+                        @if(!empty($search))
+
+                            <a href="{{ route('classes.students.add', $class) }}" class="btn btn-outline-secondary">
+
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+
+                                Reset
+
+                            </a>
+
+                        @endif
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
     <form
         action="{{ route('classes.students.store', $class) }}"
         method="POST">
 
         @csrf
 
+        {{-- Tombol Simpan & Batal di BAGIAN ATAS --}}
+        <div class="card border-0 shadow-sm mb-4">
+
+            <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                <div class="text-muted small">
+
+                    Centang siswa yang ingin dimasukkan ke kelas <strong>{{ $class->name }}</strong>.
+
+                </div>
+
+                <div class="d-flex gap-2">
+
+                    <button
+                        type="submit"
+                        class="btn btn-success">
+
+                        <i class="bi bi-check-lg me-1"></i>
+
+                        Simpan
+
+                    </button>
+
+                    <a
+                        href="{{ route('classes.students', $class) }}"
+                        class="btn btn-outline-secondary">
+
+                        Batal
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
 
         <div class="card border-0 shadow-sm">
 
             <div class="card-body">
-
 
                 {{-- Header tabel --}}
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -90,12 +184,10 @@
                         </h5>
 
                         <div class="text-muted small">
-                            Centang siswa yang ingin dimasukkan ke kelas
-                            {{ $class->name }}.
+                            Total tersedia: <strong>{{ $students->count() }}</strong> siswa
                         </div>
 
                     </div>
-
 
                     <div>
 
@@ -210,7 +302,9 @@
                                     <td colspan="6"
                                         class="text-center py-5 text-muted">
 
-                                        Tidak ada siswa yang dapat ditambahkan.
+                                        <i class="bi bi-search fs-2 text-muted mb-2 d-block"></i>
+
+                                        {{ !empty($search) ? 'Data siswa tidak ditemukan.' : 'Tidak ada siswa yang dapat ditambahkan.' }}
 
                                     </td>
 
@@ -236,23 +330,25 @@
                     </div>
 
 
-                    <div>
+                    <div class="d-flex gap-2">
+
+                        <button
+                            type="submit"
+                            class="btn btn-success">
+
+                            <i class="bi bi-check-lg me-1"></i>
+
+                            Simpan
+
+                        </button>
 
                         <a
                             href="{{ route('classes.students', $class) }}"
-                            class="btn btn-light border me-2">
+                            class="btn btn-outline-secondary">
 
                             Batal
 
                         </a>
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary">
-
-                            Simpan Siswa
-
-                        </button>
 
                     </div>
 
