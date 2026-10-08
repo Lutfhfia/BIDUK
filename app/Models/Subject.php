@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\SchoolClass;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -13,6 +12,7 @@ class Subject extends Model
         'code',
         'name',
         'category',
+        'sort_order',
         'status',
     ];
 
@@ -24,20 +24,24 @@ class Subject extends Model
         return $query->where('status', 'Aktif');
     }
 
+    /**
+     * Relasi ke kelas.
+     */
     public function classes(): BelongsToMany
-{
-    return $this->belongsToMany(
-        SchoolClass::class,
-        'class_subject',
-        'subject_id',
-        'class_id'
-    )->withTimestamps();
-}
+    {
+        return $this->belongsToMany(
+            SchoolClass::class,
+            'class_subject',
+            'subject_id',
+            'class_id'
+        )->withTimestamps();
+    }
 
-public function reportCardGrades(): HasMany
-{
-    return $this->hasMany(ReportCardGrade::class);
-}
-
-
+    /**
+     * Relasi ke nilai rapot.
+     */
+    public function reportCardGrades(): HasMany
+    {
+        return $this->hasMany(ReportCardGrade::class);
+    }
 }
