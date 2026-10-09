@@ -21,9 +21,79 @@
             </p>
         </div>
         <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('students.import.form') }}" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> Import Excel
+            </a>
+            <a href="{{ route('students.export.excel') }}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+            </a>
             <a href="{{ route('students.create') }}" class="btn btn-biduk-primary">
                 <i class="bi bi-plus-lg me-1"></i> Tambah Siswa
             </a>
+        </div>
+    </div>
+
+    {{-- Import Error Details (if any) --}}
+    @if (session('import_errors') && count(session('import_errors')) > 0)
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <div class="fw-semibold mb-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Catatan Import Siswa:
+            </div>
+            <ul class="mb-0 small">
+                @foreach (session('import_errors') as $err)
+                    <li>Baris {{ $err['row'] ?? '?' }} ({{ $err['name'] ?? '-' }}): {{ $err['message'] }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    {{-- Stat Cards --}}
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="biduk-card p-3 d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-3 bg-success-subtle text-success" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-medium">Total Siswa</div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ number_format($stats['total'] ?? 0) }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="biduk-card p-3 d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-3 bg-primary-subtle text-primary" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-medium">Siswa Aktif</div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ number_format($stats['active'] ?? 0) }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="biduk-card p-3 d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-3 bg-info-subtle text-info" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                    <i class="bi bi-gender-male"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-medium">Laki-laki</div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ number_format($stats['male'] ?? 0) }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="biduk-card p-3 d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-3 bg-danger-subtle text-danger" style="width: 48px; height: 48px; font-size: 1.4rem;">
+                    <i class="bi bi-gender-female"></i>
+                </div>
+                <div>
+                    <div class="text-muted small fw-medium">Perempuan</div>
+                    <h5 class="fw-bold mb-0 text-dark">{{ number_format($stats['female'] ?? 0) }}</h5>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -96,7 +166,7 @@
                                 <th>JK</th>
                                 <th>Kelas</th>
                                 <th>Status</th>
-                                <th style="width: 80px;">Aksi</th>
+                                <th style="width: 140px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -122,7 +192,10 @@
                                                     {{ strtoupper(substr($student->name, 0, 1)) }}
                                                 </div>
                                             @endif
-                                            <span class="fw-medium">{{ $student->name }}</span>
+                                            <a href="{{ route('students.show', $student->id) }}"
+                                               class="fw-medium text-dark text-decoration-none hover-primary">
+                                                {{ $student->name }}
+                                            </a>
                                         </div>
                                     </td>
                                     <td>
@@ -157,38 +230,29 @@
                                             {{ $student->status }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="action-dropdown dropdown">
-                                            <button class="btn btn-sm btn-light border-0" type="button"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('students.show', $student) }}">
-                                                        <i class="bi bi-eye text-primary"></i> Lihat Detail
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('students.edit', $student) }}">
-                                                        <i class="bi bi-pencil-square text-warning"></i> Edit
-                                                    </a>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <form action="{{ route('students.destroy', $student) }}" method="POST"
-                                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="bi bi-trash3"></i> Hapus
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            </ul>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center align-items-center gap-1">
+                                            <a href="{{ route('students.show', $student->id) }}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Lihat Detail">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('students.edit', $student->id) }}"
+                                               class="btn btn-sm btn-outline-warning"
+                                               title="Edit Data">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <form action="{{ route('students.destroy', $student->id) }}" method="POST" class="d-inline"
+                                                  onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Data">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
-                                </tr>
+                                </tr>r>
                             @endforeach
                         </tbody>
                     </table>

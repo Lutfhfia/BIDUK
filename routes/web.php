@@ -21,6 +21,7 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RekapRapotController;
+use App\Http\Controllers\StudentImportExportController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -158,6 +159,28 @@ Route::get(
         ->middleware('permission:students.create')
         ->name('students.store');
 
+    // Import & Export harus SEBELUM students/{student} agar tidak tertangkap wildcard
+    Route::get(
+        'students/import',
+        [StudentImportExportController::class, 'form']
+    )
+        ->middleware('permission:students.view')
+        ->name('students.import.form');
+
+    Route::post(
+        'students/import',
+        [StudentImportExportController::class, 'import']
+    )
+        ->middleware('permission:students.create')
+        ->name('students.import');
+
+    Route::get(
+        'students/export/excel',
+        [StudentImportExportController::class, 'exportExcel']
+    )
+        ->middleware('permission:students.view')
+        ->name('students.export.excel');
+
     Route::get(
         'students/{student}',
         [StudentController::class, 'show']
@@ -185,6 +208,8 @@ Route::get(
     )
         ->middleware('permission:students.delete')
         ->name('students.destroy');
+
+
 
 
     // =================================================
@@ -361,6 +386,16 @@ Route::get(
         'report-card-grades',
         [ReportCardGradeController::class, 'index']
     )->name('report-card-grades.index');
+
+    Route::get(
+        'report-card-grades/{student}/history',
+        [ReportCardGradeController::class, 'history']
+    )->name('report-card-grades.history');
+
+    Route::get(
+        'report-card-grades/{class}/{student}/print',
+        [ReportCardGradeController::class, 'printHistory']
+    )->name('report-card-grades.print');
 
     Route::get(
         'report-card-grades/{class}/{student}/edit',

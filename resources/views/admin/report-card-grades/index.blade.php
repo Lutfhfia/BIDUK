@@ -4,228 +4,232 @@
 
 @section('content')
 
-<div class="container-fluid py-4">
+    <div class="container-fluid py-4">
 
-    {{-- =====================================================
-        HEADER
-    ====================================================== --}}
-    <div class="mb-4">
+        {{-- =====================================================
+            HEADER
+        ====================================================== --}}
+        <div class="d-flex justify-content-between align-items-center mb-4">
 
-        <h4 class="fw-bold mb-1">
-            <i class="bi bi-journal-check me-2"></i>
-            Nilai Rapot
-        </h4>
+            <div>
 
-        <p class="text-muted mb-0">
-            Kelola isi rapot siswa berdasarkan tahun ajaran dan kelas.
-        </p>
+                <h4 class="fw-bold mb-1">
 
-    </div>
+                    <i class="bi bi-journal-check me-2"></i>
 
+                    Nilai Rapot
 
-    {{-- =====================================================
-        ALERT SUCCESS
-    ====================================================== --}}
-    @if(session('success'))
+                </h4>
 
-        <div class="alert alert-success alert-dismissible fade show">
+                <p class="text-muted mb-0">
 
-            <i class="bi bi-check-circle me-2"></i>
+                    Kelola dan input nilai rapot peserta didik semester Ganjil dan Genap serta riwayat akademik siswa.
 
-            {{ session('success') }}
+                </p>
 
-            <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-            ></button>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
-        ALERT ERROR
-    ====================================================== --}}
-    @if(session('error'))
-
-        <div class="alert alert-danger alert-dismissible fade show">
-
-            <i class="bi bi-exclamation-circle me-2"></i>
-
-            {{ session('error') }}
-
-            <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-            ></button>
-
-        </div>
-
-    @endif
-
-
-    {{-- =====================================================
-        FILTER
-    ====================================================== --}}
-    <div class="card border-0 shadow-sm mb-4">
-
-        <div class="card-header bg-white border-0 py-3">
-
-            <h5 class="fw-bold mb-1">
-                <i class="bi bi-funnel me-2"></i>
-                Pilih Data
-            </h5>
-
-            <small class="text-muted">
-                Pilih tahun ajaran dan kelas untuk melihat daftar siswa.
-            </small>
+            </div>
 
         </div>
 
 
-        <div class="card-body">
+        {{-- =====================================================
+            ALERT NOTIFIKASI
+        ====================================================== --}}
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
-            <form
-                method="GET"
-                action="{{ route('report-card-grades.index') }}"
-            >
-
-                <div class="row g-3">
-
-                    {{-- Tahun Ajaran --}}
-                    <div class="col-md-6">
-
-                        <label
-                            for="academic_year_id"
-                            class="form-label fw-semibold"
-                        >
-                            Tahun Ajaran
-                        </label>
-
-                        <select
-                            name="academic_year_id"
-                            id="academic_year_id"
-                            class="form-select"
-                            onchange="this.form.submit()"
-                        >
-
-                            <option value="">
-                                -- Pilih Tahun Ajaran --
-                            </option>
-
-                            @foreach($academicYears as $academicYear)
-
-                                <option
-                                    value="{{ $academicYear->id }}"
-                                    {{ (string) $selectedAcademicYearId === (string) $academicYear->id ? 'selected' : '' }}
-                                >
-                                    {{ $academicYear->name }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </div>
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
 
 
-                    {{-- Kelas --}}
-                    <div class="col-md-6">
-
-                        <label
-                            for="class_id"
-                            class="form-label fw-semibold"
-                        >
-                            Kelas
-                        </label>
-
-                        <select
-                            name="class_id"
-                            id="class_id"
-                            class="form-select"
-                            onchange="this.form.submit()"
-                            {{ $selectedAcademicYearId ? '' : 'disabled' }}
-                        >
-
-                            <option value="">
-                                -- Pilih Kelas --
-                            </option>
-
-                            @foreach($classes as $class)
-
-                                <option
-                                    value="{{ $class->id }}"
-                                    {{ (string) $selectedClassId === (string) $class->id ? 'selected' : '' }}
-                                >
-                                    {{ $class->name }}
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-            </form>
-
-        </div>
-
-    </div>
-
-
-    {{-- =====================================================
-        INFORMASI KELAS
-    ====================================================== --}}
-    @if($selectedClass)
-
+        {{-- =====================================================
+            FILTER PENCARIAN
+        ====================================================== --}}
         <div class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-white py-3">
+
+                <h6 class="fw-bold mb-0">
+
+                    <i class="bi bi-search me-2"></i>
+
+                    Pencarian & Filter Siswa
+
+                </h6>
+
+            </div>
 
             <div class="card-body">
 
-                <div class="row g-3">
+                <form method="GET" action="{{ route('report-card-grades.index') }}">
 
-                    <div class="col-md-4">
+                    <div class="row g-3">
 
-                        <div class="text-muted small">
-                            Tahun Ajaran
+                        {{-- Cari Nama / NIS / NISN --}}
+                        <div class="col-md-4">
+
+                            <label class="form-label fw-semibold">
+
+                                Cari Nama / NIS / NISN
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="search"
+                                class="form-control"
+                                value="{{ $search ?? '' }}"
+                                placeholder="Ketik nama, NIS, atau NISN..."
+                            >
+
                         </div>
 
-                        <div class="fw-semibold">
-                            {{ $selectedClass->academicYear->name ?? '-' }}
+                        {{-- Tahun Ajaran --}}
+                        <div class="col-md-4">
+
+                            <label class="form-label fw-semibold">
+
+                                Tahun Ajaran
+
+                            </label>
+
+                            <select name="academic_year_id" id="filter_academic_year_id" class="form-select">
+
+                                <option value="">
+                                    Semua Tahun Ajaran
+                                </option>
+
+                                @foreach ($academicYears as $ay)
+                                    <option
+                                        value="{{ $ay->id }}"
+                                        @selected((string) $selectedAcademicYearId === (string) $ay->id)
+                                    >
+                                        {{ $ay->name }}
+                                        @if ($ay->status === 'active')
+                                            (Aktif)
+                                        @endif
+                                    </option>
+                                @endforeach
+
+                            </select>
+
+                        </div>
+
+                        {{-- Kelas --}}
+                        <div class="col-md-4">
+
+                            <label class="form-label fw-semibold">
+
+                                Kelas
+
+                            </label>
+
+                            <select name="class_id" id="filter_class_id" class="form-select">
+
+                                <option value="">
+                                    Semua Kelas
+                                </option>
+
+                                @foreach ($classes as $c)
+                                    <option
+                                        value="{{ $c->id }}"
+                                        data-academic-year="{{ $c->academic_year_id }}"
+                                        @selected((string) $selectedClassId === (string) $c->id)
+                                    >
+                                        {{ $c->name }}
+                                        @if (!$selectedAcademicYearId && $c->academicYear)
+                                            ({{ $c->academicYear->name }})
+                                        @endif
+                                    </option>
+                                @endforeach
+
+                            </select>
+
                         </div>
 
                     </div>
 
+                    <div class="mt-3 d-flex gap-2">
 
-                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-success">
 
-                        <div class="text-muted small">
-                            Kelas
-                        </div>
+                            <i class="bi bi-search me-1"></i>
 
-                        <div class="fw-semibold">
-                            {{ $selectedClass->name }}
-                        </div>
+                            Cari
+
+                        </button>
+
+                        <a href="{{ route('report-card-grades.index') }}" class="btn btn-outline-secondary">
+
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+
+                            Reset
+
+                        </a>
 
                     </div>
 
+                </form>
 
-                    <div class="col-md-4">
+            </div>
 
-                        <div class="text-muted small">
-                            Mata Pelajaran
+        </div>
+
+
+        {{-- =====================================================
+            INFORMASI KELAS (JIKA MEMILIH KELAS SPESIFIK)
+        ====================================================== --}}
+        @if ($selectedClass)
+
+            <div class="card border-0 shadow-sm mb-4">
+
+                <div class="card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+
+                            <div class="text-muted small">
+                                Tahun Ajaran
+                            </div>
+
+                            <div class="fw-semibold">
+                                {{ $selectedClass->academicYear->name ?? '-' }}
+                            </div>
+
                         </div>
 
-                        <div class="fw-semibold">
+                        <div class="col-md-4">
 
-                            {{ $selectedClass->subjects->count() }}
+                            <div class="text-muted small">
+                                Kelas
+                            </div>
 
-                            mata pelajaran
+                            <div class="fw-semibold">
+                                {{ $selectedClass->name }}
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-4">
+
+                            <div class="text-muted small">
+                                Mata Pelajaran
+                            </div>
+
+                            <div class="fw-semibold">
+                                {{ $selectedClass->subjects->count() }} mata pelajaran
+                            </div>
 
                         </div>
 
@@ -235,312 +239,351 @@
 
             </div>
 
-        </div>
-
-    @endif
+        @endif
 
 
-    {{-- =====================================================
-        DAFTAR SISWA
-    ====================================================== --}}
-    <div class="card border-0 shadow-sm">
+        {{-- =====================================================
+            DAFTAR SISWA / HASIL PENCARIAN
+        ====================================================== --}}
+        @if ($searched)
 
-        <div class="card-header bg-white border-0 py-3">
+            <div class="card border-0 shadow-sm">
 
-            <div class="d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3">
 
-                <div>
+                    <div class="d-flex justify-content-between align-items-center">
 
-                    <h5 class="fw-bold mb-1">
-                        Daftar Siswa
-                    </h5>
+                        <div>
 
-                    @if($selectedClass)
+                            <h6 class="fw-bold mb-1">
 
-                        <small class="text-muted">
-                            Kelola nilai rapot Semester Ganjil dan Genap.
-                        </small>
+                                Hasil Data Siswa
+
+                            </h6>
+
+                            <small class="text-muted">
+
+                                @if ($students instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                    Total data:
+                                    <strong>{{ $students->total() }}</strong>
+                                    siswa
+                                @else
+                                    Total data:
+                                    <strong>{{ $students->count() }}</strong>
+                                    siswa
+                                @endif
+
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="card-body">
+
+                    @if ($students->count() > 0)
+
+                        <div class="table-responsive">
+
+                            <table class="table table-bordered table-hover align-middle mb-0">
+
+                                <thead class="table-light">
+
+                                    <tr>
+
+                                        <th class="text-center" style="width: 50px;">
+                                            No.
+                                        </th>
+
+                                        <th style="width: 110px;">
+                                            NIS
+                                        </th>
+
+                                        <th style="width: 120px;">
+                                            NISN
+                                        </th>
+
+                                        <th>
+                                            Nama Siswa
+                                        </th>
+
+                                        <th>
+                                            Kelas
+                                        </th>
+
+                                        <th>
+                                            Tahun Ajaran
+                                        </th>
+
+                                        <th class="text-center" style="width: 130px;">
+                                            Ganjil
+                                        </th>
+
+                                        <th class="text-center" style="width: 130px;">
+                                            Genap
+                                        </th>
+
+                                        <th class="text-center" style="width: 220px;">
+                                            Aksi
+                                        </th>
+
+                                    </tr>
+
+                                </thead>
+
+                                <tbody>
+
+                                    @foreach ($students as $index => $student)
+
+                                        @php
+                                            $targetClass = $student->target_class ?? null;
+                                        @endphp
+
+                                        <tr>
+
+                                            {{-- No --}}
+                                            <td class="text-center">
+
+                                                @if ($students instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                                    {{ $students->firstItem() + $index }}
+                                                @else
+                                                    {{ $index + 1 }}
+                                                @endif
+
+                                            </td>
+
+                                            {{-- NIS --}}
+                                            <td>
+                                                {{ $student->nis ?? '-' }}
+                                            </td>
+
+                                            {{-- NISN --}}
+                                            <td>
+                                                {{ $student->nisn ?? '-' }}
+                                            </td>
+
+                                            {{-- Nama Siswa --}}
+                                            <td>
+                                                <div class="fw-semibold">
+                                                    {{ $student->name }}
+                                                </div>
+                                            </td>
+
+                                            {{-- Kelas --}}
+                                            <td>
+                                                @if ($targetClass)
+                                                    Kelas {{ $targetClass->grade_level }} {{ $targetClass->name }}
+                                                @else
+                                                    <span class="badge bg-warning-subtle text-warning">
+                                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                                        Belum Masuk Kelas
+                                                    </span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Tahun Ajaran --}}
+                                            <td>
+                                                @if ($targetClass?->academicYear)
+                                                    {{ $targetClass->academicYear->name }}
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Status Ganjil --}}
+                                            <td class="text-center">
+
+                                                @if (!$student->has_ganjil)
+                                                    <span class="badge bg-secondary-subtle text-secondary">
+                                                        Tidak tersedia
+                                                    </span>
+                                                @elseif ($student->ganjil_grades_count > 0)
+                                                    <span class="badge bg-success-subtle text-success">
+                                                        <i class="bi bi-check-circle me-1"></i>
+                                                        Sudah Diisi
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary">
+                                                        <i class="bi bi-circle me-1"></i>
+                                                        Belum Diisi
+                                                    </span>
+                                                @endif
+
+                                            </td>
+
+                                            {{-- Status Genap --}}
+                                            <td class="text-center">
+
+                                                @if (!$student->has_genap)
+                                                    <span class="badge bg-secondary-subtle text-secondary">
+                                                        Tidak tersedia
+                                                    </span>
+                                                @elseif ($student->genap_grades_count > 0)
+                                                    <span class="badge bg-success-subtle text-success">
+                                                        <i class="bi bi-check-circle me-1"></i>
+                                                        Sudah Diisi
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary">
+                                                        <i class="bi bi-circle me-1"></i>
+                                                        Belum Diisi
+                                                    </span>
+                                                @endif
+
+                                            </td>
+
+                                            {{-- Aksi --}}
+                                            <td class="text-center">
+
+                                                <div class="d-flex justify-content-center gap-1 flex-wrap">
+
+                                                    {{-- Input / Edit Rapot --}}
+                                                    @if ($targetClass)
+                                                        <a
+                                                            href="{{ route('report-card-grades.edit', [
+                                                                'class' => $targetClass->id,
+                                                                'student' => $student->id,
+                                                            ]) }}"
+                                                            class="btn btn-sm btn-success"
+                                                            title="Input / Edit Rapot Kelas Ini"
+                                                        >
+                                                            <i class="bi bi-pencil-square me-1"></i>
+                                                            {{ $student->ganjil_grades_count > 0 || $student->genap_grades_count > 0 ? 'Edit Rapot' : 'Input Rapot' }}
+                                                        </a>
+                                                    @else
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-sm btn-outline-secondary"
+                                                            disabled
+                                                            title="Siswa belum ditempatkan ke dalam kelas."
+                                                        >
+                                                            <i class="bi bi-slash-circle me-1"></i>
+                                                            Belum Ada Kelas
+                                                        </button>
+                                                    @endif
+
+                                                    {{-- Tombol Riwayat Nilai Rapot Siswa --}}
+                                                    <a
+                                                        href="{{ route('report-card-grades.history', $student->id) }}"
+                                                        class="btn btn-sm btn-outline-primary"
+                                                        title="Lihat Riwayat Rapot Kelas 1 - 6"
+                                                    >
+                                                        <i class="bi bi-clock-history me-1"></i>
+                                                        Riwayat
+                                                    </a>
+
+                                                </div>
+
+                                            </td>
+
+                                        </tr>
+
+                                    @endforeach
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                        {{-- Pagination --}}
+                        @if ($students instanceof \Illuminate\Pagination\LengthAwarePaginator && $students->hasPages())
+                            <div class="d-flex justify-content-center mt-4">
+                                {{ $students->links() }}
+                            </div>
+                        @endif
 
                     @else
 
-                        <small class="text-muted">
-                            Pilih tahun ajaran dan kelas terlebih dahulu.
-                        </small>
+                        {{-- EMPTY STATE --}}
+                        <div class="text-center py-5">
+
+                            <div class="mb-3">
+                                <i class="bi bi-search" style="font-size: 3rem; color: #ccc;"></i>
+                            </div>
+
+                            <h6 class="fw-bold">
+                                Data Siswa Tidak Ditemukan
+                            </h6>
+
+                            <p class="text-muted mb-0">
+                                Tidak ditemukan data siswa berdasarkan filter pencarian yang dimasukkan.
+                            </p>
+
+                        </div>
 
                     @endif
 
                 </div>
 
+            </div>
 
-                @if($selectedClass)
+        @else
 
-                    <span class="badge bg-success-subtle text-success">
+            {{-- INITIAL STATE --}}
+            <div class="card border-0 shadow-sm">
 
-                        {{ $students->count() }}
+                <div class="card-body">
 
-                        Siswa
+                    <div class="text-center py-5">
 
-                    </span>
+                        <div class="mb-3">
+                            <i class="bi bi-journal-check" style="font-size: 3rem; color: #1a7a4c;"></i>
+                        </div>
 
-                @endif
+                        <h6 class="fw-bold">
+                            Kelola Nilai Rapot Siswa
+                        </h6>
+
+                        <p class="text-muted mb-0">
+                            Gunakan filter di atas untuk mencari siswa berdasarkan Nama, NIS, NISN,
+                            atau pilih Tahun Ajaran dan Kelas untuk menampilkan daftar siswa dan mengelola nilai rapot.
+                        </p>
+
+                    </div>
+
+                </div>
 
             </div>
 
-        </div>
-
-
-        <div class="card-body p-0">
-
-
-            {{-- BELUM PILIH KELAS --}}
-            @if(!$selectedClass)
-
-                <div class="text-center py-5">
-
-                    <i class="bi bi-people fs-1 text-muted"></i>
-
-                    <h6 class="fw-semibold mt-3">
-                        Belum memilih kelas
-                    </h6>
-
-                    <p class="text-muted mb-0">
-                        Silakan pilih tahun ajaran dan kelas terlebih dahulu.
-                    </p>
-
-                </div>
-
-
-            {{-- TIDAK ADA SISWA --}}
-            @elseif($students->count() === 0)
-
-                <div class="text-center py-5">
-
-                    <i class="bi bi-person-x fs-1 text-muted"></i>
-
-                    <h6 class="fw-semibold mt-3">
-                        Belum ada siswa
-                    </h6>
-
-                    <p class="text-muted mb-0">
-                        Belum ada siswa aktif di kelas ini.
-                    </p>
-
-                </div>
-
-
-            {{-- TABEL --}}
-            @else
-
-                <div class="table-responsive">
-
-                    <table class="table table-hover align-middle mb-0">
-
-                        <thead class="table-light">
-
-                            <tr>
-
-                                <th
-                                    class="text-center"
-                                    style="width: 60px;"
-                                >
-                                    No
-                                </th>
-
-                                <th style="width: 130px;">
-                                    NIS
-                                </th>
-
-                                <th style="width: 160px;">
-                                    NISN
-                                </th>
-
-                                <th>
-                                    Nama Siswa
-                                </th>
-
-                                <th
-                                    class="text-center"
-                                    style="width: 150px;"
-                                >
-                                    Ganjil
-                                </th>
-
-                                <th
-                                    class="text-center"
-                                    style="width: 150px;"
-                                >
-                                    Genap
-                                </th>
-
-                                <th
-                                    class="text-center"
-                                    style="width: 150px;"
-                                >
-                                    Aksi
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody>
-
-                            @foreach($students as $index => $student)
-
-                                <tr>
-
-                                    {{-- No --}}
-                                    <td class="text-center">
-
-                                        {{ $index + 1 }}
-
-                                    </td>
-
-
-                                    {{-- NIS --}}
-                                    <td>
-
-                                        {{ $student->nis ?? '-' }}
-
-                                    </td>
-
-
-                                    {{-- NISN --}}
-                                    <td>
-
-                                        {{ $student->nisn ?? '-' }}
-
-                                    </td>
-
-
-                                    {{-- Nama --}}
-                                    <td>
-
-                                        <div class="fw-semibold">
-                                            {{ $student->name }}
-                                        </div>
-
-                                    </td>
-
-
-                                    {{-- STATUS GANJIL --}}
-                                    <td class="text-center">
-
-                                        @if(!$semesterGanjil)
-
-                                            <span class="badge bg-secondary-subtle text-secondary">
-                                                Tidak tersedia
-                                            </span>
-
-                                        @elseif($student->ganjil_grades_count > 0)
-
-                                            <span class="badge bg-success-subtle text-success">
-
-                                                <i class="bi bi-check-circle me-1"></i>
-
-                                                Sudah Diisi
-
-                                            </span>
-
-                                        @else
-
-                                            <span class="badge bg-secondary-subtle text-secondary">
-
-                                                <i class="bi bi-circle me-1"></i>
-
-                                                Belum Diisi
-
-                                            </span>
-
-                                        @endif
-
-                                    </td>
-
-
-                                    {{-- STATUS GENAP --}}
-                                    <td class="text-center">
-
-                                        @if(!$semesterGenap)
-
-                                            <span class="badge bg-secondary-subtle text-secondary">
-                                                Tidak tersedia
-                                            </span>
-
-                                        @elseif($student->genap_grades_count > 0)
-
-                                            <span class="badge bg-success-subtle text-success">
-
-                                                <i class="bi bi-check-circle me-1"></i>
-
-                                                Sudah Diisi
-
-                                            </span>
-
-                                        @else
-
-                                            <span class="badge bg-secondary-subtle text-secondary">
-
-                                                <i class="bi bi-circle me-1"></i>
-
-                                                Belum Diisi
-
-                                            </span>
-
-                                        @endif
-
-                                    </td>
-
-
-                                    {{-- AKSI --}}
-                                    <td class="text-center">
-
-                                        <a
-                                            href="{{ route(
-                                                'report-card-grades.edit',
-                                                [
-                                                    'class' => $selectedClass->id,
-                                                    'student' => $student->id
-                                                ]
-                                            ) }}"
-                                            class="btn btn-sm btn-success"
-                                        >
-
-                                            <i class="bi bi-pencil-square me-1"></i>
-
-                                            @if(
-                                                $student->ganjil_grades_count > 0 ||
-                                                $student->genap_grades_count > 0
-                                            )
-
-                                                Edit Rapot
-
-                                            @else
-
-                                                Input Rapot
-
-                                            @endif
-
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-
-                            @endforeach
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            @endif
-
-        </div>
+        @endif
 
     </div>
 
-</div>
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const yearSelect = document.getElementById('filter_academic_year_id');
+            const classSelect = document.getElementById('filter_class_id');
+
+            if (!yearSelect || !classSelect) return;
+
+            const allClassOptions = Array.from(classSelect.querySelectorAll('option')).filter(opt => opt.value !== '');
+
+            function filterClasses() {
+                const selectedYear = yearSelect.value;
+                const currentSelectedClass = classSelect.value;
+
+                // Reset class options
+                classSelect.innerHTML = '<option value="">Semua Kelas</option>';
+
+                allClassOptions.forEach(opt => {
+                    const optYear = opt.getAttribute('data-academic-year');
+                    if (!selectedYear || optYear === selectedYear) {
+                        const newOption = opt.cloneNode(true);
+                        if (newOption.value === currentSelectedClass) {
+                            newOption.selected = true;
+                        }
+                        classSelect.appendChild(newOption);
+                    }
+                });
+            }
+
+            yearSelect.addEventListener('change', filterClasses);
+        });
+    </script>
+    @endpush
 
 @endsection

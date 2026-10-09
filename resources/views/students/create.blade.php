@@ -142,37 +142,49 @@
                             @enderror
                         </div>
                         <div class="col-md-4">
-                            <label for="school_code" class="form-label">Nomor Kode Sekolah</label>
+                            <label for="school_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Sekolah</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="school_code" id="school_code"
-                                class="form-control @error('school_code') is-invalid @enderror"
-                                value="{{ old('school_code') }}">
+                                class="form-control bg-light @error('school_code') is-invalid @enderror"
+                                value="{{ old('school_code', \App\Models\Student::DEFAULT_SCHOOL_CODE) }}" readonly>
                             @error('school_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-4">
-                            <label for="district_code" class="form-label">Nomor Kode Kecamatan</label>
+                            <label for="district_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Kecamatan</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="district_code" id="district_code"
-                                class="form-control @error('district_code') is-invalid @enderror"
-                                value="{{ old('district_code') }}">
+                                class="form-control bg-light @error('district_code') is-invalid @enderror"
+                                value="{{ old('district_code', \App\Models\Student::DEFAULT_DISTRICT_CODE) }}" readonly>
                             @error('district_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-4">
-                            <label for="city_code" class="form-label">Nomor Kode Kabupaten/Kota</label>
+                            <label for="city_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Kabupaten/Kota</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="city_code" id="city_code"
-                                class="form-control @error('city_code') is-invalid @enderror"
-                                value="{{ old('city_code') }}">
+                                class="form-control bg-light @error('city_code') is-invalid @enderror"
+                                value="{{ old('city_code', \App\Models\Student::DEFAULT_CITY_CODE) }}" readonly>
                             @error('city_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                         <div class="col-md-4">
-                            <label for="province_code" class="form-label">Nomor Kode Provinsi</label>
+                            <label for="province_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Provinsi</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="province_code" id="province_code"
-                                class="form-control @error('province_code') is-invalid @enderror"
-                                value="{{ old('province_code') }}">
+                                class="form-control bg-light @error('province_code') is-invalid @enderror"
+                                value="{{ old('province_code', \App\Models\Student::DEFAULT_PROVINCE_CODE) }}" readonly>
                             @error('province_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -181,7 +193,7 @@
                             <label for="student_number" class="form-label">Nomor Urut</label>
                             <input type="text" name="student_number" id="student_number"
                                 class="form-control @error('student_number') is-invalid @enderror"
-                                value="{{ old('student_number') }}">
+                                value="{{ old('student_number') }}" placeholder="Nomor urut buku induk siswa">
                             @error('student_number')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

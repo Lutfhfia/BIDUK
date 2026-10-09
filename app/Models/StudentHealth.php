@@ -7,8 +7,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentHealth extends Model
 {
-    protected $fillable = ['student_id', 'academic_year_id', 'semester_id', 'hearing', 'vision', 'teeth', 'notes'];
+    protected $table = 'student_healths';
 
-    public function academicYear(): BelongsTo { return $this->belongsTo(AcademicYear::class); }
-    public function semester(): BelongsTo { return $this->belongsTo(Semester::class); }
+    protected $fillable = [
+        'student_id',
+        'academic_year_id',
+        'semester_id',
+        'hearing',
+        'vision',
+        'teeth',
+        'diseases',
+        'immunizations',
+        'notes',
+    ];
+
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class);
+    }
 }

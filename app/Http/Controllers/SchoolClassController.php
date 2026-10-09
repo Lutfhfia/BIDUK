@@ -641,7 +641,7 @@ class SchoolClassController extends Controller
     /**
      * Form checklist siswa untuk dimasukkan ke kelas.
      */
-    public function addStudents(SchoolClass $class)
+    public function addStudents(Request $request, SchoolClass $class)
     {
         /*
          * Ambil ID siswa yang sudah memiliki kelas aktif
@@ -665,14 +665,28 @@ class SchoolClassController extends Controller
             ->toArray();
 
         /*
-         * Tampilkan hanya siswa yang BELUM memiliki
-         * kelas aktif pada tahun ajaran tersebut.
+         * Parameter pencarian siswa.
          */
-        $students = Student::query()
+        $search = $request->input('search');
+
+        /*
+         * Query siswa yang BELUM memiliki kelas aktif
+         * pada tahun ajaran tersebut dan status Aktif.
+         */
+        $studentsQuery = Student::query()
             ->whereNotIn(
                 'id',
                 $assignedStudentIds
-            )
+            );
+
+        if (!empty($search)) {
+            $studentsQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('nis', 'like', '%' . $search . '%');
+            });
+        }
+
+        $students = $studentsQuery
             ->orderBy('name')
             ->get();
 
@@ -680,7 +694,8 @@ class SchoolClassController extends Controller
             'admin.classes.add-students',
             compact(
                 'class',
-                'students'
+                'students',
+                'search'
             )
         );
     }

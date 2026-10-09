@@ -173,62 +173,52 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label for="nis" class="form-label">Nomor Induk Siswa <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" name="nis" id="nis"
-                                class="form-control @error('nis') is-invalid @enderror"
-                                value="{{ old('nis', $student->nis) }}" required>
-                            @error('nis')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="nisn" class="form-label">Nomor Induk Siswa Nasional <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" name="nisn" id="nisn"
-                                class="form-control @error('nisn') is-invalid @enderror"
-                                value="{{ old('nisn', $student->nisn) }}" required>
-                            @error('nisn')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="school_code" class="form-label">Nomor Kode Sekolah</label>
+                            <label for="school_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Sekolah</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="school_code" id="school_code"
-                                class="form-control @error('school_code') is-invalid @enderror"
-                                value="{{ old('school_code', $student->school_code) }}">
+                                class="form-control bg-light @error('school_code') is-invalid @enderror"
+                                value="{{ old('school_code', $student->school_code) }}" readonly>
                             @error('school_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-4">
-                            <label for="district_code" class="form-label">Nomor Kode Kecamatan</label>
+                            <label for="district_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Kecamatan</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="district_code" id="district_code"
-                                class="form-control @error('district_code') is-invalid @enderror"
-                                value="{{ old('district_code', $student->district_code) }}">
+                                class="form-control bg-light @error('district_code') is-invalid @enderror"
+                                value="{{ old('district_code', $student->district_code) }}" readonly>
                             @error('district_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-4">
-                            <label for="city_code" class="form-label">Nomor Kode Kab/Kota</label>
+                            <label for="city_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Kab/Kota</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="city_code" id="city_code"
-                                class="form-control @error('city_code') is-invalid @enderror"
-                                value="{{ old('city_code', $student->city_code) }}">
+                                class="form-control bg-light @error('city_code') is-invalid @enderror"
+                                value="{{ old('city_code', $student->city_code) }}" readonly>
                             @error('city_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-4">
-                            <label for="province_code" class="form-label">Nomor Kode Provinsi</label>
+                            <label for="province_code" class="form-label d-flex justify-content-between">
+                                <span>Nomor Kode Provinsi</span>
+                                <span class="badge bg-success bg-opacity-10 text-success" style="font-size: 0.7rem;">Template Sekolah</span>
+                            </label>
                             <input type="text" name="province_code" id="province_code"
-                                class="form-control @error('province_code') is-invalid @enderror"
-                                value="{{ old('province_code', $student->province_code) }}">
+                                class="form-control bg-light @error('province_code') is-invalid @enderror"
+                                value="{{ old('province_code', $student->province_code) }}" readonly>
                             @error('province_code')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror

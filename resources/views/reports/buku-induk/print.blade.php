@@ -1144,7 +1144,7 @@
                 </div>
 
                 <div class="nomor-urut-value">
-                    {{ $student->order_number ?? '' }}
+                    {{ $student->student_number ?? $student->order_number ?? '' }}
                 </div>
 
             </div>
