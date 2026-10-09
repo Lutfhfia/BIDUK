@@ -109,10 +109,16 @@ class BukuIndukController extends Controller
             ->orderBy('name')
             ->get();
 
-        $selectedStudent = $students->firstWhere(
-            'id',
-            (int) $request->input('student_id')
-        );
+        $selectedStudent = null;
+        if ($request->filled('student_id')) {
+            $selectedStudent = $students->firstWhere(
+                'id',
+                (int) $request->input('student_id')
+            ) ?? Student::with([
+                'classAssignments.schoolClass.academicYear',
+                'classes.academicYear'
+            ])->find($request->input('student_id'));
+        }
 
         return view('reports.buku-induk.index', compact(
             'academicYears',
