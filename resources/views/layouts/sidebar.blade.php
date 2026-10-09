@@ -182,8 +182,7 @@
             {{-- Rekap Rapot --}}
             <li class="nav-item">
 
-                <a href="{{ route('report-card-grades.index') }}"
-                   class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
+                <a href="#" class="nav-link">
 
                     <i class="bi bi-file-earmark-bar-graph-fill"></i>
                     <span>Rekap Rapot</span>
