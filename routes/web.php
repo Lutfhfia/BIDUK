@@ -20,6 +20,8 @@ use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RekapRapotController;
 use App\Http\Controllers\StudentImportExportController;
 
 use Illuminate\Support\Facades\Route;
@@ -97,6 +99,30 @@ Route::middleware('auth')->group(function () {
         '/laporan/buku-induk/unduh-semua',
         [BukuIndukController::class, 'downloadAll']
     )->name('buku-induk.download-all');
+
+     // =================================================
+// REKAP RAPOT
+// =================================================
+
+Route::get(
+    '/laporan/rekap-rapot',
+    [RekapRapotController::class, 'index']
+)->name('rekap-rapot.index');
+
+Route::get(
+    '/laporan/rekap-rapot/cetak/{student}',
+    [RekapRapotController::class, 'print']
+)->name('rekap-rapot.print');
+
+Route::get(
+    '/laporan/rekap-rapot/cetak-batch',
+    [RekapRapotController::class, 'batch']
+)->name('rekap-rapot.batch');
+
+Route::get(
+    '/laporan/rekap-rapot/unduh-semua',
+    [RekapRapotController::class, 'downloadAll']
+)->name('rekap-rapot.download-all');
 
 
     // =================================================
@@ -410,7 +436,16 @@ Route::middleware('auth')->group(function () {
     // =================================================
     // MANAJEMEN USER
     // =================================================
+// Reset password user
+Route::post(
+    'users/{user}/reset-password',
+    [UserController::class, 'resetPassword']
+)->name('users.reset-password');
 
+Route::resource(
+    'users',
+    UserController::class
+);
     Route::resource(
         'users',
         UserController::class
@@ -583,5 +618,15 @@ Route::middleware('auth')->group(function () {
         'activity-logs/{activityLog}',
         [ActivityLogController::class, 'show']
     )->name('activity-logs.show');
+
+    // PROFIL SAYA
+Route::get('/profile', [ProfileController::class, 'show'])
+->name('profile.show');
+
+Route::get('/profile/edit', [ProfileController::class, 'edit'])
+->name('profile.edit');
+
+Route::put('/profile', [ProfileController::class, 'update'])
+->name('profile.update');
 
 });

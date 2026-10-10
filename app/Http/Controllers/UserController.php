@@ -264,7 +264,46 @@ class UserController extends Controller
         ->route('users.index')
         ->with('success', 'Data user berhasil diperbarui.');
 }
+    /**
+ * Reset password user.
+ */
+public function resetPassword(User $user)
+{
+    $this->authorizeSuperAdmin();
 
+    // Jangan izinkan reset password akun Super Admin.
+    if ($user->isSuperAdmin()) {
+        return redirect()
+            ->route('users.index')
+            ->withErrors([
+                'reset_password' => 'Password akun Super Admin tidak dapat direset melalui menu ini.',
+            ]);
+    }
+
+    // Jangan izinkan reset password akun yang sedang digunakan.
+    if ($user->id === auth()->id()) {
+        return redirect()
+            ->route('users.index')
+            ->withErrors([
+                'reset_password' => 'Password akun yang sedang digunakan tidak dapat direset dari menu ini.',
+            ]);
+    }
+
+    // Buat password sementara baru.
+    $generatedPassword = Str::random(12);
+
+    // User model akan otomatis melakukan hashing
+    // karena field password menggunakan cast "hashed".
+    $user->update([
+        'password' => $generatedPassword,
+    ]);
+
+    return redirect()
+        ->route('users.index')
+        ->with('success', 'Password user ' . $user->name . ' berhasil direset.')
+        ->with('reset_password', $generatedPassword)
+        ->with('reset_password_user', $user->name);
+}
     /**
      * Remove the specified resource from storage.
      */

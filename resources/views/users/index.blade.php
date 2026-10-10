@@ -13,6 +13,40 @@
 @endsection
 
 @section('content')
+@if (session('reset_password'))
+    <div class="alert alert-warning border mb-4">
+        <div class="fw-semibold mb-2">
+            <i class="bi bi-key-fill me-2"></i>
+            Password Baru
+        </div>
+
+        <div class="mb-2">
+            Password akun
+            <strong>{{ session('reset_password_user') }}</strong>
+            berhasil direset.
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <code id="resetPasswordValue" class="fs-6">
+                {{ session('reset_password') }}
+            </code>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-dark"
+                onclick="copyResetPassword(this)"
+            >
+                <i class="bi bi-copy me-1"></i>
+                Salin Password
+            </button>
+        </div>
+
+        <div class="small text-muted mt-2">
+            Berikan password sementara ini kepada pengguna dan sarankan untuk
+            segera menggantinya setelah berhasil login.
+        </div>
+    </div>
+@endif
 @if (session('generated_password'))
     <div class="alert alert-warning border mb-4">
         <div class="fw-semibold mb-2">
@@ -232,6 +266,26 @@
                                                 <i class="bi bi-eye"></i>
                                             </a>
 
+                                            {{-- Reset Password --}}
+@if ($user->id !== auth()->id() && !$user->isSuperAdmin())
+    <form
+        action="{{ route('users.reset-password', $user) }}"
+        method="POST"
+        onsubmit="return confirm('Yakin ingin mereset password {{ $user->name }}? Password lama akan langsung tidak berlaku.')"
+        class="d-inline"
+    >
+        @csrf
+
+        <button
+            type="submit"
+            class="btn btn-sm btn-outline-secondary"
+            title="Reset Password"
+        >
+            <i class="bi bi-key-fill"></i>
+        </button>
+    </form>
+@endif
+
                                             <a href="{{ route('users.edit', $user) }}"
                                                class="btn btn-sm btn-outline-warning"
                                                title="Edit">
@@ -292,5 +346,29 @@
         @endif
 
     </div>
+    <script>
+    function copyResetPassword(button) {
+        const passwordElement = document.getElementById('resetPasswordValue');
 
+        if (!passwordElement) {
+            return;
+        }
+
+        const password = passwordElement.textContent.trim();
+
+        navigator.clipboard.writeText(password)
+            .then(() => {
+                const originalHtml = button.innerHTML;
+
+                button.innerHTML = '<i class="bi bi-check-lg me-1"></i>Tersalin';
+
+                setTimeout(() => {
+                    button.innerHTML = originalHtml;
+                }, 2000);
+            })
+            .catch(() => {
+                alert('Password gagal disalin. Silakan salin secara manual.');
+            });
+    }
+</script>
 @endsection
