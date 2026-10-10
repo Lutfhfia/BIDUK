@@ -130,17 +130,16 @@ class EmployeeController extends Controller
             ],
 
             'email' => [
-                'nullable',
-                'email',
-                'max:100',
-                'unique:employees,email',
-                'unique:users,email',
-            ],
+    'nullable',
+    'email',
+    'max:100',
+    'unique:employees,email',
+],
 
-            'address' => [
-                'nullable',
-                'string',
-            ],
+'address' => [
+    'nullable',
+    'string',
+],
 
             'photo' => [
                 'nullable',
@@ -655,63 +654,162 @@ class EmployeeController extends Controller
         return 'BIDUK@' . $lastFour;
     }
 
-    /**
-     * Membuat atau menyinkronkan akun User.
-     */
-    private function createOrSyncUser(Employee $employee): User
-    {
-        $username = $this->usernameForEmployee($employee);
+/**
+ * Membuat atau menyinkronkan akun User.
+ */
+private function createOrSyncUser(Employee $employee): User
+{
+    $username = $this->usernameForEmployee($employee);
 
-        $roleName = $this->roleNameFromPosition(
-            $employee->position
+    $roleName = $this->roleNameFromPosition(
+        $employee->position
+    );
+
+    $role = Role::where('name', $roleName)->first();
+
+    if (!$role) {
+        throw new \RuntimeException(
+            "Role '{$roleName}' belum tersedia di tabel roles."
         );
+    }
 
-        $role = Role::where('name', $roleName)->first();
+    /*
+     * Cari akun berdasarkan username/NIP/NUPTK.
+     */
+    $existingUser = User::where(
+        'username',
+        $username
+    )->first();
 
-        if (!$role) {
-            throw new \RuntimeException(
-                "Role '{$roleName}' belum tersedia di tabel roles."
-            );
+    /*
+     * ======================================================
+     * KASUS 1:
+     * User sudah ada tetapi belum terhubung ke pegawai.
+     *
+     * Contoh:
+     * Indah sudah punya akun User,
+     * tetapi employee_id masih NULL.
+     * ======================================================
+     */
+    if ($existingUser && !$existingUser->employee_id) {
+
+        /*
+         * Pastikan email pegawai tidak sedang dipakai
+         * oleh USER LAIN.
+         */
+        if ($employee->email) {
+
+            $emailUsedByOtherUser = User::where(
+                'email',
+                $employee->email
+            )
+                ->where(
+                    'id',
+                    '!=',
+                    $existingUser->id
+                )
+                ->exists();
+
+            if ($emailUsedByOtherUser) {
+                throw new \RuntimeException(
+                    "Email '{$employee->email}' sudah digunakan oleh akun lain."
+                );
+            }
         }
 
-        $existingUser = User::where('username', $username)
-            ->when($employee->user, function ($query) use ($employee) {
-                $query->where('id', '!=', $employee->user->id);
-            })
-            ->first();
+        /*
+         * Hubungkan akun lama dengan pegawai baru.
+         *
+         * Password TIDAK diubah.
+         */
+        $existingUser->update([
+            'employee_id' => $employee->id,
+            'name' => $employee->name,
+            'email' => $employee->email,
+            'role_id' => $role->id,
+            'status' => $employee->status,
+        ]);
 
-        if ($existingUser) {
-            throw new \RuntimeException(
-                "Username '{$username}' sudah digunakan oleh akun lain."
-            );
+        return $existingUser;
+    }
+
+    /*
+     * ======================================================
+     * KASUS 2:
+     * User sudah ada dan sudah terhubung ke pegawai lain.
+     *
+     * Ini benar-benar konflik.
+     * ======================================================
+     */
+    if (
+        $existingUser &&
+        (int) $existingUser->employee_id !== (int) $employee->id
+    ) {
+        throw new \RuntimeException(
+            "Username '{$username}' sudah terhubung dengan pegawai lain."
+        );
+    }
+
+    /*
+     * ======================================================
+     * KASUS 3:
+     * Pegawai sudah memiliki akun.
+     *
+     * Sinkronkan data tanpa mengubah password.
+     * ======================================================
+     */
+    $user = $employee->user;
+
+    if ($user) {
+
+        if ($employee->email) {
+
+            $emailUsedByOtherUser = User::where(
+                'email',
+                $employee->email
+            )
+                ->where(
+                    'id',
+                    '!=',
+                    $user->id
+                )
+                ->exists();
+
+            if ($emailUsedByOtherUser) {
+                throw new \RuntimeException(
+                    "Email '{$employee->email}' sudah digunakan oleh akun lain."
+                );
+            }
         }
 
-        $user = $employee->user;
-
-        if (!$user) {
-
-            $user = User::create([
-                'employee_id' => $employee->id,
-                'name' => $employee->name,
-                'username' => $username,
-                'email' => $employee->email,
-                'password' => $this->initialPassword($username),
-                'role_id' => $role->id,
-                'status' => $employee->status,
-            ]);
-
-        } else {
-
-            $user->update([
-                'employee_id' => $employee->id,
-                'name' => $employee->name,
-                'username' => $username,
-                'email' => $employee->email,
-                'role_id' => $role->id,
-                'status' => $employee->status,
-            ]);
-        }
+        $user->update([
+            'employee_id' => $employee->id,
+            'name' => $employee->name,
+            'username' => $username,
+            'email' => $employee->email,
+            'role_id' => $role->id,
+            'status' => $employee->status,
+        ]);
 
         return $user;
     }
+
+    /*
+     * ======================================================
+     * KASUS 4:
+     * Benar-benar belum ada akun.
+     *
+     * Buat akun baru seperti mekanisme BIDUK sekarang.
+     * ======================================================
+     */
+    return User::create([
+        'employee_id' => $employee->id,
+        'name' => $employee->name,
+        'username' => $username,
+        'email' => $employee->email,
+        'password' => $this->initialPassword($username),
+        'role_id' => $role->id,
+        'status' => $employee->status,
+    ]);
+}
 }

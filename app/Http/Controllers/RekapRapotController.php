@@ -10,8 +10,10 @@ use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentPromotion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,8 +39,7 @@ class RekapRapotController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Pilihan tampilan Semester: Ganjil, Genap, atau Ganjil & Genap.
-        // Pilihan ini sengaja tidak bergantung pada semester aktif.
+        // Pilihan tampilan semester tidak bergantung pada semester aktif.
         $semesterMode = $this->normalizeSemesterMode(
             $request->input('semester', 'both')
         );
@@ -56,11 +57,10 @@ class RekapRapotController extends Controller
         $selectedClassId = $request->input('class_id');
         $selectedStatus = $request->input('status', 'Aktif');
         $search = trim((string) $request->input('search', ''));
-
         $students = collect();
 
         if ($selectedAcademicYearId) {
-            $selectedClass = $selectedClassId
+            $selectedClass = ($selectedClassId !== null && $selectedClassId !== '' && $selectedClassId !== 'all')
                 ? $classes->firstWhere('id', (int) $selectedClassId)
                 : null;
 
@@ -87,12 +87,18 @@ class RekapRapotController extends Controller
                 $studentsQuery->whereHas('classAssignments.schoolClass', function ($query) use ($selectedAcademicYearId) {
                     $query->where('academic_year_id', $selectedAcademicYearId);
                 });
+
+                if ($search !== '') {
+                    $studentsQuery->where(function ($query) use ($search) {
+                        $query->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('nis', 'like', '%' . $search . '%')
+                            ->orWhere('nisn', 'like', '%' . $search . '%');
+                    });
+                }
             }
 
             if ($selectedClass || $selectedClassId === 'all') {
-                $students = $studentsQuery
-                    ->orderBy('name')
-                    ->get();
+                $students = $studentsQuery->orderBy('name')->get();
             }
         }
 
@@ -122,14 +128,17 @@ class RekapRapotController extends Controller
         $semesterMode = $this->normalizeSemesterMode(
             $request->input('semester', 'both')
         );
-        $classId = $request->input('class_id');
+
+        $classIdInput = $request->input('class_id');
+        $classId = ($classIdInput !== null && $classIdInput !== '' && $classIdInput !== 'all')
+            ? (int) $classIdInput
+            : null;
 
         $class = $this->resolveStudentClass($student, $academicYearId, $classId);
 
         abort_unless($class, 404, 'Kelas siswa tidak ditemukan untuk tahun ajaran yang dipilih.');
 
         $report = $this->buildReport($student, $class, $academicYearId, $semesterMode);
-
         $view = view('reports.rekap-rapot.print', $report);
 
         if ($request->boolean('pdf')) {
@@ -144,9 +153,8 @@ class RekapRapotController extends Controller
     }
 
     /**
-     * Preview/cetak banyak siswa.
-     * class_id diisi untuk mode Per Kelas.
-     * Tanpa class_id untuk mode Semua Kelas.
+     * Preview/cetak banyak siswa. class_id diisi untuk per kelas;
+     * class_id kosong atau "all" berarti semua kelas.
      */
     public function batch(Request $request): Response|View
     {
@@ -158,12 +166,15 @@ class RekapRapotController extends Controller
         $semesterMode = $this->normalizeSemesterMode(
             $request->input('semester', 'both')
         );
-        $classId = $request->input('class_id');
+
+        $classIdInput = $request->input('class_id');
+        $isAllClasses = $classIdInput === null || $classIdInput === '' || $classIdInput === 'all';
+        $classId = $isAllClasses ? null : (int) $classIdInput;
 
         $students = Student::query()
             ->whereHas('classes', function ($query) use ($academicYearId, $classId) {
                 $query->where('classes.academic_year_id', $academicYearId)
-                    ->when($classId, fn ($q) => $q->where('classes.id', $classId));
+                    ->when($classId !== null, fn ($q) => $q->where('classes.id', $classId));
             })
             ->orderBy('name')
             ->get();
@@ -178,10 +189,12 @@ class RekapRapotController extends Controller
                 : null;
         })->filter()->values();
 
+        abort_unless($reports->isNotEmpty(), 422, 'Tidak ada rapor yang dapat dicetak untuk kelas/tahun ajaran tersebut.');
+
         $view = view('reports.rekap-rapot.bulk-pdf', compact('reports'));
 
         if ($request->boolean('pdf', true)) {
-            $filename = $classId
+            $filename = !$isAllClasses
                 ? 'rapot-kelas-' . $classId . '-' . now()->format('Y-m-d-His') . '.pdf'
                 : 'rapot-semua-kelas-' . now()->format('Y-m-d-His') . '.pdf';
 
@@ -198,7 +211,7 @@ class RekapRapotController extends Controller
      */
     public function downloadAll(Request $request): Response|View
     {
-        $request->merge(['class_id' => null, 'pdf' => true]);
+        $request->merge(['class_id' => 'all', 'pdf' => true]);
 
         return $this->batch($request);
     }
@@ -213,7 +226,6 @@ class RekapRapotController extends Controller
         string $semesterMode = 'both'
     ): array {
         $semesterMode = $this->normalizeSemesterMode($semesterMode);
-
         $academicYear = AcademicYear::find($academicYearId) ?? $class->academicYear;
 
         $semesters = Semester::where('academic_year_id', $academicYearId)
@@ -228,18 +240,22 @@ class RekapRapotController extends Controller
             fn ($semester) => strtolower($semester->name) === 'genap'
         );
 
+        $semesterIds = collect([
+            $semesterGanjil?->id,
+            $semesterGenap?->id,
+        ])->filter()->values();
+
         $grades = ReportCardGrade::with('subject')
             ->where('student_id', $student->id)
             ->where('class_id', $class->id)
-            ->whereIn(
-                'semester_id',
-                collect([$semesterGanjil?->id, $semesterGenap?->id])->filter()
-            )
+            ->whereIn('semester_id', $semesterIds)
             ->get()
             ->groupBy('semester_id');
 
+        // Urutan harus sama dengan halaman input Nilai Rapot.
         $subjects = $class->subjects()
             ->where('subjects.status', 'Aktif')
+            ->orderBy('subjects.sort_order')
             ->orderBy('subjects.name')
             ->get();
 
@@ -259,6 +275,13 @@ class RekapRapotController extends Controller
             ])->first()
             : null;
 
+        // Data keputusan kenaikan disimpan per siswa, kelas, dan tahun ajaran.
+        $promotion = StudentPromotion::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYearId,
+        ])->first();
+
         $achievements = Achievement::where([
             'student_id' => $student->id,
             'class_id' => $class->id,
@@ -275,14 +298,13 @@ class RekapRapotController extends Controller
         $headmaster = Employee::query()
             ->where('status', 'Aktif')
             ->where(function ($query) {
-                $query->where('position', 'like', '%Kepala%')
-                    ->orWhere('position', 'like', '%Kepala Sekolah%');
+                $query->where('position', 'like', '%Kepala Sekolah%')
+                    ->orWhere('position', 'like', '%Kepala%');
             })
             ->orderBy('id')
             ->first();
 
         $schoolProfile = $this->schoolProfile();
-
         $gradeLevel = (int) $class->grade_level;
         $isFinalClass = $gradeLevel === 6;
 
@@ -298,6 +320,7 @@ class RekapRapotController extends Controller
             'subjects',
             'attendanceGanjil',
             'attendanceGenap',
+            'promotion',
             'achievements',
             'homeroomTeacher',
             'headmaster',
@@ -308,8 +331,6 @@ class RekapRapotController extends Controller
 
     /**
      * Menormalisasi pilihan tampilan semester untuk cetak rapor.
-     * Pilihan ini murni untuk tampilan identitas rapor dan tidak
-     * bergantung pada semester aktif.
      */
     private function normalizeSemesterMode(mixed $value): string
     {
@@ -331,27 +352,31 @@ class RekapRapotController extends Controller
         return SchoolClass::query()
             ->where('academic_year_id', $academicYearId)
             ->where('status', 'Aktif')
-            ->when($classId, fn ($query) => $query->whereKey($classId))
+            ->when($classId !== null, fn ($query) => $query->whereKey($classId))
             ->whereHas('classStudents', function ($query) use ($student) {
                 $query->where('student_id', $student->id)
                     ->where('status', 'Aktif');
             })
             ->with('academicYear')
+            ->orderBy('grade_level')
+            ->orderBy('name')
             ->first();
     }
 
     private function resolveAcademicYearIdForStudent(Student $student): int
     {
-        return (int) ($student->classes()
-            ->with('academicYear')
-            ->first()?->academic_year_id
+        return (int) (
+            $student->classes()
+                ->with('academicYear')
+                ->first()?->academic_year_id
             ?? AcademicYear::getActive()?->id
-            ?? 0);
+            ?? 0
+        );
     }
 
     /**
      * Mengambil profil sekolah bila tabel tersedia.
-     * Fallback tetap aman jika migration school_profiles belum dijalankan.
+     * Fallback tetap aman bila migration school_profiles belum dijalankan.
      */
     private function schoolProfile(): array
     {
@@ -363,7 +388,7 @@ class RekapRapotController extends Controller
 
         if (Schema::hasTable('school_profiles')) {
             try {
-                $row = \DB::table('school_profiles')->first();
+                $row = DB::table('school_profiles')->first();
 
                 if ($row) {
                     $profile['name'] = $row->school_name
@@ -377,7 +402,7 @@ class RekapRapotController extends Controller
                         ?? null;
                 }
             } catch (\Throwable $exception) {
-                // Gunakan fallback jika struktur tabel belum tersedia.
+                // Fallback bila struktur tabel belum tersedia.
             }
         }
 

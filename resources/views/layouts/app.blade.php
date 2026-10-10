@@ -569,19 +569,60 @@
                 </ol>
             </nav>
         </div>
-        <div class="navbar-user">
-            <div class="navbar-user-avatar">
-                <i class="bi bi-person-fill"></i>
+        
+<div class="dropdown">
+    <button
+        type="button"
+        class="navbar-user dropdown-toggle"
+        id="navbarUserDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        style="border: 0; background: transparent; padding: 0; cursor: pointer;"
+    >
+    <div class="navbar-user-avatar" style="overflow: hidden;">
+    @if (auth()->user()?->profile_photo_path)
+        <img
+            src="{{ asset('storage/' . auth()->user()->profile_photo_path) }}"
+            alt="Foto Profil"
+            style="width: 100%; height: 100%; object-fit: cover;"
+        >
+    @else
+        <i class="bi bi-person-fill"></i>
+    @endif
+</div>
+
+        <div class="text-start">
+            <div style="font-size: 0.85rem; font-weight: 600; color: #1f2937;">
+                {{ auth()->user()?->name ?? 'Pengguna BIDUK' }}
             </div>
-            <div>
-                <div style="font-size: 0.85rem; font-weight: 600; color: #1f2937;">
-                    {{ auth()->user()?->name ?? 'Super Admin' }}
-                </div>
-                <div style="font-size: 0.7rem; color: #9ca3af;">
-                    {{ auth()->user()?->role?->name ?? 'Administrator' }}
-                </div>
+
+            <div style="font-size: 0.7rem; color: #9ca3af;">
+                {{ auth()->user()?->role?->name ?? 'Pengguna' }}
             </div>
         </div>
+    </button>
+
+    <ul
+        class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2"
+        aria-labelledby="navbarUserDropdown"
+        style="min-width: 200px; border-radius: 10px;"
+    >
+        <li>
+            <a class="dropdown-item py-2" href="{{ route('profile.show') }}">
+                <i class="bi bi-person me-2"></i>
+                Lihat Profil
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
+                <i class="bi bi-pencil-square me-2"></i>
+                Edit Profil
+            </a>
+        </li>
+    </ul>
+</div>
+
     </nav>
 
     {{-- Main Content --}}

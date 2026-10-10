@@ -165,32 +165,28 @@
             </li>
 
 
-            {{-- Rekap Absensi --}}
-            <li class="nav-item">
-
-                <a href="{{ route('rekap-absensi.index') }}"
-                   class="nav-link {{ request()->routeIs('rekap-absensi.*') ? 'active' : '' }}">
-
-                    <i class="bi bi-clipboard2-check-fill"></i>
-                    <span>Rekap Absensi</span>
-
-                </a>
-
-            </li>
+         {{-- Rekap Absensi --}}
+<li class="nav-item">
+    <a href="{{ route('rekap-absensi.index') }}"
+       class="nav-link {{ request()->routeIs('rekap-absensi.*') ? 'active' : '' }}">
+        <i class="bi bi-clipboard2-check-fill"></i>
+        <span>Rekap Absensi</span>
+    </a>
+</li>
 
 
-            {{-- Rekap Rapot --}}
-            <li class="nav-item">
+           {{-- Rekap Rapot --}}
+<li class="nav-item">
 
-                <a href="#" class="nav-link">
+<a href="{{ route('rekap-rapot.index') }}"
+   class="nav-link {{ request()->routeIs('rekap-rapot.*') ? 'active' : '' }}">
 
-                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
-                    <span>Rekap Rapot</span>
+    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+    <span>Rekap Rapot</span>
 
-                </a>
+</a>
 
-            </li>
-
+</li>
 
             {{-- Rekap Prestasi --}}
             <li class="nav-item">
@@ -213,33 +209,23 @@
 
         <ul class="sidebar-nav">
 
-            {{-- Manajemen User --}}
-            <li class="nav-item">
+           {{-- Manajemen User --}}
+<li class="nav-item">
+    <a href="{{ route('users.index') }}"
+       class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+        <i class="bi bi-person-gear"></i>
+        <span>Manajemen User</span>
+    </a>
+</li>
 
-                <a href="{{ route('users.index') }}"
-                   class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-
-                    <i class="bi bi-person-gear"></i>
-                    <span>Manajemen User</span>
-
-                </a>
-
-            </li>
-
-
-            {{-- Hak Akses Role --}}
-            <li class="nav-item">
-
-                <a href="{{ route('role-permissions.index') }}"
-                   class="nav-link {{ request()->routeIs('role-permissions.*') ? 'active' : '' }}">
-
-                    <i class="bi bi-shield-lock-fill"></i>
-                    <span>Hak Akses Role</span>
-
-                </a>
-
-            </li>
-
+          {{-- Hak Akses Role --}}
+<li class="nav-item">
+    <a href="{{ route('role-permissions.index') }}"
+       class="nav-link {{ request()->routeIs('role-permissions.*') ? 'active' : '' }}">
+        <i class="bi bi-shield-lock-fill"></i>
+        <span>Hak Akses Role</span>
+    </a>
+</li>
 
             {{-- Profil Sekolah --}}
             <li class="nav-item">

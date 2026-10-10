@@ -1247,17 +1247,23 @@
                             class="form-select"
                         >
 
-                            <option value="">
-                                -- Pilih Keputusan --
-                            </option>
+                        <option value="">
+    -- Pilih Keputusan --
+</option>
 
-                            <option value="Naik">
-                                Naik
-                            </option>
+<option
+    value="Naik"
+    @selected(old('promotion_status', $promotion?->promotion_status) === 'Naik')
+>
+    Naik
+</option>
 
-                            <option value="Tidak Naik">
-                                Tidak Naik
-                            </option>
+<option
+    value="Tidak Naik"
+    @selected(old('promotion_status', $promotion?->promotion_status) === 'Tidak Naik')
+>
+    Tidak Naik
+</option>
 
                         </select>
 
@@ -1272,12 +1278,12 @@
                         </label>
 
                         <input
-                            type="text"
-                            name="promotion_class"
-                            class="form-control"
-                            placeholder="Contoh: 5A"
+                         type="text"
+                        name="promotion_class"
+                        class="form-control"
+                        placeholder="Contoh: 5A"
+                        value="{{ old('promotion_class', $promotion?->promotion_class) }}"
                         >
-
                     </div>
 
 
@@ -1289,10 +1295,14 @@
                         </label>
 
                         <input
-                            type="date"
-                            name="promotion_date"
-                            class="form-control"
-                        >
+    type="date"
+    name="promotion_date"
+    class="form-control"
+    value="{{ old(
+        'promotion_date',
+        $promotion?->promotion_date?->format('Y-m-d')
+    ) }}"
+>
 
                     </div>
 
