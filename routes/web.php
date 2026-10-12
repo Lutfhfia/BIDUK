@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExtracurricularController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\RekapAbsensiController;
+use App\Http\Controllers\FinalGradeController;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SchoolAchievementController;
@@ -393,6 +394,13 @@ Route::get(
         [ReportCardGradeController::class, 'history']
     )->name('report-card-grades.history');
 
+    Route::post(
+        'report-card-grades/{student}/history/record',
+        [ReportCardGradeController::class, 'storeClassHistory']
+    )
+        ->middleware('permission:students.edit')
+        ->name('report-card-grades.history.store');
+
     Route::get(
         'report-card-grades/{class}/{student}/print',
         [ReportCardGradeController::class, 'printHistory']
@@ -412,6 +420,26 @@ Route::get(
         'report-card-grades/{class}/{student}',
         [ReportCardGradeController::class, 'destroy']
     )->name('report-card-grades.destroy');
+
+
+    // =================================================
+    // NILAI AKHIR / IJAZAH (KELAS 6 SEMESTER GENAP)
+    // =================================================
+
+    Route::get(
+        'report-card-grades/{class}/{student}/nilai-akhir',
+        [FinalGradeController::class, 'edit']
+    )->name('final-grades.edit');
+
+    Route::put(
+        'report-card-grades/{class}/{student}/nilai-akhir',
+        [FinalGradeController::class, 'update']
+    )->name('final-grades.update');
+
+    Route::get(
+        'report-card-grades/{class}/{student}/nilai-akhir/cetak',
+        [FinalGradeController::class, 'print']
+    )->name('final-grades.print');
 
 
     // =================================================

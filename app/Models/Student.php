@@ -118,6 +118,11 @@ class Student extends Model
         return $this->hasMany(ClassStudent::class);
     }
 
+    public function classHistories(): HasMany
+    {
+        return $this->hasMany(StudentClassHistory::class);
+    }
+
     public function previousEducation(): HasOne
     {
         return $this->hasOne(StudentPreviousEducation::class);

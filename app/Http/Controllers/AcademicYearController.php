@@ -28,9 +28,11 @@ class AcademicYearController extends Controller
     /**
      * Menampilkan form tambah tahun ajaran.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('admin.academic-years.create');
+        $prefilledName = trim((string) $request->input('name'));
+
+        return view('admin.academic-years.create', compact('prefilledName'));
     }
 
     /**
@@ -39,6 +41,12 @@ class AcademicYearController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'history_student_id' => [
+                'nullable',
+                'integer',
+                'exists:students,id',
+            ],
+
             'name' => [
                 'required',
                 'string',
@@ -73,6 +81,9 @@ class AcademicYearController extends Controller
             'status.required' => 'Status tahun ajaran wajib dipilih.',
             'current_semester.required' => 'Semester berjalan wajib dipilih.',
         ]);
+
+        $historyStudentId = $validated['history_student_id'] ?? null;
+        unset($validated['history_student_id']);
 
         try {
             /*
@@ -134,6 +145,12 @@ class AcademicYearController extends Controller
                         'status' => 'inactive',
                     ]
                 );
+            }
+
+            if ($historyStudentId) {
+                return redirect()
+                    ->route('report-card-grades.history', ['student' => $historyStudentId])
+                    ->with('success', 'Tahun ajaran berhasil dibuat. Lanjutkan dengan membuat kelas dan mengatur mata pelajarannya dari kartu riwayat.');
             }
 
             return redirect()

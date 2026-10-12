@@ -445,6 +445,7 @@
                                                             href="{{ route('report-card-grades.edit', [
                                                                 'class' => $targetClass->id,
                                                                 'student' => $student->id,
+                                                                'return_url' => request()->fullUrl(),
                                                             ]) }}"
                                                             class="btn btn-sm btn-success"
                                                             title="Input / Edit Rapot Kelas Ini"
@@ -452,6 +453,22 @@
                                                             <i class="bi bi-pencil-square me-1"></i>
                                                             {{ $student->ganjil_grades_count > 0 || $student->genap_grades_count > 0 ? 'Edit Rapot' : 'Input Rapot' }}
                                                         </a>
+
+                                                        {{-- Tombol Nilai Akhir / Ijazah khusus Kelas 6 --}}
+                                                        @if ((int) $targetClass->grade_level === 6)
+                                                            <a
+                                                                href="{{ route('final-grades.edit', [
+                                                                    'class' => $targetClass->id,
+                                                                    'student' => $student->id,
+                                                                    'return_url' => request()->fullUrl(),
+                                                                ]) }}"
+                                                                class="btn btn-sm btn-outline-info"
+                                                                title="Kelola Nilai Akhir / Ijazah"
+                                                            >
+                                                                <i class="bi bi-award me-1"></i>
+                                                                Nilai Ijazah
+                                                            </a>
+                                                        @endif
                                                     @else
                                                         <button
                                                             type="button"
@@ -466,7 +483,10 @@
 
                                                     {{-- Tombol Riwayat Nilai Rapot Siswa --}}
                                                     <a
-                                                        href="{{ route('report-card-grades.history', $student->id) }}"
+                                                        href="{{ route('report-card-grades.history', [
+                                                            'student' => $student->id,
+                                                            'return_url' => request()->fullUrl(),
+                                                        ]) }}"
                                                         class="btn btn-sm btn-outline-primary"
                                                         title="Lihat Riwayat Rapot Kelas 1 - 6"
                                                     >

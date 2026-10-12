@@ -31,6 +31,10 @@
 
                 @csrf
 
+                @if (request()->filled('history_student_id'))
+                    <input type="hidden" name="history_student_id" value="{{ request('history_student_id') }}">
+                @endif
+
                 <div class="row g-3">
 
                     {{-- Nama Tahun Ajaran --}}
@@ -43,7 +47,7 @@
                         <input type="text"
                                name="name"
                                class="form-control @error('name') is-invalid @enderror"
-                               value="{{ old('name') }}"
+                               value="{{ old('name', $prefilledName ?? '') }}"
                                placeholder="Contoh: 2025/2026"
                                maxlength="20"
                                required>

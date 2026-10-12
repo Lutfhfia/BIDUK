@@ -84,7 +84,7 @@ class SchoolClassController extends Controller
     /**
      * Form tambah kelas.
      */
-    public function create()
+    public function create(Request $request)
     {
         $academicYears = AcademicYear::orderByDesc(
             'start_date'
@@ -100,12 +100,19 @@ class SchoolClassController extends Controller
             ->orderBy('name')
             ->get();
 
+        $selectedAcademicYearId = $request->integer('academic_year_id') ?: null;
+        $selectedGradeLevel = $request->integer('grade_level') ?: null;
+        $prefilledClassName = trim((string) $request->input('name'));
+
         return view(
             'admin.classes.create',
             compact(
                 'academicYears',
                 'teachers',
-                'subjects'
+                'subjects',
+                'selectedAcademicYearId',
+                'selectedGradeLevel',
+                'prefilledClassName'
             )
         );
     }
@@ -116,6 +123,12 @@ class SchoolClassController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'history_student_id' => [
+                'nullable',
+                'integer',
+                'exists:students,id',
+            ],
+
             'academic_year_id' => [
                 'required',
                 'exists:academic_years,id',
@@ -172,13 +185,15 @@ class SchoolClassController extends Controller
             ],
         ]);
 
+        $historyStudentId = $validated['history_student_id'] ?? null;
+
         /*
          * Simpan subject_ids secara terpisah.
          * Karena subject_ids bukan kolom di tabel classes.
          */
         $subjectIds = $validated['subject_ids'] ?? [];
 
-        unset($validated['subject_ids']);
+        unset($validated['subject_ids'], $validated['history_student_id']);
 
         /*
          * Nama kelas tidak boleh sama
@@ -259,12 +274,18 @@ class SchoolClassController extends Controller
             $class->fresh()->getAttributes()
         );
 
+        if ($historyStudentId) {
+            return redirect()
+                ->route('report-card-grades.history', ['student' => $historyStudentId])
+                ->with(
+                    'success',
+                    'Kelas dan mata pelajaran berhasil disiapkan. Riwayat siswa sudah terhubung dengan kelas master.'
+                );
+        }
+
         return redirect()
             ->route('classes.index')
-            ->with(
-                'success',
-                'Data kelas berhasil ditambahkan.'
-            );
+            ->with('success', 'Data kelas berhasil ditambahkan.');
     }
 
     /**
@@ -806,6 +827,18 @@ class SchoolClassController extends Controller
             foreach (
                 $studentIds as $studentId
             ) {
+                $previousAssignments = ClassStudent::where('student_id', $studentId)
+                    ->where('status', 'Aktif')
+                    ->where('class_id', '!=', $class->id)
+                    ->get();
+
+                foreach ($previousAssignments as $previousAssignment) {
+                    $previousAssignment->update([
+                        'status' => 'Naik Kelas',
+                        'exit_date' => now()->toDateString(),
+                    ]);
+                }
+
                 ClassStudent::updateOrCreate(
                     [
                         'class_id' =>

@@ -4,16 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
 use App\Models\Achievement;
+use App\Models\ClassStudent;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentClassHistory;
+use App\Models\Employee;
 use App\Models\RekapAbsensi;
 use App\Models\StudentPromotion;
+use App\Models\Subject;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class ReportCardGradeController extends Controller
 {
@@ -30,6 +36,12 @@ class ReportCardGradeController extends Controller
      */
     public function index(Request $request)
     {
+        /*
+         * Simpan URL index saat ini (beserta query filter/pencarian/halaman)
+         * agar saat kembali dari halaman edit/riwayat/ijazah, filter tetap terjaga.
+         */
+        session()->put('report_card_grades_index_url', $request->fullUrl());
+
         /*
          * Daftar Tahun Ajaran.
          */
@@ -58,14 +70,12 @@ class ReportCardGradeController extends Controller
 
         $selectedClass = null;
         $students = collect();
-        $searched = false;
+        $searched = true;
 
         /*
-         * Cek apakah ada filter yang aktif.
+         * Tampilkan seluruh siswa secara default; filter hanya mempersempit daftar.
          */
-        if ($search || $selectedAcademicYearId || $selectedClassId) {
-
-            $searched = true;
+        if ($searched) {
 
             if ($selectedClassId) {
 
@@ -108,7 +118,12 @@ class ReportCardGradeController extends Controller
                         $semesterGenap?->id,
                     ])->filter();
 
-                    $studentsList = $studentsQuery->orderBy('students.name')->get();
+                    $studentsList = $studentsQuery
+                        ->orderByRaw('CASE WHEN students.nis IS NULL OR students.nis = \'\' THEN 1 ELSE 0 END')
+                        ->orderByRaw('CAST(students.nis AS UNSIGNED)')
+                        ->orderBy('students.nis')
+                        ->orderBy('students.id')
+                        ->get();
 
                     if ($semesterIds->isNotEmpty() && $studentsList->isNotEmpty()) {
 
@@ -182,7 +197,13 @@ class ReportCardGradeController extends Controller
                     'reportCardGrades'
                 ]);
 
-                $paginatedStudents = $query->orderBy('name')->paginate(20)->withQueryString();
+                $paginatedStudents = $query
+                    ->orderByRaw('CASE WHEN nis IS NULL OR nis = \'\' THEN 1 ELSE 0 END')
+                    ->orderByRaw('CAST(nis AS UNSIGNED)')
+                    ->orderBy('nis')
+                    ->orderBy('id')
+                    ->paginate(20)
+                    ->withQueryString();
 
                 $paginatedStudents->getCollection()->transform(function ($student) use ($selectedAcademicYearId) {
                     $targetClass = null;
@@ -267,206 +288,430 @@ class ReportCardGradeController extends Controller
      * Menampilkan riwayat nilai rapot satu siswa dari kelas 1 sampai 6
      * berdasarkan kelas dan tahun ajaran yang pernah ditempuh siswa.
      */
-    public function history(Student $student)
+    public function history(Request $request, Student $student)
     {
         $student->load([
-            'classes' => function ($q) {
-                $q->with([
-                    'academicYear.semesters',
-                    'subjects'
-                ])->orderBy('grade_level')->orderByDesc('academic_year_id');
-            },
+            'classAssignments.schoolClass.academicYear',
             'reportCardGrades'
         ]);
 
-        $classesByGradeLevel = $student->classes->groupBy('grade_level');
+        $classAssignments = $student->classAssignments()
+            ->with('schoolClass.academicYear')
+            ->orderByDesc('created_at')
+            ->get();
+        $manualHistories = $student->classHistories()
+            ->get()
+            ->keyBy('grade_level');
+
+        $currentActiveAssignment = $classAssignments->first(fn ($assignment) => $assignment->status === 'Aktif');
+        $currentGradeLevel = $currentActiveAssignment?->schoolClass?->grade_level;
+
+        $assignmentsByGrade = $classAssignments
+            ->filter(fn ($assignment) => $assignment->schoolClass && $assignment->schoolClass->grade_level !== null)
+            ->groupBy(fn ($assignment) => (int) $assignment->schoolClass->grade_level);
 
         $gradeLevelsData = [];
 
         for ($level = 1; $level <= 6; $level++) {
-            $matchingClasses = $classesByGradeLevel->get($level, collect());
+            $manualHistory = $manualHistories->get($level);
+            $matchingAssignments = $assignmentsByGrade->get($level, collect());
 
-            // Ambil kelas aktif atau kelas terbaru untuk grade level ini
-            $levelClass = $matchingClasses->first(fn($c) => ($c->pivot->status ?? '') === 'Aktif')
-                ?? $matchingClasses->first();
+            $levelAssignment = $matchingAssignments
+                ->sortByDesc(fn ($assignment) => $assignment->schoolClass?->academicYear?->start_date?->timestamp ?? $assignment->entry_date?->timestamp ?? 0)
+                ->first();
 
-            if ($levelClass) {
-                $semesters = $levelClass->academicYear?->semesters ?? collect();
-                $semGanjil = $semesters->first(fn($s) => strtolower($s->name) === 'ganjil');
-                $semGenap = $semesters->first(fn($s) => strtolower($s->name) === 'genap');
+            $class = null;
+            if ($manualHistory) {
+                $class = SchoolClass::with(['academicYear.semesters', 'subjects'])
+                    ->where('grade_level', $level)
+                    ->whereRaw('LOWER(name) = ?', [mb_strtolower(trim($manualHistory->rombel))])
+                    ->whereHas('academicYear', function ($query) use ($manualHistory) {
+                        $query->where('name', trim($manualHistory->academic_year));
+                    })
+                    ->first();
+            }
 
-                $ganjilCount = $semGanjil
-                    ? $student->reportCardGrades
-                        ->where('class_id', $levelClass->id)
-                        ->where('semester_id', $semGanjil->id)
-                        ->count()
-                    : 0;
+            $class ??= $levelAssignment?->schoolClass;
 
-                $genapCount = $semGenap
-                    ? $student->reportCardGrades
-                        ->where('class_id', $levelClass->id)
-                        ->where('semester_id', $semGenap->id)
-                        ->count()
-                    : 0;
-
+            if (!$class) {
                 $gradeLevelsData[$level] = [
                     'level' => $level,
-                    'has_class' => true,
-                    'class' => $levelClass,
-                    'academic_year' => $levelClass->academicYear,
-                    'has_ganjil' => (bool)$semGanjil,
-                    'has_genap' => (bool)$semGenap,
-                    'ganjil_count' => $ganjilCount,
-                    'genap_count' => $genapCount,
-                    'has_data' => ($ganjilCount > 0 || $genapCount > 0),
-                ];
-            } else {
-                $gradeLevelsData[$level] = [
-                    'level' => $level,
-                    'has_class' => false,
+                    'has_class' => (bool) $manualHistory,
+                    'is_assigned' => false,
                     'class' => null,
                     'academic_year' => null,
+                    'history_entry' => null,
+                    'manual_history' => $manualHistory,
+                    'has_subjects' => false,
+                    'academic_year_master' => $manualHistory
+                        ? AcademicYear::where('name', trim($manualHistory->academic_year))->first()
+                        : null,
                     'has_ganjil' => false,
                     'has_genap' => false,
                     'ganjil_count' => 0,
                     'genap_count' => 0,
                     'has_data' => false,
                 ];
+
+                continue;
             }
+
+            $academicYear = $class->academicYear;
+            $semesters = $academicYear?->semesters ?? collect();
+            $semGanjil = $semesters->first(fn ($s) => strtolower($s->name) === 'ganjil');
+            $semGenap = $semesters->first(fn ($s) => strtolower($s->name) === 'genap');
+
+            $ganjilCount = $semGanjil
+                ? ReportCardGrade::where('student_id', $student->id)
+                    ->where('class_id', $class->id)
+                    ->where('semester_id', $semGanjil->id)
+                    ->count()
+                : 0;
+
+            $genapCount = $semGenap
+                ? ReportCardGrade::where('student_id', $student->id)
+                    ->where('class_id', $class->id)
+                    ->where('semester_id', $semGenap->id)
+                    ->count()
+                : 0;
+
+            $gradeLevelsData[$level] = [
+                'level' => $level,
+                'has_class' => true,
+                'is_assigned' => $levelAssignment?->status === 'Aktif',
+                'class' => $class,
+                'academic_year' => $academicYear,
+                'history_entry' => $levelAssignment,
+                'manual_history' => $manualHistory,
+                'has_subjects' => $class->subjects->contains(fn ($subject) => $subject->status === 'Aktif'),
+                'academic_year_master' => $academicYear,
+                'has_ganjil' => (bool) $semGanjil,
+                'has_genap' => (bool) $semGenap,
+                'ganjil_count' => $ganjilCount,
+                'genap_count' => $genapCount,
+                'has_data' => ($ganjilCount > 0 || $genapCount > 0),
+            ];
         }
+
+        $returnUrl = $request->input('return_url')
+            ?: session('report_card_grades_index_url')
+            ?: route('report-card-grades.index');
 
         return view(
             'admin.report-card-grades.history',
             compact(
                 'student',
-                'gradeLevelsData'
+                'gradeLevelsData',
+                'returnUrl',
+                'currentGradeLevel'
             )
         );
+    }
+
+    public function storeClassHistory(Request $request, Student $student)
+    {
+        $validated = $request->validate([
+            'history_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('student_class_histories', 'id')->where('student_id', $student->id),
+            ],
+            'grade_level' => ['required', 'integer', 'between:1,6'],
+            'academic_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}\/\d{4}$/'],
+            'rombel' => ['required', 'string', 'max:50'],
+            'final_status' => ['required', 'in:Naik Kelas,Tinggal Kelas,Belum Diketahui'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        [$historyStartYear, $historyEndYear] = array_map('intval', explode('/', $validated['academic_year']));
+        if ($historyEndYear !== $historyStartYear + 1) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'academic_year' => 'Format tahun ajaran harus berurutan, misalnya 2024/2025.',
+                ]);
+        }
+
+        $activeAssignment = $student->classAssignments()
+            ->with('schoolClass.academicYear')
+            ->where('status', 'Aktif')
+            ->first();
+
+        $currentGradeLevel = (int) ($activeAssignment?->schoolClass?->grade_level ?? 0);
+        $currentAcademicYear = $activeAssignment?->schoolClass?->academicYear;
+
+        if ($currentGradeLevel > 0 && (int) $validated['grade_level'] === $currentGradeLevel) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'grade_level' => 'Kelas aktif siswa dikelola melalui penempatan kelas. Form ini hanya untuk melengkapi riwayat kelas sebelumnya.',
+                ]);
+        }
+
+        if (
+            $currentGradeLevel > 0
+            && $validated['grade_level'] < $currentGradeLevel
+            && $currentAcademicYear
+            && $historyStartYear >= (int) $currentAcademicYear->start_date->format('Y')
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'academic_year' => 'Riwayat kelas ' . $validated['grade_level'] . ' harus menggunakan tahun ajaran sebelum tahun ajaran kelas aktif siswa (' . $currentAcademicYear->name . ').',
+                ]);
+        }
+
+        $historyEntry = null;
+
+        if (!empty($validated['history_id'])) {
+            $historyEntry = StudentClassHistory::where('id', $validated['history_id'])
+                ->where('student_id', $student->id)
+                ->first();
+        }
+
+        if ($historyEntry && (int) $historyEntry->grade_level !== (int) $validated['grade_level']) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'history_id' => 'Riwayat yang akan diedit tidak sesuai dengan tingkatan kelas yang dipilih.',
+                ]);
+        }
+
+        $hasConflictingGradeInAcademicYear = StudentClassHistory::query()
+            ->where('student_id', $student->id)
+            ->when($historyEntry, fn ($query) => $query->where('id', '!=', $historyEntry->id))
+            ->where('academic_year', $validated['academic_year'])
+            ->where('grade_level', '!=', $validated['grade_level'])
+            ->exists();
+
+        $hasConflictingMasterAssignment = $student->classAssignments()
+            ->whereHas('schoolClass', function ($query) use ($validated) {
+                $query->where('grade_level', '!=', $validated['grade_level'])
+                    ->whereHas('academicYear', fn ($yearQuery) => $yearQuery->where('name', $validated['academic_year']));
+            })
+            ->exists();
+
+        if ($hasConflictingGradeInAcademicYear || $hasConflictingMasterAssignment) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'academic_year' => 'Siswa sudah memiliki riwayat pada tingkatan kelas lain di tahun ajaran ini. Periksa kembali tahun ajaran dan dokumen sekolah.',
+                ]);
+        }
+
+        $student->classHistories()->updateOrCreate(
+            ['grade_level' => $validated['grade_level']],
+            [
+                'academic_year' => $validated['academic_year'],
+                'rombel' => trim($validated['rombel']),
+                'final_status' => $validated['final_status'],
+                'notes' => trim((string) ($validated['notes'] ?? '')) !== '' ? trim((string) ($validated['notes'] ?? '')) : null,
+            ]
+        );
+
+        return redirect()->route('report-card-grades.history', ['student' => $student->id])
+            ->with('success', 'Riwayat kelas berhasil disimpan.');
     }
 
 
     /**
      * ==========================================================
-     * CETAK RAPOT PDF (RIWAYAT)
+     * CETAK RAPOT (TAMPILAN REKAP RAPOT KURIKULUM MERDEKA)
      * ==========================================================
      *
-     * Menghasilkan file PDF rapot untuk satu siswa,
-     * pada satu kelas & satu semester tertentu.
+     * Menghasilkan tampilan atau PDF rapot siswa dengan format
+     * identik seperti pada fitur Rekap Rapot.
      *
-     * URL: /report-card-grades/{class}/{student}/print?semester={ganjil|genap}
+     * URL: /report-card-grades/{class}/{student}/print
      */
     public function printHistory(
         Request $request,
         SchoolClass $class,
         Student $student
     ) {
-        /*
-         * Validasi: siswa harus pernah terdaftar di kelas ini.
-         */
-        $isStudentInClass = $class->students()
-            ->where('students.id', $student->id)
-            ->exists();
-
-        if (!$isStudentInClass) {
-            abort(404, 'Siswa tidak ditemukan di kelas ini.');
+        if (!$student->exists) {
+            abort(404, 'Siswa tidak ditemukan.');
         }
 
-        /*
-         * Tentukan semester.
-         */
-        $semesterName = $request->input('semester', 'ganjil');
+        $academicYearId = (int) (
+            $request->input('academic_year_id')
+            ?: ($class->academic_year_id ?: ($class->academicYear?->id ?: AcademicYear::getActive()?->id ?: 0))
+        );
 
-        $semester = Semester::where('academic_year_id', $class->academic_year_id)
-            ->whereRaw('LOWER(name) = ?', [strtolower($semesterName)])
-            ->first();
+        $semesterMode = $request->input('semester', 'both');
 
-        if (!$semester) {
-            abort(404, 'Semester tidak ditemukan untuk tahun ajaran ini.');
+        $reportData = $this->buildReportData($student, $class, $academicYearId, $semesterMode);
+        $view = view('reports.rekap-rapot.print', $reportData);
+
+        if ($request->boolean('pdf')) {
+            $filename = 'rapot-' . ($student->nis ?: $student->id) . '-kelas-' . $class->grade_level . '.pdf';
+
+            return Pdf::loadHTML($view->render())
+                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
+                ->download($filename);
         }
 
-        /*
-         * Ambil tahun ajaran.
-         */
-        $academicYear = $class->academicYear;
+        return $view;
+    }
 
-        /*
-         * Ambil nilai rapot siswa pada kelas + semester.
-         */
-        $grades = ReportCardGrade::where('student_id', $student->id)
-            ->where('class_id', $class->id)
-            ->where('semester_id', $semester->id)
-            ->with('subject')
-            ->get()
-            ->sortBy(fn ($g) => $g->subject->name ?? '');
+    /**
+     * Menyusun data laporan rapot identik dengan format Rekap Rapot.
+     */
+    private function buildReportData(
+        Student $student,
+        SchoolClass $class,
+        int $academicYearId,
+        string $semesterMode = 'both'
+    ): array {
+        $semesterMode = in_array(strtolower(trim($semesterMode)), ['ganjil', 'genap', 'both'], true)
+            ? strtolower(trim($semesterMode))
+            : 'both';
 
-        /*
-         * Ambil rekap absensi.
-         */
-        $attendance = RekapAbsensi::where([
-            'student_id' => $student->id,
-            'class_id'   => $class->id,
-            'semester_id' => $semester->id,
-        ])->first();
+        $academicYear = AcademicYear::find($academicYearId) ?? $class->academicYear ?? AcademicYear::getActive();
 
-        /*
-         * Ambil prestasi pada kelas + tahun ajaran.
-         */
-        $achievements = Achievement::where('student_id', $student->id)
-            ->where('class_id', $class->id)
-            ->where('academic_year_id', $class->academic_year_id)
+        $semesters = Semester::where('academic_year_id', $academicYearId)
             ->orderBy('id')
             ->get();
 
-        /*
-         * Wali kelas.
-         */
-        $homeroomTeacher = $class->homeroomTeacher;
-
-        /*
-         * Data sekolah.
-         */
-        $school = SchoolProfile::first();
-
-        /*
-         * Kepala sekolah (ambil dari data pegawai jika tersedia).
-         */
-        $headmaster = null;
-        $headmasterNip = null;
-
-        $kepalaSekolah = \App\Models\Employee::where('position', 'like', '%Kepala Sekolah%')
-            ->first();
-
-        if ($kepalaSekolah) {
-            $headmaster = $kepalaSekolah->name;
-            $headmasterNip = $kepalaSekolah->nip;
+        if ($semesters->isEmpty() && AcademicYear::getActive()) {
+            $semesters = Semester::where('academic_year_id', AcademicYear::getActive()->id)
+                ->orderBy('id')
+                ->get();
         }
 
-        /*
-         * Render view lalu generate PDF.
-         */
-        $view = view('reports.rapot.print', compact(
+        $semesterGanjil = $semesters->first(
+            fn ($semester) => strtolower($semester->name) === 'ganjil'
+        );
+
+        $semesterGenap = $semesters->first(
+            fn ($semester) => strtolower($semester->name) === 'genap'
+        );
+
+        $semesterIds = collect([
+            $semesterGanjil?->id,
+            $semesterGenap?->id,
+        ])->filter()->values();
+
+        $grades = ReportCardGrade::with('subject')
+            ->where('student_id', $student->id)
+            ->where('class_id', $class->id)
+            ->whereIn('semester_id', $semesterIds)
+            ->get()
+            ->groupBy('semester_id');
+
+        $subjects = $class->subjects()
+            ->where('subjects.status', 'Aktif')
+            ->orderBy('subjects.sort_order')
+            ->orderBy('subjects.name')
+            ->get();
+
+        if ($subjects->isEmpty()) {
+            $subjects = Subject::where('status', 'Aktif')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+        }
+
+        $attendanceGanjil = $semesterGanjil
+            ? RekapAbsensi::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'semester_id' => $semesterGanjil->id,
+            ])->first()
+            : null;
+
+        $attendanceGenap = $semesterGenap
+            ? RekapAbsensi::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'semester_id' => $semesterGenap->id,
+            ])->first()
+            : null;
+
+        $promotion = StudentPromotion::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYearId,
+        ])->first();
+
+        $achievements = Achievement::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYearId,
+        ])
+            ->orderBy('id')
+            ->limit(3)
+            ->get();
+
+        $homeroomTeacher = $class->homeroom_teacher_id
+            ? Employee::find($class->homeroom_teacher_id)
+            : ($class->homeroomTeacher ?? null);
+
+        $headmaster = Employee::query()
+            ->where('status', 'Aktif')
+            ->where(function ($query) {
+                $query->where('position', 'like', '%Kepala Sekolah%')
+                    ->orWhere('position', 'like', '%Kepala%');
+            })
+            ->orderBy('id')
+            ->first();
+
+        $schoolProfile = $this->getSchoolProfile();
+        $gradeLevel = (int) $class->grade_level;
+        $isFinalClass = $gradeLevel === 6;
+
+        return compact(
             'student',
             'class',
-            'semester',
             'academicYear',
+            'semesters',
+            'semesterGanjil',
+            'semesterGenap',
+            'semesterMode',
             'grades',
-            'attendance',
+            'subjects',
+            'attendanceGanjil',
+            'attendanceGenap',
+            'promotion',
             'achievements',
             'homeroomTeacher',
-            'school',
             'headmaster',
-            'headmasterNip'
-        ));
+            'schoolProfile',
+            'isFinalClass'
+        );
+    }
 
-        $filename = 'rapot-'
-            . ($student->nis ?: $student->id)
-            . '-kelas-' . $class->grade_level
-            . '-' . strtolower($semester->name)
-            . '.pdf';
+    /**
+     * Profil sekolah untuk kop rapot.
+     */
+    private function getSchoolProfile(): array
+    {
+        $profile = [
+            'name' => 'SDN 204 Palembang',
+            'address' => '',
+            'logo' => null,
+        ];
 
-        return Pdf::loadHTML($view->render())
-            ->setPaper('a4', 'portrait')
-            ->download($filename);
+        if (Schema::hasTable('school_profiles')) {
+            try {
+                $row = DB::table('school_profiles')->first();
+
+                if ($row) {
+                    $profile['name'] = $row->school_name
+                        ?? $row->name
+                        ?? $profile['name'];
+                    $profile['address'] = $row->address
+                        ?? $row->school_address
+                        ?? '';
+                    $profile['logo'] = $row->logo
+                        ?? $row->school_logo
+                        ?? null;
+                }
+            } catch (\Throwable $exception) {
+            }
+        }
+
+        return $profile;
     }
 
 
@@ -480,25 +725,15 @@ class ReportCardGradeController extends Controller
      * Ganjil + Genap ditampilkan sekaligus.
      */
     public function edit(
+        Request $request,
         SchoolClass $class,
         Student $student
     ) {
         /*
-         * Pastikan siswa memang berada di kelas tersebut.
+         * Validasi siswa.
          */
-        $isStudentInClass = $class->students()
-            ->where(
-                'students.id',
-                $student->id
-            )
-            ->wherePivot(
-                'status',
-                'Aktif'
-            )
-            ->exists();
-
-        if (!$isStudentInClass) {
-            abort(404);
+        if (!$student->exists) {
+            abort(404, 'Siswa tidak ditemukan.');
         }
 
         /*
@@ -513,6 +748,15 @@ class ReportCardGradeController extends Controller
         )
             ->orderBy('id')
             ->get();
+
+        if ($semesters->isEmpty() && AcademicYear::getActive()) {
+            $semesters = Semester::where(
+                'academic_year_id',
+                AcademicYear::getActive()->id
+            )
+                ->orderBy('id')
+                ->get();
+        }
 
         /*
          * Semester Ganjil.
@@ -536,11 +780,12 @@ class ReportCardGradeController extends Controller
          * ======================================================
          */
 
-         $subjects = $class->subjects()
-         ->where('subjects.status', 'Aktif')
-         ->orderBy('subjects.sort_order')
-         ->orderBy('subjects.name')
-         ->get();
+        $subjects = $class->subjects()
+            ->where('subjects.status', 'Aktif')
+            ->orderBy('subjects.sort_order')
+            ->orderBy('subjects.name')
+            ->get();
+
         /*
          * ======================================================
          * NILAI RAPOT
@@ -665,6 +910,13 @@ class ReportCardGradeController extends Controller
          * PENTING:
          * edit mengembalikan halaman edit.
          */
+        $returnUrl = $request->input('return_url')
+            ?: session('report_card_grades_index_url')
+            ?: route('report-card-grades.index', [
+                'academic_year_id' => $class->academic_year_id,
+                'class_id' => $class->id,
+            ]);
+
         return view(
             'admin.report-card-grades.edit',
             compact(
@@ -677,7 +929,8 @@ class ReportCardGradeController extends Controller
                 'attendanceGanjil',
                 'attendanceGenap',
                 'achievementData',
-                'promotion'
+                'promotion',
+                'returnUrl'
             )
         );
     }
@@ -705,19 +958,13 @@ class ReportCardGradeController extends Controller
          * ======================================================
          */
 
-        $isStudentInClass = $class->students()
-            ->where(
-                'students.id',
-                $student->id
-            )
-            ->wherePivot(
-                'status',
-                'Aktif'
-            )
-            ->exists();
+        if (!$student->exists) {
+            abort(404, 'Siswa tidak ditemukan.');
+        }
 
-        if (!$isStudentInClass) {
-            abort(404);
+        // Jika siswa belum terdaftar di kelas ini, otomatis hubungkan ke kelas
+        if (!$class->students()->where('students.id', $student->id)->exists()) {
+            $class->students()->attach($student->id, ['status' => 'Aktif']);
         }
 
         /*
@@ -731,6 +978,14 @@ class ReportCardGradeController extends Controller
             $class->academic_year_id
         )
             ->get();
+
+        if ($semesters->isEmpty() && AcademicYear::getActive()) {
+            $semesters = Semester::where(
+                'academic_year_id',
+                AcademicYear::getActive()->id
+            )
+                ->get();
+        }
 
         $semesterGanjil = $semesters->first(
             fn ($semester) =>
@@ -753,6 +1008,15 @@ class ReportCardGradeController extends Controller
          ->orderBy('subjects.sort_order')
          ->orderBy('subjects.name')
          ->get();
+
+        if ($subjects->isEmpty()) {
+            return redirect()
+                ->route('report-card-grades.edit', [
+                    'class' => $class->id,
+                    'student' => $student->id,
+                ])
+                ->with('error', 'Kelas ini belum memiliki mata pelajaran. Atur mata pelajaran kelas terlebih dahulu sebelum menyimpan nilai rapor.');
+        }
 
         /*
          * ======================================================
@@ -1170,8 +1434,9 @@ class ReportCardGradeController extends Controller
          * ======================================================
          */
 
-        return redirect()
-            ->route(
+        $returnUrl = $request->input('return_url')
+            ?: session('report_card_grades_index_url')
+            ?: route(
                 'report-card-grades.index',
                 [
                     'academic_year_id' =>
@@ -1180,7 +1445,9 @@ class ReportCardGradeController extends Controller
                     'class_id' =>
                         $class->id,
                 ]
-            )
+            );
+
+        return redirect($returnUrl)
             ->with(
                 'success',
                 'Data rapot dan prestasi berhasil disimpan.'
@@ -1194,6 +1461,7 @@ class ReportCardGradeController extends Controller
      * ==========================================================
      */
     public function destroy(
+        Request $request,
         SchoolClass $class,
         Student $student
     ) {
@@ -1243,8 +1511,9 @@ class ReportCardGradeController extends Controller
         /*
          * Kembali ke daftar siswa.
          */
-        return redirect()
-            ->route(
+        $returnUrl = $request->input('return_url')
+            ?: session('report_card_grades_index_url')
+            ?: route(
                 'report-card-grades.index',
                 [
                     'academic_year_id' =>
@@ -1253,7 +1522,9 @@ class ReportCardGradeController extends Controller
                     'class_id' =>
                         $class->id,
                 ]
-            )
+            );
+
+        return redirect($returnUrl)
             ->with(
                 'success',
                 'Seluruh nilai rapot dan prestasi '

@@ -92,6 +92,9 @@
 
                 @csrf
 
+                @if (request()->filled('history_student_id'))
+                    <input type="hidden" name="history_student_id" value="{{ request('history_student_id') }}">
+                @endif
 
                 <div class="row g-4">
 
@@ -121,7 +124,7 @@
 
                                 <option
                                     value="{{ $academicYear->id }}"
-                                    {{ old('academic_year_id') == $academicYear->id ? 'selected' : '' }}>
+                                    {{ old('academic_year_id', $selectedAcademicYearId ?? null) == $academicYear->id ? 'selected' : '' }}>
 
                                     {{ $academicYear->name }}
 
@@ -167,7 +170,7 @@
 
                                 <option
                                     value="{{ $i }}"
-                                    {{ old('grade_level') == $i ? 'selected' : '' }}>
+                                    {{ old('grade_level', $selectedGradeLevel ?? null) == $i ? 'selected' : '' }}>
 
                                     Kelas {{ $i }}
 
@@ -203,7 +206,7 @@
                             type="text"
                             name="name"
                             id="name"
-                            value="{{ old('name') }}"
+                            value="{{ old('name', $prefilledClassName ?? '') }}"
                             class="form-control @error('name') is-invalid @enderror"
                             placeholder="Contoh: 1A"
                             maxlength="20"

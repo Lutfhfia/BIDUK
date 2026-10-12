@@ -22,16 +22,29 @@
             </p>
         </div>
 
-        <a
-            href="{{ route('report-card-grades.index', [
-                'academic_year_id' => $class->academic_year_id,
-                'class_id' => $class->id
-            ]) }}"
-            class="btn btn-outline-secondary"
-        >
-            <i class="bi bi-arrow-left me-1"></i>
-            Kembali
-        </a>
+        <div class="d-flex gap-2">
+            @if((int) $class->grade_level === 6)
+                <a
+                    href="{{ route('final-grades.edit', [
+                        'class' => $class->id,
+                        'student' => $student->id,
+                        'return_url' => request()->fullUrl(),
+                    ]) }}"
+                    class="btn btn-outline-info"
+                >
+                    <i class="bi bi-award me-1"></i>
+                    Nilai Akhir / Ijazah
+                </a>
+            @endif
+
+            <a
+                href="{{ $returnUrl ?? session('report_card_grades_index_url', route('report-card-grades.index', ['academic_year_id' => $class->academic_year_id, 'class_id' => $class->id])) }}"
+                class="btn btn-outline-secondary"
+            >
+                <i class="bi bi-arrow-left me-1"></i>
+                Kembali
+            </a>
+        </div>
 
     </div>
 
@@ -122,6 +135,8 @@
         @csrf
 
         @method('PUT')
+
+        <input type="hidden" name="return_url" value="{{ $returnUrl ?? '' }}">
 
 
         {{-- =================================================
@@ -272,14 +287,24 @@
 
                 @if($subjects->count() === 0)
 
-                    <div class="alert alert-warning mb-0">
+                    <div class="alert alert-warning mb-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div>
+                            <i class="bi bi-exclamation-triangle me-2"></i>
 
-                        <i class="bi bi-exclamation-triangle me-2"></i>
+                            Kelas <strong>{{ $class->name }}</strong> belum memiliki mata pelajaran.
+                            Nilai belum dapat diinput sampai mata pelajaran kelas disetel.
+                        </div>
 
-                        Belum ada mata pelajaran untuk kelas
-                        <strong>{{ $class->name }}</strong>.
-
-                        Silakan atur mata pelajaran melalui Data Kelas.
+                        @if (auth()->user()?->can('classes.edit'))
+                            <a href="{{ route('classes.edit', $class) }}" class="btn btn-sm btn-warning text-nowrap">
+                                <i class="bi bi-gear me-1"></i>
+                                Seting Kelas
+                            </a>
+                        @else
+                            <span class="small text-muted">
+                                Hubungi admin yang memiliki izin edit kelas untuk menyetel mata pelajaran.
+                            </span>
+                        @endif
 
                     </div>
 
@@ -485,9 +510,36 @@
 
                         <div>
 
-                            <h6 class="fw-bold mb-3">
-                                SEMESTER GENAP
-                            </h6>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0">
+                                    SEMESTER GENAP
+                                </h6>
+
+                                @if((int) $class->grade_level === 6)
+                                    <a
+                                        href="{{ route('final-grades.edit', ['class' => $class->id, 'student' => $student->id, 'return_url' => request()->fullUrl()]) }}"
+                                        class="btn btn-sm btn-info text-white shadow-sm"
+                                    >
+                                        <i class="bi bi-award me-1"></i>
+                                        Tabel Nilai Akhir / Ijazah Kelas 6
+                                    </a>
+                                @endif
+                            </div>
+
+                            @if((int) $class->grade_level === 6)
+                                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between mb-3 py-2 px-3">
+                                    <div class="small">
+                                        <i class="bi bi-info-circle-fill me-2 fs-6"></i>
+                                        <strong>Catatan Kelas 6:</strong> Data rapor semester ini akan menjadi komponen perhitungan Nilai Sekolah (rata-rata 4 semester) pada tabel Nilai Akhir / Ijazah.
+                                    </div>
+                                    <a
+                                        href="{{ route('final-grades.edit', ['class' => $class->id, 'student' => $student->id, 'return_url' => request()->fullUrl()]) }}"
+                                        class="btn btn-sm btn-outline-info bg-white text-info text-nowrap ms-3"
+                                    >
+                                        Buka Nilai Akhir &rarr;
+                                    </a>
+                                </div>
+                            @endif
 
 
                             <div class="table-responsive">
@@ -1319,10 +1371,7 @@
         <div class="d-flex justify-content-end gap-2 mb-5">
 
             <a
-                href="{{ route('report-card-grades.index', [
-                    'academic_year_id' => $class->academic_year_id,
-                    'class_id' => $class->id
-                ]) }}"
+                href="{{ $returnUrl ?? session('report_card_grades_index_url', route('report-card-grades.index', ['academic_year_id' => $class->academic_year_id, 'class_id' => $class->id])) }}"
                 class="btn btn-outline-secondary"
             >
                 Batal

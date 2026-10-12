@@ -13,6 +13,8 @@ class ClassStudent extends Model
         'class_id',
         'student_id',
         'status',
+        'final_status',
+        'notes',
         'entry_date',
         'exit_date',
     ];
