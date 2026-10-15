@@ -96,6 +96,15 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .brand-mark img {
+    width: 100%;
+    height: 100%;
+    padding: 3px;
+    object-fit: contain;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
         .brand-title {
             font-size: 30px;
             font-weight: 700;
@@ -486,6 +495,19 @@
 </head>
 
 <body>
+@php
+    $storage = \Illuminate\Support\Facades\Storage::disk('public');
+
+    $schoolLogo = \App\Models\SchoolProfile::query()->value('logo');
+    $schoolLogoSrc = null;
+
+    if ($schoolLogo && $storage->exists($schoolLogo)) {
+        $mimeType = $storage->mimeType($schoolLogo) ?? 'image/png';
+
+        $schoolLogoSrc = 'data:' . $mimeType . ';base64,'
+            . base64_encode($storage->get($schoolLogo));
+    }
+@endphp
 
 <div class="login-wrapper">
 
@@ -496,9 +518,16 @@
 
         <div class="brand-top">
 
-            <div class="brand-mark">
-                B
-            </div>
+        <div class="brand-mark">
+    @if ($schoolLogoSrc)
+        <img
+            src="{{ $schoolLogoSrc }}"
+            alt="Logo SDN 204 Palembang"
+        >
+    @else
+        B
+    @endif
+</div>
 
             <div class="brand-title">
                 BIDUK
