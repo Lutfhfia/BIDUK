@@ -9,36 +9,24 @@
     </title>
 
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 0;
-        }
+     @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+}
 
-        * {
-            box-sizing: border-box;
-        }
+.page {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    position: relative;
+    page-break-after: always;
+}
 
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            color: #000;
-            font-family: Arial, Helvetica, sans-serif;
-        }
-
-        body {
-            font-size: 7pt;
-        }
-
-        .page {
-            width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 0 30mm 8mm;
-            background: #fff;
-            position: relative;
-            page-break-after: always;
-        }
+.page:last-child {
+    page-break-after: auto;
+}
 
         .page:last-child {
             page-break-after: auto;
@@ -109,20 +97,20 @@
         }
 
         .grades-table th,
-        .grades-table td {
-            border: 1px solid #000;
-            padding: 1mm 1mm;
-            font-size: 5.5pt;
-            vertical-align: middle;
-            overflow-wrap: break-word;
-        }
-
-        .grades-table th {
-            text-align: center;
-            font-weight: bold;
-            background-color: #f0f0f0;
-            font-size: 5.8pt;
-        }
+.grades-table td {
+    border: 1px solid #000;
+    padding: 0.8mm 0.5mm;
+    font-size: 6pt;
+    vertical-align: middle;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+.grades-table th {
+    text-align: center;
+    font-weight: bold;
+    background-color: #f0f0f0;
+    font-size: 6.2pt;
+}
 
         .grades-table td.text-center {
             text-align: center;
@@ -258,12 +246,12 @@
         <table class="grades-table">
             <thead>
                 <tr>
-                    <th style="width: 6mm;">No</th>
-                    <th style="width: 36mm;">Mata Pelajaran</th>
-                    <th style="width: 12mm;">Nilai<br>Sekolah</th>
-                    <th style="width: 44mm;">Capaian Pembelajaran<br>(Nilai Sekolah)</th>
-                    <th style="width: 12mm;">Nilai<br>Akhir</th>
-                    <th style="width: 40mm;">Capaian Pembelajaran<br>(Nilai Akhir)</th>
+                <th style="width: 4%;">No</th>
+<th style="width: 24%;">Mata Pelajaran</th>
+<th style="width: 8%;">Nilai<br>Sekolah</th>
+<th style="width: 22%;">Capaian Pembelajaran<br>(Nilai Sekolah)</th>
+<th style="width: 8%;">Nilai<br>Akhir</th>
+<th style="width: 28%;">Capaian Pembelajaran<br>(Nilai Akhir)</th>
                 </tr>
             </thead>
 
