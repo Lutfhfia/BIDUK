@@ -116,6 +116,20 @@
             </li>
 
 
+            {{-- Semester --}}
+            <li class="nav-item">
+
+                <a href="{{ route('semesters.index') }}"
+                   class="nav-link {{ request()->routeIs('semesters.*') ? 'active' : '' }}">
+
+                    <i class="bi bi-calendar-range"></i>
+                    <span>Semester</span>
+
+                </a>
+
+            </li>
+
+
             {{-- Mata Pelajaran --}}
             <li class="nav-item">
 

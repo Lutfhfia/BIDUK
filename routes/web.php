@@ -18,6 +18,7 @@ use App\Http\Controllers\SchoolClassController;
 use App\Http\Controllers\SchoolGalleryController;
 use App\Http\Controllers\SchoolNewsController;
 use App\Http\Controllers\SchoolProfileController;
+use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
@@ -363,6 +364,28 @@ Route::get(
         'academic-years',
         AcademicYearController::class
     );
+
+    Route::get('semesters', [SemesterController::class, 'index'])
+        ->middleware('permission:semesters.view')
+        ->name('semesters.index');
+    Route::get('semesters/create', [SemesterController::class, 'create'])
+        ->middleware('permission:semesters.create')
+        ->name('semesters.create');
+    Route::post('semesters', [SemesterController::class, 'store'])
+        ->middleware('permission:semesters.create')
+        ->name('semesters.store');
+    Route::get('semesters/{semester}', [SemesterController::class, 'show'])
+        ->middleware('permission:semesters.view')
+        ->name('semesters.show');
+    Route::get('semesters/{semester}/edit', [SemesterController::class, 'edit'])
+        ->middleware('permission:semesters.edit')
+        ->name('semesters.edit');
+    Route::put('semesters/{semester}', [SemesterController::class, 'update'])
+        ->middleware('permission:semesters.edit')
+        ->name('semesters.update');
+    Route::delete('semesters/{semester}', [SemesterController::class, 'destroy'])
+        ->middleware('permission:semesters.delete')
+        ->name('semesters.destroy');
 
 
     // =================================================
