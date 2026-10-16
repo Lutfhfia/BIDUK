@@ -325,9 +325,9 @@
                                             Genap
                                         </th>
 
-                                        <th class="text-center" style="width: 220px;">
-                                            Aksi
-                                        </th>
+                                        <th class="text-center" style="width: 260px; min-width: 260px;">
+    Aksi
+</th>
 
                                     </tr>
 
@@ -435,9 +435,9 @@
                                             </td>
 
                                             {{-- Aksi --}}
-                                            <td class="text-center">
+<td class="text-center" style="min-width: 260px;">
 
-                                                <div class="d-flex justify-content-center gap-1 flex-wrap">
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; min-width: 248px;">
 
                                                     {{-- Input / Edit Rapot --}}
                                                     @if ($targetClass)
@@ -447,7 +447,7 @@
                                                                 'student' => $student->id,
                                                                 'return_url' => request()->fullUrl(),
                                                             ]) }}"
-                                                            class="btn btn-sm btn-success"
+                                                           class="btn btn-sm btn-success w-100 text-nowrap"
                                                             title="Input / Edit Rapot Kelas Ini"
                                                         >
                                                             <i class="bi bi-pencil-square me-1"></i>
