@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use App\Models\GraduationStatus;
+use App\Services\FinalGradeService;
 use Symfony\Component\HttpFoundation\Response;
 
 class RekapRapotController extends Controller
@@ -138,8 +140,18 @@ class RekapRapotController extends Controller
 
         abort_unless($class, 404, 'Kelas siswa tidak ditemukan untuk tahun ajaran yang dipilih.');
 
-        $report = $this->buildReport($student, $class, $academicYearId, $semesterMode);
-        $view = view('reports.rekap-rapot.print', $report);
+        $report = $this->buildReport(
+            $student,
+            $class,
+            $academicYearId,
+            $semesterMode
+        );
+        
+        $template = $report['isFinalClass']
+            ? 'reports.rekap-rapot.kelas-6'
+            : 'reports.rekap-rapot.print';
+        
+        $view = view($template, $report);
 
         if ($request->boolean('pdf')) {
             $filename = 'rapot-' . ($student->nis ?: $student->id) . '.pdf';
@@ -308,6 +320,48 @@ class RekapRapotController extends Controller
         $gradeLevel = (int) $class->grade_level;
         $isFinalClass = $gradeLevel === 6;
 
+        
+        // Data tambahan khusus untuk Rekap Rapor Kelas 6.
+        // Kelas 1-5 tetap menggunakan template rapor lama.
+        $ijazahMapping = collect();
+        $finalGrades = collect();
+        $reportAverageScores = [];
+        $graduationStatus = null;
+
+        if ($isFinalClass) {
+            $finalGradeService = app(FinalGradeService::class);
+
+            // Daftar mata pelajaran dan nilai akhir yang sudah tersimpan.
+            $ijazahMapping = $finalGradeService->getIjazahSubjectMapping();
+
+            $finalGrades = $finalGradeService->getStoredGrades(
+                $student->id,
+                $class->id,
+                $academicYearId
+            );
+
+            // Ambil rata-rata rapor dari perhitungan yang sudah digunakan
+            // oleh fitur Nilai Akhir/Ijazah.
+           // Nilai rata-rata rapor mengikuti mata pelajaran aktif
+// yang tersedia pada kelas di fitur Mata Pelajaran.
+foreach ($subjects as $subject) {
+    $reportResult = $finalGradeService->calculateSchoolScore(
+        $student,
+        (int) $subject->id
+    );
+
+    $reportAverageScores[$subject->id] = $reportResult['score'];
+}
+
+            // Ambil status kelulusan siswa pada kelas dan tahun ajaran ini.
+            $graduationStatus = GraduationStatus::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYearId,
+            ])->first();
+        }
+
+
         return compact(
             'student',
             'class',
@@ -325,7 +379,11 @@ class RekapRapotController extends Controller
             'homeroomTeacher',
             'headmaster',
             'schoolProfile',
-            'isFinalClass'
+            'isFinalClass',
+            'ijazahMapping',
+'finalGrades',
+'reportAverageScores',
+'graduationStatus'
         );
     }
 

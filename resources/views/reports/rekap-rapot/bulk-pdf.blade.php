@@ -117,14 +117,15 @@
 
 @foreach($reports as $report)
 
-    <div class="student-report">
+<div class="student-report">
 
-        {{-- =====================================================
-             GUNAKAN TEMPLATE YANG SAMA DENGAN CETAK INDIVIDU
-             ===================================================== --}}
-        @include('reports.rekap-rapot.print', $report)
+@if (!empty($report['isFinalClass']))
+    @include('reports.rekap-rapot.kelas-6', $report)
+@else
+    @include('reports.rekap-rapot.print', $report)
+@endif
 
-    </div>
+</div>
 
 @endforeach
 
