@@ -1,11 +1,15 @@
 @extends('layouts.app')
 
+@section('title', 'Hak Akses Role')
+
 @section('content')
 <div class="container-fluid">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Hak Akses Role</h4>
+            <h4 class="fw-bold mb-1">
+                <i class="bi bi-shield-lock text-success me-2"></i>Hak Akses Role
+            </h4>
             <p class="text-muted mb-0">
                 Atur hak akses berdasarkan role pengguna.
             </p>

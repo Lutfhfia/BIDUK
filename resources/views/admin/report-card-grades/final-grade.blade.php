@@ -23,6 +23,7 @@
         </div>
 
         <div class="d-flex gap-2">
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
             <a
                 href="{{ route('final-grades.print', [$class->id, $student->id]) }}"
                 class="btn btn-outline-danger"
@@ -31,6 +32,7 @@
                 <i class="bi bi-printer me-1"></i>
                 Cetak PDF
             </a>
+            @endif
 
             <a
                 href="{{ $returnUrl ?? route('report-card-grades.edit', [

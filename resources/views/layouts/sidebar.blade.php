@@ -54,6 +54,7 @@
         <ul class="sidebar-nav">
 
             {{-- Data Siswa --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.view'))
             <li class="nav-item">
 
                 <a href="{{ route('students.index') }}"
@@ -65,9 +66,11 @@
                 </a>
 
             </li>
+            @endif
 
 
             {{-- Data Pegawai --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.view'))
             <li class="nav-item">
 
                 <a href="{{ route('pegawai.index') }}"
@@ -79,9 +82,11 @@
                 </a>
 
             </li>
+            @endif
 
 
             {{-- Data Kelas --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.view'))
             <li class="nav-item">
 
                 <a href="{{ route('classes.index') }}"
@@ -93,6 +98,7 @@
                 </a>
 
             </li>
+            @endif
 
         </ul>
 
@@ -103,6 +109,7 @@
         <ul class="sidebar-nav">
 
             {{-- Tahun Ajaran --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.view'))
             <li class="nav-item">
 
                 <a href="{{ route('academic-years.index') }}"
@@ -114,23 +121,11 @@
                 </a>
 
             </li>
-
-
-            {{-- Semester --}}
-            <li class="nav-item">
-
-                <a href="{{ route('semesters.index') }}"
-                   class="nav-link {{ request()->routeIs('semesters.*') ? 'active' : '' }}">
-
-                    <i class="bi bi-calendar-range"></i>
-                    <span>Semester</span>
-
-                </a>
-
-            </li>
+            @endif
 
 
             {{-- Mata Pelajaran --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.view'))
             <li class="nav-item">
 
                 <a href="{{ route('subjects.index') }}"
@@ -142,13 +137,15 @@
                 </a>
 
             </li>
+            @endif
 
 
             {{-- Nilai Rapot --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
             <li class="nav-item">
 
                 <a href="{{ route('report-card-grades.index') }}"
-                   class="nav-link {{ request()->routeIs('report-card-grades.*') ? 'active' : '' }}">
+                   class="nav-link {{ request()->routeIs('report-card-grades.*', 'final-grades.*') ? 'active' : '' }}">
 
                     <i class="bi bi-card-checklist"></i>
                     <span>Nilai Rapot</span>
@@ -156,6 +153,7 @@
                 </a>
 
             </li>
+            @endif
 
         </ul>
 
@@ -166,6 +164,7 @@
         <ul class="sidebar-nav">
 
             {{-- Buku Induk --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('student_records.view'))
             <li class="nav-item">
 
                 <a href="{{ route('buku-induk.index') }}"
@@ -177,9 +176,11 @@
                 </a>
 
             </li>
+            @endif
 
 
          {{-- Rekap Absensi --}}
+@if (auth()->user()?->isSuperAdmin() || auth()->user()?->isAdmin() || auth()->user()?->isGuru() || auth()->user()?->isKepalaSekolah())
 <li class="nav-item">
     <a href="{{ route('rekap-absensi.index') }}"
        class="nav-link {{ request()->routeIs('rekap-absensi.*') ? 'active' : '' }}">
@@ -187,9 +188,11 @@
         <span>Rekap Absensi</span>
     </a>
 </li>
+@endif
 
 
            {{-- Rekap Rapot --}}
+@if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('report_cards.view'))
 <li class="nav-item">
 
 <a href="{{ route('rekap-rapot.index') }}"
@@ -201,8 +204,10 @@
 </a>
 
 </li>
+@endif
 
             {{-- Rekap Prestasi --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('achievements.view'))
             <li class="nav-item">
 
                 <a href="{{ route('achievement-reports.index') }}"
@@ -214,6 +219,7 @@
                 </a>
 
             </li>
+            @endif
 
         </ul>
 
@@ -224,6 +230,7 @@
         <ul class="sidebar-nav">
 
            {{-- Manajemen User --}}
+@if (auth()->user()?->isSuperAdmin())
 <li class="nav-item">
     <a href="{{ route('users.index') }}"
        class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
@@ -231,8 +238,10 @@
         <span>Manajemen User</span>
     </a>
 </li>
+@endif
 
           {{-- Hak Akses Role --}}
+@if (auth()->user()?->isSuperAdmin())
 <li class="nav-item">
     <a href="{{ route('role-permissions.index') }}"
        class="nav-link {{ request()->routeIs('role-permissions.*') ? 'active' : '' }}">
@@ -240,8 +249,10 @@
         <span>Hak Akses Role</span>
     </a>
 </li>
+@endif
 
             {{-- Profil Sekolah --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('school_profile.manage'))
             <li class="nav-item">
 
                 <a href="{{ route('school-profile.index') }}"
@@ -258,6 +269,7 @@
                 </a>
 
             </li>
+            @endif
 
 
             {{-- Log Aktivitas --}}

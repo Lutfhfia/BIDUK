@@ -20,6 +20,7 @@
                 </a>
 
                 <h3 class="fw-bold mt-2 mb-1">
+                    <i class="bi bi-pencil-square text-success me-2"></i>
                     Edit Data Kelas
                 </h3>
 

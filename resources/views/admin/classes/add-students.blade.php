@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Tambah Siswa ke Kelas ' . $class->name)
+
 @section('content')
 
 <div class="container-fluid py-4">
@@ -9,11 +11,8 @@
 
         <div>
 
-            <div class="text-muted small mb-1">
-                Master Data / Data Kelas / {{ $class->name }}
-            </div>
-
             <h3 class="fw-bold mb-1">
+                <i class="bi bi-person-plus text-success me-2"></i>
                 Tambah Siswa ke Kelas {{ $class->name }}
             </h3>
 

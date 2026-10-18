@@ -12,7 +12,9 @@
 
     {{-- Header Dashboard --}}
     <div class="mb-4">
-        <h4 class="fw-bold mb-1">Dashboard</h4>
+        <h4 class="fw-bold mb-1">
+            <i class="bi bi-speedometer2 text-success me-2"></i>Dashboard
+        </h4>
         <p class="text-muted mb-0">
             Selamat datang, {{ auth()->user()->name }}
         </p>
@@ -342,7 +344,21 @@
                         @foreach ($progress['missing_items'] as $item)
                             <tr>
                                 <td>{{ $item['class_name'] }}</td>
-                                <td>{{ $item['student_name'] }}</td>
+                                <td>
+                                    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit'))
+                                        <a
+                                            href="{{ route('report-card-grades.edit', [
+                                                'class' => $item['class_id'],
+                                                'student' => $item['student_id'],
+                                            ]) }}"
+                                            class="text-decoration-none"
+                                        >
+                                            {{ $item['student_name'] }}
+                                        </a>
+                                    @else
+                                        {{ $item['student_name'] }}
+                                    @endif
+                                </td>
                                 <td>{{ $item['subject_name'] }}</td>
                             </tr>
                         @endforeach

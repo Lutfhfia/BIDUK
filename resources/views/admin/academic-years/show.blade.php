@@ -7,11 +7,8 @@
     {{-- Header --}}
     <div class="mb-4">
 
-        <div class="text-muted small mb-1">
-            Akademik / Tahun Ajaran / Detail
-        </div>
-
         <h3 class="fw-bold mb-1">
+            <i class="bi bi-calendar3 text-success me-2"></i>
             Detail Tahun Ajaran
         </h3>
 
@@ -99,38 +96,6 @@
                 </div>
 
 
-                {{-- Semester Berjalan --}}
-                <div class="col-md-6">
-
-                    <div class="text-muted small">
-                        Semester Berjalan
-                    </div>
-
-                    <div class="mt-1">
-
-                        @if ($academicYear->current_semester)
-
-                            <span class="badge badge-aktif px-3 py-2">
-
-                                <i class="bi bi-bookmark-fill me-1"></i>
-
-                                {{ $academicYear->current_semester }}
-
-                            </span>
-
-                        @else
-
-                            <span class="text-muted">
-                                Belum ditentukan
-                            </span>
-
-                        @endif
-
-                    </div>
-
-                </div>
-
-
                 {{-- Jumlah Kelas --}}
                 <div class="col-md-6">
 
@@ -160,14 +125,13 @@
 
                 </a>
 
-                <a href="{{ route('academic-years.edit', $academicYear) }}"
-                   class="btn btn-biduk-primary">
-
-                    <i class="bi bi-pencil me-1"></i>
-
-                    Edit
-
-                </a>
+                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.edit'))
+                    <a href="{{ route('academic-years.edit', $academicYear) }}"
+                       class="btn btn-biduk-primary">
+                        <i class="bi bi-pencil me-1"></i>
+                        Edit
+                    </a>
+                @endif
 
             </div>
 

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Daftar Siswa Kelas ' . $class->name)
+
 @section('content')
 
 <div class="container-fluid py-4">
@@ -8,11 +10,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
-            <div class="text-muted small mb-1">
-                Master Data / Data Kelas / {{ $class->name }}
-            </div>
-
             <h3 class="fw-bold mb-1">
+                <i class="bi bi-people text-success me-2"></i>
                 Daftar Siswa Kelas {{ $class->name }}
             </h3>
 
@@ -27,10 +26,12 @@
                 ← Kembali
             </a>
 
-            <a href="{{ route('classes.students.add', $class) }}"
-               class="btn btn-primary">
-                + Tambah Siswa
-            </a>
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
+                <a href="{{ route('classes.students.add', $class) }}"
+                   class="btn btn-primary">
+                    + Tambah Siswa
+                </a>
+            @endif
         </div>
 
     </div>
@@ -201,6 +202,7 @@
 
                                         <ul class="dropdown-menu dropdown-menu-end">
 
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.view'))
                                             <li>
                                                 <a
                                                     class="dropdown-item"
@@ -210,7 +212,9 @@
 
                                                 </a>
                                             </li>
+                                            @endif
 
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
                                             <li>
                                                 <a
                                                     class="dropdown-item"
@@ -220,7 +224,9 @@
 
                                                 </a>
                                             </li>
+                                            @endif
 
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                                             <li>
                                                 <hr class="dropdown-divider">
                                             </li>
@@ -246,6 +252,7 @@
                                                 </form>
 
                                             </li>
+                                            @endif
 
                                         </ul>
 

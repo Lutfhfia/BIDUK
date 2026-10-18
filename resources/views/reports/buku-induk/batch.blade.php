@@ -12,8 +12,7 @@
     <main class="container py-4">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
             <div>
-                <div class="text-muted small mb-1">Laporan / Buku Induk</div>
-                <h1 class="h3 mb-1">{{ $class ? 'Buku Induk Kelas ' . $class->name : 'Buku Induk Semua Kelas' }}</h1>
+                <h1 class="h3 mb-1"><i class="bi bi-book-fill text-success me-2"></i>{{ $class ? 'Buku Induk Kelas ' . $class->name : 'Buku Induk Semua Kelas' }}</h1>
                 <p class="text-muted mb-0">{{ $students->count() }} siswa ditemukan pada parameter yang dipilih.</p>
             </div>
             <a href="{{ route('buku-induk.index', request()->only(['academic_year_id', 'semester_id', 'class_id', 'status'])) }}"

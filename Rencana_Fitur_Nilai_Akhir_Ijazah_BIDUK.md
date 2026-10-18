@@ -1,10 +1,5 @@
 # PROMPT PERBAIKAN FITUR KELOLA RIWAYAT KELAS PADA BIDUK
 
-Saya ingin memperbaiki halaman **Riwayat Nilai Rapor Siswa** pada aplikasi BIDUK (Laravel 13, PHP 8.4, MySQL).
-
-Perhatikan tampilan halaman riwayat rapor yang sudah ada. Saat ini tersedia kartu Rapor Kelas 1 sampai Kelas 6. Beberapa kartu menampilkan status **Belum Ada** karena riwayat penempatan kelas siswa tersebut belum tercatat di BIDUK.
-
-Saya ingin menambahkan fitur agar pengguna yang berwenang dapat **melengkapi dan mengelola riwayat kelas siswa langsung dari halaman tersebut**.
 
 ## 1. Tambahkan fitur Kelola Riwayat Kelas
 

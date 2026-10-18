@@ -3,19 +3,13 @@
 @section('title', 'Buku Induk')
 
 @section('content')
-    <div class="container-fluid py-4">
+    <div class="container-fluid">
 
         {{-- =========================================================
          HEADER
     ========================================================== --}}
         <div class="d-flex justify-content-between align-items-start mb-4">
             <div>
-                <div class="text-muted small mb-2">
-                    Laporan
-                    <span class="mx-2">›</span>
-                    Buku Induk
-                </div>
-
                 <h3 class="fw-bold mb-1 text-dark">
                     <i class="bi bi-book-fill text-success me-2"></i>Buku Induk
                 </h3>

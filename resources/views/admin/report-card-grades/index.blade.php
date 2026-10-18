@@ -440,7 +440,7 @@
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; min-width: 248px;">
 
                                                     {{-- Input / Edit Rapot --}}
-                                                    @if ($targetClass)
+                                                    @if ($targetClass && (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit')))
                                                         <a
                                                             href="{{ route('report-card-grades.edit', [
                                                                 'class' => $targetClass->id,
@@ -469,7 +469,7 @@
                                                                 Nilai Ijazah
                                                             </a>
                                                         @endif
-                                                    @else
+                                                    @elseif (!$targetClass)
                                                         <button
                                                             type="button"
                                                             class="btn btn-sm btn-outline-secondary"
@@ -482,7 +482,8 @@
                                                     @endif
 
                                                     {{-- Tombol Riwayat Nilai Rapot Siswa --}}
-                                                    <a
+                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
+                                                            <a
                                                         href="{{ route('report-card-grades.history', [
                                                             'student' => $student->id,
                                                             'return_url' => request()->fullUrl(),
@@ -493,6 +494,7 @@
                                                         <i class="bi bi-clock-history me-1"></i>
                                                         Riwayat
                                                     </a>
+                                                    @endif
 
                                                 </div>
 

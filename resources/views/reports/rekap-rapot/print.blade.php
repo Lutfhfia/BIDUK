@@ -1,22 +1,20 @@
+@if (empty($isBulkReport))
 <!DOCTYPE html>
-
 <html lang="id">
-
 <head>
-
     <meta charset="UTF-8">
-
     <title>Rapor - {{ $student->name }}</title>
+@endif
 
     <style>
 
-        @page { margin: 6mm 8mm 6mm 8mm; size: F4 portrait; }
+        @page { margin: 12mm 15mm; size: A4 portrait; }
 
         * { box-sizing: border-box; }
 
         body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; font-size: 8px; }
 
-        .page { width: 100%; min-height: 310mm; position: relative; page-break-after: always; }
+        .page { width: 100%; min-height: 0; position: relative; page-break-after: auto; }
 
         .page:last-child { page-break-after: auto; }
 
@@ -327,11 +325,34 @@
 
         .print-only-hidden { display: none; }
 
+        @media screen {
+            html,
+            body {
+                min-height: 100%;
+                background: #e5e7eb;
+            }
+
+            body {
+                padding: 24px 0;
+            }
+
+            body > .page {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                padding: 12mm 15mm;
+                background: #fff;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+                page-break-after: auto;
+            }
+        }
+
     </style>
 
+@if (empty($isBulkReport))
 </head>
-
 <body>
+@endif
 
 @php
 
@@ -905,6 +926,8 @@
 
 </div>
 
+@if (empty($isBulkReport))
 </body>
 
 </html>
+@endif

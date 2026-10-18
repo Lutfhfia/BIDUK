@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Mata Pelajaran')
+
 @section('content')
 
 <div class="container-fluid">
@@ -7,14 +9,10 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <div class="text-muted mb-1">
-                Dashboard / Akademik / Mata Pelajaran / Edit
-            </div>
-
-            <h2 class="fw-bold mb-1">
-                <i class="bi bi-pencil-square me-2"></i>
+            <h4 class="fw-bold mb-1">
+                <i class="bi bi-pencil-square text-success me-2"></i>
                 Edit Mata Pelajaran
-            </h2>
+            </h4>
 
             <p class="text-muted mb-0">
                 Perbarui informasi mata pelajaran yang tersedia dalam sistem BIDUK.

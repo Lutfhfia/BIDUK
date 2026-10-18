@@ -5,7 +5,9 @@
 <div class="container-fluid py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-            <h4 class="fw-bold mb-1">Profil Saya</h4>
+            <h4 class="fw-bold mb-1">
+                <i class="bi bi-person-circle text-success me-2"></i>Profil Saya
+            </h4>
             <p class="text-muted mb-0">Informasi akun pengguna BIDUK.</p>
         </div>
 

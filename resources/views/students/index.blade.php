@@ -22,15 +22,19 @@
                 </p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ route('students.import.form') }}" class="btn btn-outline-success">
-                    <i class="bi bi-file-earmark-arrow-up me-1"></i> Import Excel
-                </a>
+                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.create'))
+                    <a href="{{ route('students.import.form') }}" class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-arrow-up me-1"></i> Import Excel
+                    </a>
+                @endif
                 <a href="{{ route('students.export.excel') }}" class="btn btn-outline-primary">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                 </a>
-                <a href="{{ route('students.create') }}" class="btn btn-biduk-primary">
-                    <i class="bi bi-plus-lg me-1"></i> Tambah Siswa
-                </a>
+                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.create'))
+                    <a href="{{ route('students.create') }}" class="btn btn-biduk-primary">
+                        <i class="bi bi-plus-lg me-1"></i> Tambah Siswa
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -242,20 +246,24 @@
                                                     class="btn btn-sm btn-outline-primary" title="Lihat Detail">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ route('students.edit', $student->id) }}"
-                                                    class="btn btn-sm btn-outline-warning" title="Edit Data">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </a>
-                                                <form action="{{ route('students.destroy', $student->id) }}"
-                                                    method="POST" class="d-inline"
-                                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="Hapus Data">
-                                                        <i class="bi bi-trash3"></i>
-                                                    </button>
-                                                </form>
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                                    <a href="{{ route('students.edit', $student->id) }}"
+                                                        class="btn btn-sm btn-outline-warning" title="Edit Data">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </a>
+                                                @endif
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.delete'))
+                                                    <form action="{{ route('students.destroy', $student->id) }}"
+                                                        method="POST" class="d-inline"
+                                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                            title="Hapus Data">
+                                                            <i class="bi bi-trash3"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -285,9 +293,11 @@
                             @endif
                         </p>
                         @if (!$search && !$classId && !$status)
-                            <a href="{{ route('students.create') }}" class="btn btn-biduk-primary">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah Siswa Pertama
-                            </a>
+                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.create'))
+                                <a href="{{ route('students.create') }}" class="btn btn-biduk-primary">
+                                    <i class="bi bi-plus-lg me-1"></i> Tambah Siswa Pertama
+                                </a>
+                            @endif
                         @endif
                     </div>
                 @endif

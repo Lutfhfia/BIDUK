@@ -295,7 +295,7 @@
                             Nilai belum dapat diinput sampai mata pelajaran kelas disetel.
                         </div>
 
-                        @if (auth()->user()?->can('classes.edit'))
+                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                             <a href="{{ route('classes.edit', $class) }}" class="btn btn-sm btn-warning text-nowrap">
                                 <i class="bi bi-gear me-1"></i>
                                 Seting Kelas
@@ -1068,12 +1068,16 @@
             <div class="card-header bg-white py-3">
 
                 <h5 class="fw-bold mb-1">
-                    F. Ketidakhadiran dan Kenaikan
+                    F. Ketidakhadiran dan {{ (int) $class->grade_level === 6 ? 'Status Kelulusan' : 'Kenaikan' }}
                 </h5>
 
                 <small class="text-muted">
                     Data ketidakhadiran diambil otomatis dari Rekap Absensi.
-                    Keputusan kenaikan diisi pada bagian Kenaikan.
+                    @if ((int) $class->grade_level === 6)
+                        Status kelulusan diatur pada halaman Nilai Akhir / Ijazah.
+                    @else
+                        Keputusan kenaikan diisi pada bagian Kenaikan.
+                    @endif
                 </small>
 
             </div>
@@ -1277,6 +1281,43 @@
                 </div>
 
 
+                @if ((int) $class->grade_level === 6)
+                    <input
+                        type="hidden"
+                        name="promotion_status"
+                        value="{{ old('promotion_status', $promotion?->promotion_status) }}"
+                    >
+                    <input
+                        type="hidden"
+                        name="promotion_class"
+                        value="{{ old('promotion_class', $promotion?->promotion_class) }}"
+                    >
+                    <input
+                        type="hidden"
+                        name="promotion_date"
+                        value="{{ old('promotion_date', $promotion?->promotion_date?->format('Y-m-d')) }}"
+                    >
+
+                    <div class="alert alert-info mb-0">
+                        <div class="fw-semibold mb-1">
+                            Status akhir kelas 6 adalah Lulus atau Tidak Lulus.
+                        </div>
+                        <div class="small mb-3">
+                            Status ini akan digunakan pada cetak rapor kelas 6.
+                        </div>
+                        <a
+                            href="{{ route('final-grades.edit', [
+                                'class' => $class->id,
+                                'student' => $student->id,
+                                'return_url' => request()->fullUrl(),
+                            ]) }}"
+                            class="btn btn-sm btn-outline-info"
+                        >
+                            <i class="bi bi-award me-1"></i>
+                            Atur Status Kelulusan
+                        </a>
+                    </div>
+                @else
                 {{-- =========================================
                     KENAIKAN
                 ========================================== --}}
@@ -1357,6 +1398,7 @@
 >
 
                     </div>
+                    @endif
 
                 </div>
 

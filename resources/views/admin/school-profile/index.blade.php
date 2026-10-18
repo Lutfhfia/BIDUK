@@ -257,7 +257,7 @@
         {{-- Header with Quick Link to Landing Page --}}
         <div class="sp-header d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h1>Profil Sekolah</h1>
+                <h1><i class="bi bi-building-fill text-success me-2"></i>Profil Sekolah</h1>
                 <p>Kelola identitas, visi misi, prestasi, ekstrakurikuler, berita, dan galeri sekolah yang terhubung ke
                     Landing Page.</p>
             </div>

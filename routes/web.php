@@ -80,27 +80,32 @@ Route::middleware('auth')->group(function () {
     Route::get(
         '/laporan/buku-induk',
         [BukuIndukController::class, 'index']
-    )->name('buku-induk.index');
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.index');
 
     Route::get(
         '/laporan/buku-induk/cetak-batch',
         [BukuIndukController::class, 'batch']
-    )->name('buku-induk.batch');
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.batch');
 
     Route::get(
         '/laporan/buku-induk/cetak-batch-pdf',
         [BukuIndukController::class, 'batchPdf']
-    )->name('buku-induk.batch-pdf');
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.batch-pdf');
 
     Route::get(
         '/laporan/buku-induk/cetak/{student}',
         [BukuIndukController::class, 'print']
-    )->name('buku-induk.print');
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.print');
 
     Route::get(
         '/laporan/buku-induk/unduh-semua',
         [BukuIndukController::class, 'downloadAll']
-    )->name('buku-induk.download-all');
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.download-all');
 
      // =================================================
 // REKAP RAPOT
@@ -109,22 +114,26 @@ Route::middleware('auth')->group(function () {
 Route::get(
     '/laporan/rekap-rapot',
     [RekapRapotController::class, 'index']
-)->name('rekap-rapot.index');
+)->middleware('permission:report_cards.view')
+    ->name('rekap-rapot.index');
 
 Route::get(
     '/laporan/rekap-rapot/cetak/{student}',
     [RekapRapotController::class, 'print']
-)->name('rekap-rapot.print');
+)->middleware('permission:report_cards.view')
+    ->name('rekap-rapot.print');
 
 Route::get(
     '/laporan/rekap-rapot/cetak-batch',
     [RekapRapotController::class, 'batch']
-)->name('rekap-rapot.batch');
+)->middleware('permission:report_cards.view')
+    ->name('rekap-rapot.batch');
 
 Route::get(
     '/laporan/rekap-rapot/unduh-semua',
     [RekapRapotController::class, 'downloadAll']
-)->name('rekap-rapot.download-all');
+)->middleware('permission:report_cards.view')
+    ->name('rekap-rapot.download-all');
 
 
     // =================================================
@@ -134,7 +143,8 @@ Route::get(
     Route::get(
         '/achievement-reports',
         [AchievementReportController::class, 'index']
-    )->name('achievement-reports.index');
+    )->middleware('permission:achievements.view')
+        ->name('achievement-reports.index');
 
 
     // =================================================
@@ -363,7 +373,11 @@ Route::get(
     Route::resource(
         'academic-years',
         AcademicYearController::class
-    );
+    )
+        ->middlewareFor(['index', 'show'], 'permission:academic_years.view')
+        ->middlewareFor(['create', 'store'], 'permission:academic_years.create')
+        ->middlewareFor(['edit', 'update'], 'permission:academic_years.edit')
+        ->middlewareFor('destroy', 'permission:academic_years.delete');
 
     Route::get('semesters', [SemesterController::class, 'index'])
         ->middleware('permission:semesters.view')
@@ -410,12 +424,14 @@ Route::get(
     Route::get(
         'report-card-grades',
         [ReportCardGradeController::class, 'index']
-    )->name('report-card-grades.index');
+    )->middleware('permission:grades.view')
+        ->name('report-card-grades.index');
 
     Route::get(
         'report-card-grades/{student}/history',
         [ReportCardGradeController::class, 'history']
-    )->name('report-card-grades.history');
+    )->middleware('permission:grades.view')
+        ->name('report-card-grades.history');
 
     Route::post(
         'report-card-grades/{student}/history/record',
@@ -427,22 +443,26 @@ Route::get(
     Route::get(
         'report-card-grades/{class}/{student}/print',
         [ReportCardGradeController::class, 'printHistory']
-    )->name('report-card-grades.print');
+    )->middleware('permission:grades.view')
+        ->name('report-card-grades.print');
 
     Route::get(
         'report-card-grades/{class}/{student}/edit',
         [ReportCardGradeController::class, 'edit']
-    )->name('report-card-grades.edit');
+    )->middleware('permission:grades.edit')
+        ->name('report-card-grades.edit');
 
     Route::put(
         'report-card-grades/{class}/{student}',
         [ReportCardGradeController::class, 'update']
-    )->name('report-card-grades.update');
+    )->middleware('permission:grades.edit')
+        ->name('report-card-grades.update');
 
     Route::delete(
         'report-card-grades/{class}/{student}',
         [ReportCardGradeController::class, 'destroy']
-    )->name('report-card-grades.destroy');
+    )->middleware('permission:grades.delete')
+        ->name('report-card-grades.destroy');
 
 
     // =================================================
@@ -452,17 +472,20 @@ Route::get(
     Route::get(
         'report-card-grades/{class}/{student}/nilai-akhir',
         [FinalGradeController::class, 'edit']
-    )->name('final-grades.edit');
+    )->middleware('permission:grades.edit')
+        ->name('final-grades.edit');
 
     Route::put(
         'report-card-grades/{class}/{student}/nilai-akhir',
         [FinalGradeController::class, 'update']
-    )->name('final-grades.update');
+    )->middleware('permission:grades.edit')
+        ->name('final-grades.update');
 
     Route::get(
         'report-card-grades/{class}/{student}/nilai-akhir/cetak',
         [FinalGradeController::class, 'print']
-    )->name('final-grades.print');
+    )->middleware('permission:grades.view')
+        ->name('final-grades.print');
 
 
     // =================================================
@@ -491,16 +514,13 @@ Route::get(
 Route::post(
     'users/{user}/reset-password',
     [UserController::class, 'resetPassword']
-)->name('users.reset-password');
+)->middleware('permission:users.manage')
+    ->name('users.reset-password');
 
 Route::resource(
     'users',
     UserController::class
-);
-    Route::resource(
-        'users',
-        UserController::class
-    );
+)->middleware('permission:users.manage');
 
 
     // =================================================
@@ -592,12 +612,14 @@ Route::resource(
     Route::get(
         '/school-profile',
         [SchoolProfileController::class, 'index']
-    )->name('school-profile.index');
+    )->middleware('permission:school_profile.manage')
+        ->name('school-profile.index');
 
     Route::put(
         '/school-profile',
         [SchoolProfileController::class, 'update']
-    )->name('school-profile.update');
+    )->middleware('permission:school_profile.manage')
+        ->name('school-profile.update');
 
 
     // =================================================
@@ -611,7 +633,7 @@ Route::resource(
         'store',
         'update',
         'destroy'
-    ]);
+    ])->middleware('permission:school_profile.manage');
 
 
     // =================================================
@@ -625,7 +647,7 @@ Route::resource(
         'store',
         'update',
         'destroy'
-    ]);
+    ])->middleware('permission:school_profile.manage');
 
 
     // =================================================
@@ -639,7 +661,7 @@ Route::resource(
         'store',
         'update',
         'destroy'
-    ]);
+    ])->middleware('permission:school_profile.manage');
 
 
     // =================================================
@@ -653,7 +675,7 @@ Route::resource(
         'store',
         'update',
         'destroy'
-    ]);
+    ])->middleware('permission:school_profile.manage');
 
 
     // =================================================

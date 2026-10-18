@@ -37,6 +37,7 @@
         <div class="d-flex gap-2">
 
             {{-- Import --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.create'))
             <button
                 type="button"
                 class="btn btn-biduk-outline"
@@ -46,7 +47,9 @@
                 <i class="bi bi-upload me-1"></i>
                 Import Excel
             </button>
+            @endif
 
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.view'))
             <div class="dropdown">
     <button
         type="button"
@@ -80,8 +83,10 @@
         </li>
     </ul>
 </div>
+            @endif
 
             {{-- Tambah --}}
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.create'))
             <a
                 href="{{ route('pegawai.create') }}"
                 class="btn btn-biduk-primary"
@@ -89,6 +94,7 @@
                 <i class="bi bi-plus-lg me-1"></i>
                 Tambah Pegawai
             </a>
+            @endif
 
         </div>
 
@@ -456,6 +462,7 @@
                                             </li>
 
 
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
                                             <li>
 
                                                 <a
@@ -467,8 +474,10 @@
                                                 </a>
 
                                             </li>
+                                            @endif
 
 
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.delete'))
                                             <li>
                                                 <hr class="dropdown-divider">
                                             </li>
@@ -496,6 +505,7 @@
                                                 </form>
 
                                             </li>
+                                            @endif
 
                                         </ul>
 

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Models\RekapAbsensi;
+use App\Models\ReportCardGrade;
 use App\Models\Semester;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -139,6 +141,20 @@ class SemesterController extends Controller
      */
     public function destroy(Semester $semester)
     {
+        $hasAttendance = RekapAbsensi::query()
+            ->where('semester_id', $semester->id)
+            ->exists();
+
+        $hasGrades = ReportCardGrade::query()
+            ->where('semester_id', $semester->id)
+            ->exists();
+
+        if ($hasAttendance || $hasGrades) {
+            return redirect()
+                ->route('semesters.index')
+                ->with('error', 'Semester tidak dapat dihapus karena masih digunakan oleh data absensi atau nilai rapor.');
+        }
+
         $semester->delete();
 
         return redirect()

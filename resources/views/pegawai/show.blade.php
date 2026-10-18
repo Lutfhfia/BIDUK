@@ -45,6 +45,7 @@
 
         <div class="d-flex gap-2">
 
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
             <a
                 href="{{ route('pegawai.edit', $employee) }}"
                 class="btn btn-biduk-outline"
@@ -52,6 +53,7 @@
                 <i class="bi bi-pencil me-1"></i>
                 Edit
             </a>
+            @endif
 
             <a
                 href="{{ route('pegawai.index') }}"

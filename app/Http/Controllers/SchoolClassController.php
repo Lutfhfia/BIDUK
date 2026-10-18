@@ -185,6 +185,20 @@ class SchoolClassController extends Controller
             ],
         ]);
 
+        if (
+            !empty($validated['homeroom_teacher_id'])
+            && !Employee::active()
+                ->teachers()
+                ->whereKey($validated['homeroom_teacher_id'])
+                ->exists()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'homeroom_teacher_id' => 'Wali kelas harus merupakan pegawai aktif dengan jenis pegawai Guru.',
+                ]);
+        }
+
         $historyStudentId = $validated['history_student_id'] ?? null;
 
         /*
@@ -420,6 +434,21 @@ class SchoolClassController extends Controller
                 }),
             ],
         ]);
+
+        if (
+            !empty($validated['homeroom_teacher_id'])
+            && (int) $validated['homeroom_teacher_id'] !== (int) $class->homeroom_teacher_id
+            && !Employee::active()
+                ->teachers()
+                ->whereKey($validated['homeroom_teacher_id'])
+                ->exists()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'homeroom_teacher_id' => 'Wali kelas harus merupakan pegawai aktif dengan jenis pegawai Guru.',
+                ]);
+        }
 
         /*
          * Simpan subject_ids secara terpisah.

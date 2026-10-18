@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Detail Mata Pelajaran')
+
 @section('content')
 
 <div class="container-fluid">
@@ -7,14 +9,10 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <div class="text-muted mb-1">
-                Dashboard / Akademik / Mata Pelajaran / Detail
-            </div>
-
-            <h2 class="fw-bold mb-1">
-                <i class="bi bi-journal-text me-2"></i>
+            <h4 class="fw-bold mb-1">
+                <i class="bi bi-journal-text text-success me-2"></i>
                 Detail Mata Pelajaran
-            </h2>
+            </h4>
 
             <p class="text-muted mb-0">
                 Informasi lengkap mengenai mata pelajaran.
@@ -28,11 +26,13 @@
                 Kembali
             </a>
 
-            <a href="{{ route('subjects.edit', $subject) }}"
-               class="btn btn-success">
-                <i class="bi bi-pencil me-1"></i>
-                Edit
-            </a>
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.edit'))
+                <a href="{{ route('subjects.edit', $subject) }}"
+                   class="btn btn-success">
+                    <i class="bi bi-pencil me-1"></i>
+                    Edit
+                </a>
+            @endif
         </div>
     </div>
 

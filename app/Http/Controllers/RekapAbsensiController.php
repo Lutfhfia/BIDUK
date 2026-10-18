@@ -262,6 +262,19 @@ class RekapAbsensiController extends Controller
         // Ambil kelas yang dipilih.
         $schoolClass = SchoolClass::findOrFail($validated['class_id']);
 
+        $semesterMatchesClassYear = Semester::query()
+            ->whereKey($validated['semester_id'])
+            ->where('academic_year_id', $schoolClass->academic_year_id)
+            ->exists();
+
+        if (!$semesterMatchesClassYear) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'semester_id' => 'Semester harus berasal dari tahun ajaran yang sama dengan kelas.',
+                ]);
+        }
+
         // Guru/Wali Kelas hanya boleh mengelola kelas yang menjadi tanggung jawabnya.
         if ($user->isGuru()) {
             $employee = $user->employee;

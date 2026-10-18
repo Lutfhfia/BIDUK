@@ -51,9 +51,11 @@
                 <a href="{{ route('students.index', request()->only(['search', 'class_id', 'status'])) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
-                <a href="{{ route('students.edit', $student) }}" class="btn btn-biduk-primary">
-                    <i class="bi bi-pencil-square me-1"></i> Edit Data
-                </a>
+                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                    <a href="{{ route('students.edit', $student) }}" class="btn btn-biduk-primary">
+                        <i class="bi bi-pencil-square me-1"></i> Edit Data
+                    </a>
+                @endif
             </div>
         </div>
 

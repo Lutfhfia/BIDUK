@@ -7,11 +7,8 @@
     {{-- Header --}}
     <div class="mb-4">
 
-        <div class="text-muted small mb-1">
-            Akademik / Tahun Ajaran / Edit
-        </div>
-
         <h3 class="fw-bold mb-1">
+            <i class="bi bi-calendar-event text-success me-2"></i>
             Edit Tahun Ajaran
         </h3>
 
@@ -85,40 +82,6 @@
                         </select>
 
                         @error('status')
-
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-
-                        @enderror
-
-                    </div>
-
-
-                    {{-- Semester Berjalan --}}
-                    <div class="col-md-6">
-
-                        <label class="form-label fw-semibold">
-                            Semester Berjalan
-                        </label>
-
-                        <select name="current_semester"
-                                class="form-select @error('current_semester') is-invalid @enderror"
-                                required>
-
-                            <option value="Ganjil"
-                                {{ old('current_semester', $academicYear->current_semester) === 'Ganjil' ? 'selected' : '' }}>
-                                Ganjil
-                            </option>
-
-                            <option value="Genap"
-                                {{ old('current_semester', $academicYear->current_semester) === 'Genap' ? 'selected' : '' }}>
-                                Genap
-                            </option>
-
-                        </select>
-
-                        @error('current_semester')
 
                             <div class="invalid-feedback">
                                 {{ $message }}

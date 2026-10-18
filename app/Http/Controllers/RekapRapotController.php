@@ -157,7 +157,8 @@ class RekapRapotController extends Controller
             $filename = 'rapot-' . ($student->nis ?: $student->id) . '.pdf';
 
             return Pdf::loadHTML($view->render())
-                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
+                ->setOption('defaultMediaType', 'print')
+                ->setPaper('a4', 'portrait')
                 ->download($filename);
         }
 
@@ -211,7 +212,8 @@ class RekapRapotController extends Controller
                 : 'rapot-semua-kelas-' . now()->format('Y-m-d-His') . '.pdf';
 
             return Pdf::loadHTML($view->render())
-                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
+                ->setOption('defaultMediaType', 'print')
+                ->setPaper('a4', 'portrait')
                 ->download($filename);
         }
 

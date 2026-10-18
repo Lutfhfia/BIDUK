@@ -20,6 +20,7 @@
             </a>
 
             <h3 class="fw-bold mt-2 mb-1">
+                <i class="bi bi-building text-success me-2"></i>
                 Detail Kelas {{ $class->name }}
             </h3>
 
@@ -32,13 +33,13 @@
 
         <div class="d-flex gap-2">
 
-            <a href="{{ route('classes.edit', $class) }}"
-               class="btn btn-outline-primary">
-
-                <i class="bi bi-pencil me-1"></i>
-                Edit Kelas
-
-            </a>
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
+                <a href="{{ route('classes.edit', $class) }}"
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i>
+                    Edit Kelas
+                </a>
+            @endif
 
 
             <a href="{{ route('classes.students', $class) }}"
@@ -486,13 +487,13 @@
                 </div>
 
 
-                <a href="{{ route('classes.students.add', $class) }}"
-                   class="btn btn-primary">
-
-                    <i class="bi bi-person-plus me-1"></i>
-                    Tambah Siswa
-
-                </a>
+                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
+                    <a href="{{ route('classes.students.add', $class) }}"
+                       class="btn btn-primary">
+                        <i class="bi bi-person-plus me-1"></i>
+                        Tambah Siswa
+                    </a>
+                @endif
 
             </div>
 
@@ -698,6 +699,7 @@
 
                     </p>
 
+                    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                     <a
                         href="{{ route('classes.students.add', $class) }}"
                         class="btn btn-primary">
@@ -706,6 +708,7 @@
                         Tambah Siswa
 
                     </a>
+                    @endif
 
                 </div>
 

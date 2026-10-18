@@ -16,10 +16,10 @@
     {{-- Page Header --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
-            <h4 class="fw-bold text-dark mb-1">
+            <h3 class="fw-bold text-dark mb-1">
                 <i class="bi bi-building text-success me-2"></i>
                 Data Kelas
-            </h4>
+            </h3>
 
             <p class="text-muted mb-0" style="font-size: 0.85rem;">
                 Kelola data kelas dan wali kelas SDN 204
@@ -27,10 +27,12 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('classes.create') }}" class="btn btn-biduk-primary">
-                <i class="bi bi-plus-lg me-1"></i>
-                Tambah Kelas
-            </a>
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.create'))
+                <a href="{{ route('classes.create') }}" class="btn btn-biduk-primary">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Tambah Kelas
+                </a>
+            @endif
         </div>
     </div>
 
@@ -376,6 +378,7 @@
                                                 </li>
 
 
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                                                 <li>
                                                     <hr class="dropdown-divider">
                                                 </li>
@@ -391,9 +394,11 @@
                                                         Edit
                                                     </a>
                                                 </li>
+                                                @endif
 
 
                                                 {{-- Hapus --}}
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.delete'))
                                                 <li>
 
                                                     <form
@@ -416,6 +421,7 @@
                                                     </form>
 
                                                 </li>
+                                                @endif
 
                                             </ul>
 
@@ -490,6 +496,7 @@
                         !request('status')
                     )
 
+                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.create'))
                         <a
                             href="{{ route('classes.create') }}"
                             class="btn btn-biduk-primary"
@@ -497,6 +504,7 @@
                             <i class="bi bi-plus-lg me-1"></i>
                             Tambah Kelas Pertama
                         </a>
+                        @endif
 
                     @endif
 

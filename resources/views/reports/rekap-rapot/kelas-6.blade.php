@@ -1,15 +1,19 @@
+@if (empty($isBulkReport))
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
 
     <title>Rekap Rapor Kelas 6 - {{ $student->name }}</title>
+@endif
 
     <style>
+        @if (empty($isBulkReport))
         @page {
-            size: F4 portrait;
-            margin: 8mm 9mm 8mm 9mm;
+            size: A4 portrait;
+            margin: 0;
         }
+        @endif
 
         * {
             box-sizing: border-box;
@@ -29,9 +33,11 @@
         }
 
         .page {
-            width: 100%;
-            margin: 0 auto;
+            width: 180mm;
+            margin: 12mm auto 0;
             padding: 0;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         table {
@@ -42,7 +48,7 @@
 
         th,
         td {
-            border: 0.6px solid #222;
+            border: 0.5px solid #000;
         }
 
         .center {
@@ -146,7 +152,6 @@
         }
 
         .report-table th {
-            background: #f0f0f0;
             font-weight: bold;
             text-align: center;
         }
@@ -172,26 +177,23 @@
         }
 
         .report-table .group-row td {
-            background: #e8e8e8;
             font-weight: bold;
             text-align: left;
         }
 
         .report-table .total-row td,
         .report-table .average-row td {
-            background: #dceff7;
             font-weight: bold;
         }
 
         /* =========================================================
            BAGIAN BAWAH
-           SATU LAYOUT BESAR:
-           KIRI = TABEL NILAI + ABSENSI + WALI/STATUS
-           KANAN = KEPUTUSAN + KEPALA SEKOLAH
+           TABEL NILAI DAN KEPUTUSAN BERJAJAR
+           ABSENSI + STATUS AKHIR DI BAWAH TABEL NILAI
         ========================================================= */
 
         .bottom-wrapper {
-            width: 94%;
+            width: 100%;
             margin: 7px auto 0;
             border-collapse: collapse;
             table-layout: fixed;
@@ -203,15 +205,15 @@
         }
 
         .bottom-left {
-            width: 73%;
-            padding-right: 5px !important;
+            width: 74%;
+            padding-right: 0 !important;
             border: 0 !important;
         }
 
         .bottom-right {
-            width: 27%;
-            padding: 5px 6px !important;
-            border: 0.7px solid #222 !important;
+            width: 26%;
+            padding: 4px 5px !important;
+            border: 0.6px solid #000 !important;
             vertical-align: top;
         }
 
@@ -238,35 +240,34 @@
 
         .final-table th,
         .final-table td {
-            border: 0.6px solid #222;
-            padding: 2.3px 3px;
-            font-size: 6.1px;
-            line-height: 1.08;
+            border: 0.5px solid #000;
+            padding: 1.8px 2px;
+            font-size: 5.8px;
+            line-height: 1.05;
             vertical-align: middle;
             overflow-wrap: break-word;
             word-wrap: break-word;
         }
 
         .final-table th {
-            background: #f0f0f0;
             font-weight: bold;
             text-align: center;
         }
 
         .final-table .number-col {
-            width: 7%;
+            width: 3%;
         }
 
         .final-table .subject-col {
-            width: 27%;
+            width: 28%;
         }
 
         .final-table .score-col {
-            width: 12%;
+            width: 9%;
         }
 
         .final-table .outcome-col {
-            width: 21%;
+            width: 14%;
         }
 
         .final-table .subject {
@@ -284,13 +285,11 @@
         }
 
         .final-table .group-row td {
-            background: #e8e8e8;
             font-weight: bold;
             text-align: left;
         }
 
         .final-table .average-row td {
-            background: #dceff7;
             font-weight: bold;
         }
 
@@ -300,46 +299,47 @@
         ========================================================= */
 
         .decision-title {
-            margin: 0 0 8px;
-            font-size: 7.2px;
+            margin: 0 0 5px;
+            font-size: 6.5px;
             font-weight: bold;
             text-align: center;
+            text-transform: uppercase;
         }
 
         .decision-description {
-            margin: 0 0 8px;
-            font-size: 6.1px;
-            line-height: 1.35;
+            margin: 0 0 5px;
+            font-size: 5.7px;
+            line-height: 1.2;
             text-align: left;
         }
 
         .decision-status {
             width: 100%;
-            margin: 5px 0 9px;
-            padding: 5px 2px;
-            border: 0.7px solid #222;
-            font-size: 7.3px;
+            margin: 4px 0 7px;
+            padding: 4px 1px;
+            border: 0.5px solid #000;
+            font-size: 6.2px;
             font-weight: bold;
             text-align: center;
         }
 
         .decision-field {
-            margin: 6px 0 0;
-            font-size: 6.1px;
-            line-height: 1.3;
+            margin: 5px 0 0;
+            font-size: 5.6px;
+            line-height: 1.2;
             overflow-wrap: break-word;
             word-wrap: break-word;
         }
 
         .decision-headmaster {
-            margin-top: 37mm;
-            font-size: 6.2px;
+            margin-top: 18mm;
+            font-size: 5.8px;
             line-height: 1.25;
             text-align: center;
         }
 
         .decision-signature-space {
-            height: 17mm;
+            height: 14mm;
         }
 
         .signature-name {
@@ -354,13 +354,7 @@
 
         .attendance-section {
             width: 100%;
-            margin-top: 5px;
-        }
-
-        .attendance-title {
-            margin: 0 0 2px;
-            font-size: 7px;
-            font-weight: bold;
+            margin-top: 0;
         }
 
         .attendance-table {
@@ -370,26 +364,26 @@
         }
 
         .attendance-table td {
-            border: 0.6px solid #222;
-            padding: 2.5px 3px;
-            font-size: 6.2px;
-            line-height: 1.15;
+            border: 0.5px solid #000;
+            padding: 1.5px 2px;
+            font-size: 5.8px;
+            line-height: 1.1;
             vertical-align: middle;
         }
 
         .attendance-table .attendance-label {
-            width: 20%;
+            width: 28%;
             text-align: center;
             font-weight: bold;
         }
 
         .attendance-table .attendance-type {
-            width: 25%;
+            width: 42%;
             text-align: left;
         }
 
         .attendance-table .attendance-value {
-            width: 55%;
+            width: 30%;
             text-align: right;
             white-space: nowrap;
         }
@@ -400,54 +394,64 @@
 
         .signature-table {
             width: 100%;
-            margin-top: 5px;
+            margin-top: 0;
             border-collapse: collapse;
             table-layout: fixed;
         }
 
         .signature-table td {
-            border: 0;
-            padding: 2px 3px;
-            font-size: 6.2px;
-            line-height: 1.2;
+            border: 0.5px solid #000;
+            padding: 2px;
+            font-size: 5.8px;
+            line-height: 1.15;
             text-align: center;
             vertical-align: top;
         }
 
         .signature-table .homeroom {
-            width: 30%;
+            width: 32%;
         }
 
         .signature-table .final-status {
-            width: 70%;
+            width: 68%;
+            padding: 0;
         }
 
         .signature-space {
-            height: 10mm;
+            height: 8mm;
         }
 
         .status-box {
             width: 100%;
-            border: 0.7px solid #222;
+            height: 23mm;
         }
 
         .status-title {
-            padding: 4px 2px;
-            border-bottom: 0.6px solid #222;
-            font-weight: bold;
+            padding: 3px 2px;
+            border-bottom: 0.5px solid #000;
             text-align: center;
+            font-weight: bold;
         }
 
         .status-value {
+            min-height: 13mm;
             padding: 5px 2px;
-            font-size: 7.8px;
+            font-size: 6.5px;
             font-weight: bold;
             text-align: center;
         }
 
         .status-date {
-            margin-top: 5px;
-            text-align: center;
+            padding: 3px 2px;
+            text-align: left;
+        }
+
+        .status-option.selected {
+            font-weight: bold;
+        }
+
+        .status-option.crossed {
+            text-decoration: line-through;
         }
 
         /* =========================================================
@@ -455,16 +459,38 @@
         ========================================================= */
 
         .note {
-            width: 94%;
-            margin: 4px auto 0;
+            width: 100%;
+            margin: 3px auto 0;
             color: #555;
-            font-size: 5.8px;
+            font-size: 5.2px;
             line-height: 1.15;
         }
-    </style>
-</head>
 
+        @media screen {
+            html,
+            body {
+                min-height: 100%;
+                background: #e5e7eb;
+            }
+
+            body {
+                padding: 24px 0;
+            }
+
+            .page {
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                padding: 12mm 15mm;
+                background: #fff;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            }
+        }
+    </style>
+@if (empty($isBulkReport))
+</head>
 <body>
+@endif
 
 @php
     /*
@@ -488,6 +514,7 @@
     $reportAverageScores = $reportAverageScores ?? [];
 
     $graduationStatus = $graduationStatus ?? null;
+    $graduationStatusLabel = strtolower(trim((string) ($graduationStatus?->status ?? '')));
 
 
     /*
@@ -564,6 +591,8 @@
     |
     */
 
+    $mappedExamValues = collect();
+
     $mappedSchoolValues = collect();
 
     $mappedFinalValues = collect();
@@ -575,6 +604,16 @@
         $mappedGrade = $mappedSubjectId
             ? $finalGrades->get($mappedSubjectId)
             : null;
+
+        if (
+            $mappedGrade &&
+            $mappedGrade->exam_score !== null &&
+            $mappedGrade->exam_score !== ''
+        ) {
+            $mappedExamValues->push(
+                (float) $mappedGrade->exam_score
+            );
+        }
 
         if (
             $mappedGrade &&
@@ -953,7 +992,6 @@
                     <td class="outcome">
                     </td>
 
-
                     <td class="score">
                         {{ $formatScore($storedGrade?->school_score) }}
                     </td>
@@ -962,6 +1000,7 @@
                     <td class="outcome">
                         {{ $storedGrade?->school_learning_outcome ?? '' }}
                     </td>
+
 
                 </tr>
 
@@ -1000,7 +1039,7 @@
             <tr class="average-row">
 
                 <td colspan="2" class="center">
-                    RATA-RATA
+                    RATA - RATA
                 </td>
 
                 <td class="score">
@@ -1038,22 +1077,13 @@
         Nilai Sekolah = Nilai Rata-Rata + Nilai Ujian Sekolah
     </div>
 
-
     <table class="bottom-wrapper">
 
         <tbody>
 
             <tr>
 
-                {{-- =================================================
-                     KOLOM KIRI
-                ================================================== --}}
-
                 <td class="bottom-left">
-
-                    {{-- =============================================
-                         TABEL NILAI SEKOLAH / NILAI AKHIR
-                    ============================================== --}}
 
                     <table class="final-table">
 
@@ -1071,8 +1101,11 @@
 
                             <col class="outcome-col">
 
-                        </colgroup>
+                            <col class="score-col">
 
+                            <col class="outcome-col">
+
+                        </colgroup>
 
                         <thead>
 
@@ -1087,17 +1120,29 @@
                                 </th>
 
                                 <th colspan="2">
+                                    NILAI UJIAN SEKOLAH<br>STANDAR DAERAH
+                                </th>
+
+                                <th colspan="2">
                                     NILAI SEKOLAH
                                 </th>
 
                                 <th colspan="2">
-                                    NILAI AKHIR
+                                    NILAI AKHIR *)
                                 </th>
 
                             </tr>
 
 
                             <tr>
+
+                                <th>
+                                    NILAI<br>AKHIR
+                                </th>
+
+                                <th>
+                                    CAPAIAN<br>PEMBELAJARAN
+                                </th>
 
                                 <th>
                                     NILAI<br>AKHIR
@@ -1171,7 +1216,7 @@
 
                                     <tr class="group-row">
 
-                                        <td colspan="6">
+                                        <td colspan="8">
                                             {{ $currentGroup }}
                                         </td>
 
@@ -1192,6 +1237,19 @@
                                             $item['ijazah_name']
                                             ?? '-'
                                         }}
+                                    </td>
+
+
+                                    <td class="score">
+                                        {{
+                                            $formatScore(
+                                                $storedGrade?->exam_score
+                                            )
+                                        }}
+                                    </td>
+
+
+                                    <td class="outcome">
                                     </td>
 
 
@@ -1248,6 +1306,20 @@
 
                                 <td class="score">
                                     {{
+                                        $mappedExamValues->isNotEmpty()
+                                            ? $formatScore(
+                                                $mappedExamValues->avg()
+                                            )
+                                            : '-'
+                                    }}
+                                </td>
+
+
+                                <td></td>
+
+
+                                <td class="score">
+                                    {{
                                         $mappedSchoolValues->isNotEmpty()
                                             ? $formatScore(
                                                 $mappedSchoolValues->avg()
@@ -1285,12 +1357,6 @@
                     ============================================== --}}
 
                     <div class="attendance-section">
-
-                        <div class="attendance-title">
-                            KETIDAKHADIRAN
-                        </div>
-
-
                         <table class="attendance-table">
 
                             <colgroup>
@@ -1411,29 +1477,13 @@
                                 <td class="final-status">
 
                                     <div class="status-box">
-
-                                        <div class="status-title">
-                                            STATUS AKHIR
-                                        </div>
-
-
+                                        <div class="status-title">STATUS AKHIR</div>
                                         <div class="status-value">
-
-                                            {{
-                                                $graduationStatus?->status
-                                                ?: 'BELUM DITETAPKAN'
-                                            }}
-
+                                            <span class="status-option {{ $graduationStatusLabel === 'lulus' ? 'selected' : ($graduationStatusLabel === 'tidak lulus' ? 'crossed' : '') }}">LULUS</span>
+                                            /
+                                            <span class="status-option {{ $graduationStatusLabel === 'tidak lulus' ? 'selected' : ($graduationStatusLabel === 'lulus' ? 'crossed' : '') }}">TIDAK LULUS</span>
                                         </div>
-
-                                    </div>
-
-
-                                    <div class="status-date">
-
-                                        Tanggal:
-                                        {{ $graduationDateLabel }}
-
+                                        <div class="status-date">Tanggal: {{ $graduationDateLabel }}</div>
                                     </div>
 
                                 </td>
@@ -1454,7 +1504,7 @@
                 <td class="bottom-right">
 
                     <div class="decision-title">
-                        Keputusan:
+                        Keputusan Kelulusan:
                     </div>
 
 
@@ -1552,18 +1602,10 @@
     </table>
 
 
-    {{-- =========================================================
-         CATATAN
-    ========================================================== --}}
-
-    <div class="note">
-
-        Catatan: Nilai yang belum tersedia ditampilkan sebagai tanda "-".
-        Kolom Nilai Ujian Sekolah Standar Daerah tidak digunakan.
-
-    </div>
-
 </div>
 
+@if (empty($isBulkReport))
 </body>
+
 </html>
+@endif

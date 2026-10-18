@@ -15,6 +15,7 @@ use App\Models\Employee;
 use App\Models\RekapAbsensi;
 use App\Models\StudentPromotion;
 use App\Models\Subject;
+use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -309,12 +310,24 @@ class ReportCardGradeController extends Controller
         $assignmentsByGrade = $classAssignments
             ->filter(fn ($assignment) => $assignment->schoolClass && $assignment->schoolClass->grade_level !== null)
             ->groupBy(fn ($assignment) => (int) $assignment->schoolClass->grade_level);
+        $masterClassesByGrade = SchoolClass::with('academicYear')
+            ->whereBetween('grade_level', [1, 6])
+            ->get()
+            ->groupBy('grade_level');
+        $academicYears = AcademicYear::orderByDesc('start_date')->get();
 
         $gradeLevelsData = [];
 
         for ($level = 1; $level <= 6; $level++) {
             $manualHistory = $manualHistories->get($level);
             $matchingAssignments = $assignmentsByGrade->get($level, collect());
+            $historyClasses = $masterClassesByGrade->get($level, collect())
+                ->filter(fn ($historyClass) => $historyClass->academicYear)
+                ->sortBy([
+                    ['academicYear.start_date', 'desc'],
+                    ['name', 'asc'],
+                ])
+                ->values();
 
             $levelAssignment = $matchingAssignments
                 ->sortByDesc(fn ($assignment) => $assignment->schoolClass?->academicYear?->start_date?->timestamp ?? $assignment->entry_date?->timestamp ?? 0)
@@ -329,9 +342,13 @@ class ReportCardGradeController extends Controller
                         $query->where('name', trim($manualHistory->academic_year));
                     })
                     ->first();
-            }
 
-            $class ??= $levelAssignment?->schoolClass;
+                $levelAssignment = $class
+                    ? $matchingAssignments->firstWhere('class_id', $class->id)
+                    : null;
+            } else {
+                $class = $levelAssignment?->schoolClass;
+            }
 
             if (!$class) {
                 $gradeLevelsData[$level] = [
@@ -342,6 +359,7 @@ class ReportCardGradeController extends Controller
                     'academic_year' => null,
                     'history_entry' => null,
                     'manual_history' => $manualHistory,
+                    'history_classes' => $historyClasses,
                     'has_subjects' => false,
                     'academic_year_master' => $manualHistory
                         ? AcademicYear::where('name', trim($manualHistory->academic_year))->first()
@@ -383,6 +401,7 @@ class ReportCardGradeController extends Controller
                 'academic_year' => $academicYear,
                 'history_entry' => $levelAssignment,
                 'manual_history' => $manualHistory,
+                'history_classes' => $historyClasses,
                 'has_subjects' => $class->subjects->contains(fn ($subject) => $subject->status === 'Aktif'),
                 'academic_year_master' => $academicYear,
                 'has_ganjil' => (bool) $semGanjil,
@@ -402,6 +421,7 @@ class ReportCardGradeController extends Controller
             compact(
                 'student',
                 'gradeLevelsData',
+                'academicYears',
                 'returnUrl',
                 'currentGradeLevel'
             )
@@ -417,20 +437,24 @@ class ReportCardGradeController extends Controller
                 Rule::exists('student_class_histories', 'id')->where('student_id', $student->id),
             ],
             'grade_level' => ['required', 'integer', 'between:1,6'],
-            'academic_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}\/\d{4}$/'],
-            'rombel' => ['required', 'string', 'max:50'],
+            'academic_year_id' => ['required', 'integer', Rule::exists('academic_years', 'id')],
+            'class_id' => [
+                'required',
+                'integer',
+                Rule::exists('classes', 'id')
+                    ->where('academic_year_id', $request->input('academic_year_id'))
+                    ->where('grade_level', $request->input('grade_level')),
+            ],
             'final_status' => ['required', 'in:Naik Kelas,Tinggal Kelas,Belum Diketahui'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        [$historyStartYear, $historyEndYear] = array_map('intval', explode('/', $validated['academic_year']));
-        if ($historyEndYear !== $historyStartYear + 1) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'academic_year' => 'Format tahun ajaran harus berurutan, misalnya 2024/2025.',
-                ]);
-        }
+        $selectedClass = SchoolClass::with('academicYear')
+            ->whereKey($validated['class_id'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->where('grade_level', $validated['grade_level'])
+            ->firstOrFail();
+        $selectedAcademicYear = $selectedClass->academicYear;
 
         $activeAssignment = $student->classAssignments()
             ->with('schoolClass.academicYear')
@@ -452,12 +476,12 @@ class ReportCardGradeController extends Controller
             $currentGradeLevel > 0
             && $validated['grade_level'] < $currentGradeLevel
             && $currentAcademicYear
-            && $historyStartYear >= (int) $currentAcademicYear->start_date->format('Y')
+            && $selectedAcademicYear->start_date >= $currentAcademicYear->start_date
         ) {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'academic_year' => 'Riwayat kelas ' . $validated['grade_level'] . ' harus menggunakan tahun ajaran sebelum tahun ajaran kelas aktif siswa (' . $currentAcademicYear->name . ').',
+                    'academic_year_id' => 'Riwayat kelas ' . $validated['grade_level'] . ' harus menggunakan tahun ajaran sebelum tahun ajaran kelas aktif siswa (' . $currentAcademicYear->name . ').',
                 ]);
         }
 
@@ -477,17 +501,25 @@ class ReportCardGradeController extends Controller
                 ]);
         }
 
+        if (!$historyEntry && $student->classHistories()->where('grade_level', $validated['grade_level'])->exists()) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'history_id' => 'Riwayat kelas ini sudah tersimpan. Gunakan opsi edit pada kartu riwayat.',
+                ]);
+        }
+
         $hasConflictingGradeInAcademicYear = StudentClassHistory::query()
             ->where('student_id', $student->id)
             ->when($historyEntry, fn ($query) => $query->where('id', '!=', $historyEntry->id))
-            ->where('academic_year', $validated['academic_year'])
+            ->where('academic_year', $selectedAcademicYear->name)
             ->where('grade_level', '!=', $validated['grade_level'])
             ->exists();
 
         $hasConflictingMasterAssignment = $student->classAssignments()
             ->whereHas('schoolClass', function ($query) use ($validated) {
-                $query->where('grade_level', '!=', $validated['grade_level'])
-                    ->whereHas('academicYear', fn ($yearQuery) => $yearQuery->where('name', $validated['academic_year']));
+                $query->where('academic_year_id', $validated['academic_year_id'])
+                    ->where('id', '!=', $validated['class_id']);
             })
             ->exists();
 
@@ -495,19 +527,51 @@ class ReportCardGradeController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'academic_year' => 'Siswa sudah memiliki riwayat pada tingkatan kelas lain di tahun ajaran ini. Periksa kembali tahun ajaran dan dokumen sekolah.',
+                    'academic_year_id' => 'Siswa sudah memiliki penempatan kelas lain pada tahun ajaran ini. Periksa kembali tahun ajaran, rombel, dan dokumen sekolah.',
                 ]);
         }
 
-        $student->classHistories()->updateOrCreate(
-            ['grade_level' => $validated['grade_level']],
-            [
-                'academic_year' => $validated['academic_year'],
-                'rombel' => trim($validated['rombel']),
-                'final_status' => $validated['final_status'],
-                'notes' => trim((string) ($validated['notes'] ?? '')) !== '' ? trim((string) ($validated['notes'] ?? '')) : null,
-            ]
-        );
+        $historyData = [
+            'academic_year' => $selectedAcademicYear->name,
+            'rombel' => $selectedClass->name,
+            'final_status' => $validated['final_status'],
+            'notes' => trim((string) ($validated['notes'] ?? '')) !== '' ? trim((string) ($validated['notes'] ?? '')) : null,
+        ];
+        $oldValues = $historyEntry?->only([
+            'grade_level',
+            'academic_year',
+            'rombel',
+            'final_status',
+            'notes',
+        ]);
+        $action = $historyEntry ? 'updated' : 'created';
+
+        DB::transaction(function () use ($student, $historyEntry, $validated, $historyData, $oldValues, $action) {
+            if ($historyEntry) {
+                $historyEntry->update($historyData);
+            } else {
+                $historyEntry = $student->classHistories()->create([
+                    'grade_level' => $validated['grade_level'],
+                    ...$historyData,
+                ]);
+            }
+
+            app(ActivityLogger::class)->log(
+                $action,
+                'student_class_histories',
+                ($action === 'created' ? 'Menambahkan' : 'Memperbarui')
+                    . ' riwayat kelas ' . $validated['grade_level'] . ' siswa: ' . $student->name,
+                $historyEntry,
+                $oldValues,
+                $historyEntry->only([
+                    'grade_level',
+                    'academic_year',
+                    'rombel',
+                    'final_status',
+                    'notes',
+                ])
+            );
+        });
 
         return redirect()->route('report-card-grades.history', ['student' => $student->id])
             ->with('success', 'Riwayat kelas berhasil disimpan.');
@@ -547,7 +611,8 @@ class ReportCardGradeController extends Controller
             $filename = 'rapot-' . ($student->nis ?: $student->id) . '-kelas-' . $class->grade_level . '.pdf';
 
             return Pdf::loadHTML($view->render())
-                ->setPaper([0, 0, 609.45, 935.43], 'portrait')
+                ->setOption('defaultMediaType', 'print')
+                ->setPaper('a4', 'portrait')
                 ->download($filename);
         }
 

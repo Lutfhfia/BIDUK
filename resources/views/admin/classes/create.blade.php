@@ -10,11 +10,8 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
 
         <div>
-            <div class="text-muted small mb-1">
-                Master Data / Data Kelas / Tambah Kelas
-            </div>
-
             <h3 class="fw-bold mb-1">
+                <i class="bi bi-building-add text-success me-2"></i>
                 Tambah Kelas
             </h3>
 

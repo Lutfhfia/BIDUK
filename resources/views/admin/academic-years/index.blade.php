@@ -8,11 +8,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
-            <div class="text-muted small mb-1">
-                Akademik / Tahun Ajaran
-            </div>
-
             <h3 class="fw-bold mb-1">
+                <i class="bi bi-calendar3 text-success me-2"></i>
                 Tahun Ajaran
             </h3>
 
@@ -21,11 +18,13 @@
             </div>
         </div>
 
-        <a href="{{ route('academic-years.create') }}"
-           class="btn btn-biduk-primary">
-            <i class="bi bi-plus-lg me-1"></i>
-            Tambah Tahun Ajaran
-        </a>
+        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+            <a href="{{ route('academic-years.create') }}"
+               class="btn btn-biduk-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                Tambah Tahun Ajaran
+            </a>
+        @endif
 
     </div>
 
@@ -107,10 +106,6 @@
                             </th>
 
                             <th>
-                                Semester Berjalan
-                            </th>
-
-                            <th>
                                 Tanggal Mulai
                             </th>
 
@@ -166,32 +161,6 @@
                                 </td>
 
 
-                                {{-- Semester Berjalan --}}
-                                <td>
-
-                                    @if($academicYear->current_semester === 'Ganjil')
-
-                                        <span class="badge badge-aktif px-3 py-2">
-                                            Ganjil
-                                        </span>
-
-                                    @elseif($academicYear->current_semester === 'Genap')
-
-                                        <span class="badge badge-aktif px-3 py-2">
-                                            Genap
-                                        </span>
-
-                                    @else
-
-                                        <span class="text-muted small">
-                                            Belum ditentukan
-                                        </span>
-
-                                    @endif
-
-                                </td>
-
-
                                 {{-- Tanggal Mulai --}}
                                 <td>
                                     {{ $academicYear->start_date?->format('d/m/Y') ?? '-' }}
@@ -240,13 +209,13 @@
 
 
                                         {{-- Edit --}}
-                                        <a href="{{ route('academic-years.edit', $academicYear) }}"
-                                           class="btn btn-sm btn-biduk-outline"
-                                           title="Edit">
-
-                                            <i class="bi bi-pencil"></i>
-
-                                        </a>
+                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.edit'))
+                                            <a href="{{ route('academic-years.edit', $academicYear) }}"
+                                               class="btn btn-sm btn-biduk-outline"
+                                               title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        @endif
 
                                     </div>
 
@@ -258,7 +227,7 @@
 
                             <tr>
 
-                                <td colspan="7"
+                                <td colspan="6"
                                     class="text-center py-5">
 
                                     <div class="text-muted">
@@ -273,14 +242,13 @@
                                             Silakan tambahkan tahun ajaran terlebih dahulu.
                                         </p>
 
-                                        <a href="{{ route('academic-years.create') }}"
-                                           class="btn btn-biduk-primary btn-sm">
-
-                                            <i class="bi bi-plus-lg me-1"></i>
-
-                                            Tambah Tahun Ajaran
-
-                                        </a>
+                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+                                            <a href="{{ route('academic-years.create') }}"
+                                               class="btn btn-biduk-primary btn-sm">
+                                                <i class="bi bi-plus-lg me-1"></i>
+                                                Tambah Tahun Ajaran
+                                            </a>
+                                        @endif
 
                                     </div>
 

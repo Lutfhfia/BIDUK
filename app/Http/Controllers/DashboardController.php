@@ -200,7 +200,9 @@ foreach ($class->subjects as $subject) {
 
     if (!$filledPairs->has($pairKey)) {
         $missingItems[] = [
+            'class_id' => $class->id,
             'class_name' => $class->name,
+            'student_id' => $student->id,
             'student_name' => $student->name,
             'subject_name' => $subject->name,
         ];

@@ -10,7 +10,9 @@
             Kembali ke Profil
         </a>
 
-        <h4 class="fw-bold mt-3 mb-1">Edit Profil</h4>
+        <h4 class="fw-bold mt-3 mb-1">
+            <i class="bi bi-person-gear text-success me-2"></i>Edit Profil
+        </h4>
         <p class="text-muted mb-0">
             Perbarui nama dan alamat email akun Anda.
         </p>

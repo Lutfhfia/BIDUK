@@ -18,24 +18,37 @@
 
 @section('content')
 
+<style>
+    .empty-state-action {
+        padding: 0.25rem 0.65rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.25;
+    }
+
+    .empty-state-action i {
+        margin-bottom: 0 !important;
+        font-size: 0.8rem !important;
+        opacity: 1 !important;
+    }
+</style>
+
     {{-- Header Halaman --}}
-    <div class="d-flex justify-content-between align-items-center mb-4 fade-in-up">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 fade-in-up">
         <div>
-            <h4 class="fw-bold mb-1">
-                <i class="bi bi-clipboard2-check-fill me-2"
-                    style="color: var(--biduk-primary);"></i>
-                Rekap Absensi
+            <h4 class="fw-bold text-dark mb-1">
+                <i class="bi bi-clipboard2-check-fill text-success me-2"></i>Rekap Absensi
             </h4>
 
-            <p class="text-muted mb-0" style="font-size: 0.875rem;">
+            <p class="text-muted mb-0" style="font-size: 0.85rem;">
                 Kelola rekap ketidakhadiran siswa berdasarkan tahun ajaran dan semester.
             </p>
         </div>
 
-        <a href="{{ route('rekap-absensi.create') }}" class="btn btn-biduk-primary">
-            <i class="bi bi-plus-lg me-1"></i>
-            Tambah Rekap Absensi
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ route('rekap-absensi.create') }}" class="btn btn-biduk-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>Tambah Rekap Absensi
+            </a>
+        </div>
     </div>
 
 
@@ -315,44 +328,40 @@
                                                 </li>
 
 
-                                                {{-- Edit --}}
-                                                <li>
-                                                    <a
-                                                        class="dropdown-item"
-                                                        href="{{ route('rekap-absensi.edit', $rekap) }}"
-                                                    >
-                                                        <i class="bi bi-pencil-square"></i>
-                                                        Edit
-                                                    </a>
-                                                </li>
-
-
-                                                <li>
-                                                    <hr class="dropdown-divider">
-                                                </li>
-
-
-                                                {{-- Hapus --}}
-                                                <li>
-                                                    <form
-                                                        action="{{ route('rekap-absensi.destroy', $rekap) }}"
-                                                        method="POST"
-                                                        onsubmit="return confirm('Yakin ingin menghapus rekap absensi ini?');"
-                                                    >
-
-                                                        @csrf
-                                                        @method('DELETE')
-
-                                                        <button
-                                                            type="submit"
-                                                            class="dropdown-item text-danger"
+                                                @if (auth()->user()->isSuperAdmin() || auth()->user()->isGuru())
+                                                    <li>
+                                                        <a
+                                                            class="dropdown-item"
+                                                            href="{{ route('rekap-absensi.edit', $rekap) }}"
                                                         >
-                                                            <i class="bi bi-trash"></i>
-                                                            Hapus
-                                                        </button>
+                                                            <i class="bi bi-pencil-square"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
 
-                                                    </form>
-                                                </li>
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+
+                                                    <li>
+                                                        <form
+                                                            action="{{ route('rekap-absensi.destroy', $rekap) }}"
+                                                            method="POST"
+                                                            onsubmit="return confirm('Yakin ingin menghapus rekap absensi ini?');"
+                                                        >
+                                                            @csrf
+                                                            @method('DELETE')
+
+                                                            <button
+                                                                type="submit"
+                                                                class="dropdown-item text-danger"
+                                                            >
+                                                                <i class="bi bi-trash"></i>
+                                                                Hapus
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
 
                                             </ul>
 
@@ -397,21 +406,21 @@
             @else
 
                 {{-- Empty State --}}
-                <div class="empty-state">
+                <div class="empty-state py-4">
 
-                    <i class="bi bi-clipboard-x"></i>
+                    <i class="bi bi-clipboard-x" style="font-size: 1.5rem; margin-bottom: 0.5rem;"></i>
 
-                    <h5>
+                    <h6 class="mb-1">
                         Belum Ada Data Rekap Absensi
-                    </h5>
+                    </h6>
 
-                    <p class="mb-3">
+                    <p class="small mb-2">
                         Belum ada data rekap absensi siswa yang tersedia.
                     </p>
 
                     <a
                         href="{{ route('rekap-absensi.create') }}"
-                        class="btn btn-biduk-primary"
+                        class="btn btn-biduk-primary btn-sm empty-state-action"
                     >
                         <i class="bi bi-plus-lg me-1"></i>
                         Tambah Rekap Absensi

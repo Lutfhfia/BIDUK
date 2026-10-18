@@ -13,10 +13,6 @@
 
             <div>
 
-                <div class="text-muted small mb-1">
-                    Laporan / Nilai Rapot / Riwayat Nilai
-                </div>
-
                 <h4 class="fw-bold mb-1">
 
                     <i class="bi bi-clock-history me-2"></i>
@@ -158,12 +154,30 @@
                     $hasData = $data['has_data'] ?? false;
                     $ganjilCount = $data['ganjil_count'] ?? 0;
                     $genapCount = $data['genap_count'] ?? 0;
+                    $historyClasses = $data['history_classes'] ?? collect();
+                    $historyAcademicYears = $academicYears;
+                    $manualAcademicYear = $manualHistory
+                        ? $academicYears->firstWhere('name', trim($manualHistory->academic_year))
+                        : null;
+                    $selectedHistoryClass = $historyClasses->first(function ($historyClass) use ($manualHistory, $class) {
+                        if ($manualHistory) {
+                            return strcasecmp(trim($manualHistory->rombel), trim($historyClass->name)) === 0
+                                && trim($manualHistory->academic_year) === trim($historyClass->academicYear->name);
+                        }
+
+                        return $class && $class->id === $historyClass->id;
+                    });
+                    $selectedAcademicYearId = old('grade_level') == $level
+                        ? old('academic_year_id')
+                        : ($selectedHistoryClass?->academic_year_id ?? $manualAcademicYear?->id);
+                    $selectedClassId = old('grade_level') == $level
+                        ? old('class_id')
+                        : $selectedHistoryClass?->id;
                     $masterMatchesHistory = !$manualHistory
                         || ($class
                             && $ay
                             && strcasecmp(trim($manualHistory->rombel), trim($class->name)) === 0
                             && trim($manualHistory->academic_year) === trim($ay->name));
-                    $academicYearMaster = $data['academic_year_master'] ?? null;
                 @endphp
 
                 <div class="col-md-6 col-lg-4">
@@ -180,17 +194,21 @@
 
                             </h6>
 
-                            @if ($manualHistory)
+                            @if ($manualHistory && !$class)
+                                <span class="badge bg-warning-subtle text-warning">
+                                    Riwayat Perlu Dicocokkan
+                                </span>
+                            @elseif ($hasData)
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="bi bi-check-circle me-1"></i> Nilai Tersedia
+                                </span>
+                            @elseif ($manualHistory)
                                 <span class="badge bg-primary-subtle text-primary">
-                                    Riwayat Tersimpan
+                                    Nilai Belum Diisi
                                 </span>
                             @elseif (!$hasClass)
                                 <span class="badge bg-light text-muted">
                                     Belum Ada
-                                </span>
-                            @elseif ($hasData)
-                                <span class="badge bg-success-subtle text-success">
-                                    <i class="bi bi-check-circle me-1"></i> Ada Data
                                 </span>
                             @else
                                 <span class="badge bg-warning-subtle text-warning">
@@ -234,7 +252,7 @@
                                             Status Riwayat
                                         </div>
                                         <div class="fw-semibold small">
-                                            {{ $manualHistory?->final_status ?? $historyEntry?->final_status ?? $historyEntry?->status ?? '-' }}
+                                            {{ $manualHistory?->final_status ?? $historyEntry?->final_status ?? '-' }}
                                         </div>
                                     </div>
                                 @endif
@@ -304,6 +322,7 @@
                                         @if ($data['has_subjects'] ?? false)
                                             <div class="d-flex gap-2 mb-2">
 
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit'))
                                                 <a
                                                     href="{{ route('report-card-grades.edit', [
                                                         'class' => $class->id,
@@ -315,7 +334,9 @@
                                                     <i class="bi bi-pencil-square me-1"></i>
                                                     {{ $hasData ? 'Lihat & Edit' : 'Input Rapot' }}
                                                 </a>
+                                                @endif
 
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
                                                 <a
                                                     href="{{ route('report-card-grades.print', [
                                                         'class' => $class->id,
@@ -328,13 +349,14 @@
                                                     <i class="bi bi-printer me-1"></i>
                                                     Cetak Rapot
                                                 </a>
+                                                @endif
 
                                             </div>
                                         @else
                                             <div class="alert alert-warning small py-2">
                                                 Kelas ini sudah tersedia, tetapi mata pelajarannya belum disetel.
                                             </div>
-                                            @if (auth()->user()?->can('classes.edit'))
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                                                 <a href="{{ route('classes.edit', $class) }}" class="btn btn-sm btn-warning w-100 mb-2">
                                                     <i class="bi bi-gear me-1"></i>
                                                     Seting Mata Pelajaran Kelas
@@ -346,45 +368,31 @@
                                             @endif
                                         @endif
                                     @elseif ($manualHistory && !$class)
-                                        @if ($academicYearMaster && auth()->user()?->can('classes.create'))
-                                            <a
-                                                href="{{ route('classes.create', [
-                                                    'academic_year_id' => $academicYearMaster->id,
-                                                    'grade_level' => $level,
-                                                    'name' => $manualHistory->rombel,
-                                                    'history_student_id' => $student->id,
-                                                ]) }}"
-                                                class="btn btn-sm btn-outline-primary w-100 mb-2"
-                                            >
-                                                <i class="bi bi-plus-circle me-1"></i>
-                                                Buat Kelas & Seting Mata Pelajaran
-                                            </a>
-                                        @elseif (!$academicYearMaster && auth()->user()?->can('academic-years.create'))
-                                            <a
-                                                href="{{ route('academic-years.create', [
-                                                    'name' => $manualHistory->academic_year,
-                                                    'history_student_id' => $student->id,
-                                                ]) }}"
-                                                class="btn btn-sm btn-outline-primary w-100 mb-2"
-                                            >
-                                                <i class="bi bi-plus-circle me-1"></i>
-                                                Buat Tahun Ajaran Dahulu
-                                            </a>
-                                        @else
-                                            <div class="small text-muted text-center mb-2">
-                                                Tahun ajaran atau kelas master belum tersedia. Hubungi admin untuk membuatnya.
-                                            </div>
-                                        @endif
+                                        <div class="small text-muted text-center mb-2">
+                                            Riwayat tersimpan belum cocok dengan kelas master. Pilih data master yang benar atau hubungi admin sekolah.
+                                        </div>
                                     @endif
 
                                     @if (!$historyEntry || $historyEntry->status !== 'Aktif')
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-primary w-100"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#history-modal-{{ $level }}">
-                                            <i class="bi bi-journal-text me-1"></i>
-                                            {{ $manualHistory || $historyEntry ? 'Lihat & Edit Riwayat' : 'Lengkapi Riwayat' }}
-                                        </button>
+                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                            @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-primary w-100"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#history-modal-{{ $level }}">
+                                                    <i class="bi bi-journal-text me-1"></i>
+                                                    {{ $manualHistory || $historyEntry ? 'Lihat & Edit Riwayat' : 'Lengkapi Riwayat' }}
+                                                </button>
+                                            @else
+                                                <div class="small text-muted text-center">
+                                                    Kelas master untuk tingkatan ini belum tersedia. Hubungi admin sekolah.
+                                                </div>
+                                            @endif
+                                        @else
+                                            <div class="small text-muted text-center">
+                                                Anda tidak memiliki izin untuk mengubah riwayat kelas.
+                                            </div>
+                                        @endif
                                     @else
                                         <div class="small text-muted text-center">
                                             Penempatan kelas aktif dikelola melalui data kelas siswa.
@@ -414,18 +422,34 @@
                                                     <div class="row g-3">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Tahun Ajaran</label>
-                                                            <input
-                                                                type="text"
-                                                                name="academic_year"
-                                                                class="form-control"
-                                                                value="{{ old('grade_level') == $level ? old('academic_year') : ($manualHistory?->academic_year ?? $ay?->name ?? '') }}"
-                                                                placeholder="Contoh: 2024/2025"
-                                                                maxlength="20"
+                                                            <select
+                                                                id="history-academic-year-{{ $level }}"
+                                                                name="academic_year_id"
+                                                                class="form-select"
                                                                 required
                                                             >
-                                                            @error('academic_year')
+                                                                <option value="">Pilih tahun ajaran</option>
+                                                                @foreach ($historyAcademicYears as $historyAcademicYear)
+                                                                    <option
+                                                                        value="{{ $historyAcademicYear->id }}"
+                                                                        @selected((string) $selectedAcademicYearId === (string) $historyAcademicYear->id)
+                                                                    >
+                                                                        {{ $historyAcademicYear->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('academic_year_id')
                                                                 <div class="text-danger small mt-2">{{ $message }}</div>
                                                             @enderror
+                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+                                                                <a
+                                                                    href="{{ route('academic-years.create', ['history_student_id' => $student->id]) }}"
+                                                                    class="btn btn-sm btn-outline-secondary mt-2"
+                                                                >
+                                                                    <i class="bi bi-plus-circle me-1"></i>
+                                                                    Tambah Tahun Ajaran
+                                                                </a>
+                                                            @endif
                                                             @if ($currentGradeLevel && $level < $currentGradeLevel)
                                                                 <div class="form-text text-warning mt-2">
                                                                     <i class="bi bi-info-circle me-1"></i>
@@ -436,25 +460,45 @@
 
                                                         <div class="col-md-6">
                                                             <label class="form-label">Rombel</label>
-                                                            <input
-                                                                type="text"
-                                                                name="rombel"
-                                                                class="form-control"
-                                                                value="{{ old('grade_level') == $level ? old('rombel') : ($manualHistory?->rombel ?? $class?->name ?? '') }}"
-                                                                placeholder="Contoh: 3A"
-                                                                maxlength="50"
+                                                            <select
+                                                                id="history-class-{{ $level }}"
+                                                                name="class_id"
+                                                                class="form-select"
+                                                                data-academic-year-select="history-academic-year-{{ $level }}"
                                                                 required
                                                             >
-                                                            @error('rombel')
+                                                                <option value="">Pilih rombel</option>
+                                                                @foreach ($historyClasses as $historyClass)
+                                                                    <option
+                                                                        value="{{ $historyClass->id }}"
+                                                                        data-academic-year-id="{{ $historyClass->academic_year_id }}"
+                                                                        @selected((string) $selectedClassId === (string) $historyClass->id)
+                                                                    >
+                                                                        {{ $historyClass->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('class_id')
                                                                 <div class="text-danger small mt-2">{{ $message }}</div>
                                                             @enderror
+                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.create'))
+                                                                <a
+                                                                    href="{{ route('classes.create', ['grade_level' => $level, 'academic_year_id' => $selectedAcademicYearId, 'history_student_id' => $student->id]) }}"
+                                                                    class="btn btn-sm btn-outline-secondary mt-2"
+                                                                    data-history-class-create
+                                                                    data-year-select="history-academic-year-{{ $level }}"
+                                                                >
+                                                                    <i class="bi bi-plus-circle me-1"></i>
+                                                                    Tambah Rombel Kelas {{ $level }}
+                                                                </a>
+                                                            @endif
                                                         </div>
 
                                                         <div class="col-md-6">
                                                             <label class="form-label">Status akhir tahun</label>
                                                             <select name="final_status" class="form-select" required>
                                                                 <option value="">Pilih status</option>
-                                                                <option value="Naik Kelas" @selected((old('grade_level') == $level ? old('final_status') : ($manualHistory?->final_status ?? $historyEntry?->final_status ?? 'Naik Kelas')) === 'Naik Kelas')>Naik Kelas</option>
+                                                                <option value="Naik Kelas" @selected((old('grade_level') == $level ? old('final_status') : ($manualHistory?->final_status ?? $historyEntry?->final_status ?? '')) === 'Naik Kelas')>Naik Kelas</option>
                                                                 <option value="Tinggal Kelas" @selected((old('grade_level') == $level ? old('final_status') : ($manualHistory?->final_status ?? $historyEntry?->final_status ?? '')) === 'Tinggal Kelas')>Tinggal Kelas</option>
                                                                 <option value="Belum Diketahui" @selected((old('grade_level') == $level ? old('final_status') : ($manualHistory?->final_status ?? $historyEntry?->final_status ?? '')) === 'Belum Diketahui')>Belum Diketahui</option>
                                                             </select>
@@ -497,13 +541,25 @@
 
                                 </div>
 
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-primary w-100"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#history-modal-{{ $level }}">
-                                    <i class="bi bi-plus-circle me-1"></i>
-                                    Lengkapi Riwayat
-                                </button>
+                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                    @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary w-100"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#history-modal-{{ $level }}">
+                                            <i class="bi bi-plus-circle me-1"></i>
+                                            Lengkapi Riwayat
+                                        </button>
+                                    @else
+                                        <div class="small text-muted text-center">
+                                            Kelas master untuk tingkatan ini belum tersedia. Hubungi admin sekolah.
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="small text-muted text-center">
+                                        Anda tidak memiliki izin untuk mengubah riwayat kelas.
+                                    </div>
+                                @endif
 
                                 <div class="modal fade" id="history-modal-{{ $level }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -521,34 +577,70 @@
                                                     <div class="row g-3">
                                                         <div class="col-md-6">
                                                             <label class="form-label">Tahun Ajaran</label>
-                                                            <input
-                                                                type="text"
-                                                                name="academic_year"
-                                                                class="form-control"
-                                                                value="{{ old('grade_level') == $level ? old('academic_year') : '' }}"
-                                                                placeholder="Contoh: 2024/2025"
-                                                                maxlength="20"
+                                                            <select
+                                                                id="history-academic-year-{{ $level }}"
+                                                                name="academic_year_id"
+                                                                class="form-select"
                                                                 required
                                                             >
-                                                            @error('academic_year')
+                                                                <option value="">Pilih tahun ajaran</option>
+                                                                @foreach ($historyAcademicYears as $historyAcademicYear)
+                                                                    <option
+                                                                        value="{{ $historyAcademicYear->id }}"
+                                                                        @selected((string) $selectedAcademicYearId === (string) $historyAcademicYear->id)
+                                                                    >
+                                                                        {{ $historyAcademicYear->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('academic_year_id')
                                                                 <div class="text-danger small mt-2">{{ $message }}</div>
                                                             @enderror
+                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
+                                                                <a
+                                                                    href="{{ route('academic-years.create', ['history_student_id' => $student->id]) }}"
+                                                                    class="btn btn-sm btn-outline-secondary mt-2"
+                                                                >
+                                                                    <i class="bi bi-plus-circle me-1"></i>
+                                                                    Tambah Tahun Ajaran
+                                                                </a>
+                                                            @endif
                                                         </div>
 
                                                         <div class="col-md-6">
                                                             <label class="form-label">Rombel</label>
-                                                            <input
-                                                                type="text"
-                                                                name="rombel"
-                                                                class="form-control"
-                                                                value="{{ old('grade_level') == $level ? old('rombel') : '' }}"
-                                                                placeholder="Contoh: 3A"
-                                                                maxlength="50"
+                                                            <select
+                                                                id="history-class-{{ $level }}"
+                                                                name="class_id"
+                                                                class="form-select"
+                                                                data-academic-year-select="history-academic-year-{{ $level }}"
                                                                 required
                                                             >
-                                                            @error('rombel')
+                                                                <option value="">Pilih rombel</option>
+                                                                @foreach ($historyClasses as $historyClass)
+                                                                    <option
+                                                                        value="{{ $historyClass->id }}"
+                                                                        data-academic-year-id="{{ $historyClass->academic_year_id }}"
+                                                                        @selected((string) $selectedClassId === (string) $historyClass->id)
+                                                                    >
+                                                                        {{ $historyClass->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('class_id')
                                                                 <div class="text-danger small mt-2">{{ $message }}</div>
                                                             @enderror
+                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.create'))
+                                                                <a
+                                                                    href="{{ route('classes.create', ['grade_level' => $level, 'academic_year_id' => $selectedAcademicYearId, 'history_student_id' => $student->id]) }}"
+                                                                    class="btn btn-sm btn-outline-secondary mt-2"
+                                                                    data-history-class-create
+                                                                    data-year-select="history-academic-year-{{ $level }}"
+                                                                >
+                                                                    <i class="bi bi-plus-circle me-1"></i>
+                                                                    Tambah Rombel Kelas {{ $level }}
+                                                                </a>
+                                                            @endif
                                                         </div>
 
                                                         <div class="col-md-6">
@@ -598,6 +690,51 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-academic-year-select]').forEach(function (classSelect) {
+                const yearSelect = document.getElementById(classSelect.dataset.academicYearSelect);
+                if (!yearSelect) {
+                    return;
+                }
+
+                function filterClasses() {
+                    Array.from(classSelect.options).slice(1).forEach(function (option) {
+                        const matchesYear = option.dataset.academicYearId === yearSelect.value;
+                        option.hidden = !matchesYear;
+                        option.disabled = !matchesYear;
+                    });
+
+                    const selectedOption = classSelect.selectedOptions[0];
+                    if (selectedOption && selectedOption.value
+                        && selectedOption.dataset.academicYearId !== yearSelect.value) {
+                        classSelect.value = '';
+                    }
+                }
+
+                yearSelect.addEventListener('change', filterClasses);
+                filterClasses();
+            });
+
+            document.querySelectorAll('[data-history-class-create]').forEach(function (createLink) {
+                const yearSelect = document.getElementById(createLink.dataset.yearSelect);
+                if (!yearSelect) {
+                    return;
+                }
+
+                function updateCreateLink() {
+                    const createUrl = new URL(createLink.href);
+                    if (yearSelect.value) {
+                        createUrl.searchParams.set('academic_year_id', yearSelect.value);
+                    } else {
+                        createUrl.searchParams.delete('academic_year_id');
+                    }
+
+                    createLink.href = createUrl.toString();
+                }
+
+                yearSelect.addEventListener('change', updateCreateLink);
+                updateCreateLink();
+            });
+
             const failedLevel = @json(old('grade_level'));
             const failedModal = failedLevel
                 ? document.getElementById('history-modal-' + failedLevel)

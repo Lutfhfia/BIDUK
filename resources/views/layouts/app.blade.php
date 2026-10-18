@@ -243,6 +243,16 @@
             padding: 1.5rem;
         }
 
+        .biduk-content > .container-fluid,
+        .biduk-content > .fade-in-up > .container-fluid {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        .biduk-content > :first-child {
+            margin-top: 0 !important;
+        }
+
         /* ============ CARDS ============ */
         .biduk-card {
             background: #fff;
@@ -565,7 +575,70 @@
             </button>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    @yield('breadcrumb')
+                    @php
+                        $breadcrumbRoutes = [
+                            'academic-years' => ['Akademik', 'Tahun Ajaran', 'academic-years.index'],
+                            'semesters' => ['Master Data', 'Semester', 'semesters.index'],
+                            'students' => ['Master Data', 'Data Siswa', 'students.index'],
+                            'classes' => ['Master Data', 'Data Kelas', 'classes.index'],
+                            'subjects' => ['Akademik', 'Mata Pelajaran', 'subjects.index'],
+                            'pegawai' => ['Master Data', 'Data Pegawai', 'pegawai.index'],
+                            'rekap-absensi' => ['Laporan', 'Rekap Absensi', 'rekap-absensi.index'],
+                            'rekap-rapot' => ['Laporan', 'Rekap Rapot', 'rekap-rapot.index'],
+                            'achievement-reports' => ['Laporan', 'Rekap Prestasi', 'achievement-reports.index'],
+                            'buku-induk' => ['Laporan', 'Buku Induk', 'buku-induk.index'],
+                            'report-card-grades' => ['Akademik', 'Nilai Rapot', 'report-card-grades.index'],
+                            'final-grades' => ['Akademik', 'Nilai Akhir / Ijazah', null],
+                            'users' => ['Manajemen', 'Manajemen User', 'users.index'],
+                            'role-permissions' => ['Manajemen', 'Hak Akses', 'role-permissions.index'],
+                            'school-profile' => ['Pengaturan', 'Profil Sekolah', 'school-profile.index'],
+                            'activity-logs' => ['Administrasi', 'Log Aktivitas', 'activity-logs.index'],
+                            'profile' => ['Akun', 'Profil Saya', 'profile.show'],
+                        ];
+                        $currentRouteName = request()->route()?->getName() ?? '';
+                        $routePrefix = explode('.', $currentRouteName)[0];
+                        $breadcrumbRoute = $breadcrumbRoutes[$routePrefix] ?? null;
+                        $pageTitle = trim(strip_tags($__env->yieldContent('title')));
+                        if ($pageTitle === '' && $breadcrumbRoute) {
+                            $routeAction = substr($currentRouteName, strlen($routePrefix) + 1);
+                            $pageTitle = match ($routeAction) {
+                                'create' => 'Tambah ' . $breadcrumbRoute[1],
+                                'edit' => 'Edit ' . $breadcrumbRoute[1],
+                                'show' => 'Detail ' . $breadcrumbRoute[1],
+                                default => $breadcrumbRoute[1],
+                            };
+                        }
+                        $pageTitle = $pageTitle !== '' ? $pageTitle : 'Halaman';
+                    @endphp
+
+                    @if ($breadcrumbRoute && $routePrefix !== 'dashboard')
+                        <li class="breadcrumb-item">
+                            <a href="{{ route('dashboard') }}">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item">{{ $breadcrumbRoute[0] }}</li>
+                        @if (strcasecmp($pageTitle, $breadcrumbRoute[1]) === 0)
+                            <li class="breadcrumb-item active" aria-current="page">
+                                {{ $breadcrumbRoute[1] }}
+                            </li>
+                        @else
+                            <li class="breadcrumb-item">
+                                @if (!empty($breadcrumbRoute[2]) && Route::has($breadcrumbRoute[2]))
+                                    <a href="{{ route($breadcrumbRoute[2]) }}">{{ $breadcrumbRoute[1] }}</a>
+                                @else
+                                    {{ $breadcrumbRoute[1] }}
+                                @endif
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">
+                                {{ $pageTitle }}
+                            </li>
+                        @endif
+                    @elseif ($__env->hasSection('breadcrumb'))
+                        @yield('breadcrumb')
+                    @else
+                        <li class="breadcrumb-item active" aria-current="page">
+                            {{ $pageTitle }}
+                        </li>
+                    @endif
                 </ol>
             </nav>
         </div>

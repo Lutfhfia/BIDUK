@@ -69,17 +69,12 @@ class AcademicYearController extends Controller
                 Rule::in(['active', 'inactive']),
             ],
 
-            'current_semester' => [
-                'required',
-                Rule::in(['Ganjil', 'Genap']),
-            ],
         ], [
             'name.required' => 'Nama tahun ajaran wajib diisi.',
             'start_date.required' => 'Tanggal mulai wajib diisi.',
             'end_date.required' => 'Tanggal selesai wajib diisi.',
             'end_date.after' => 'Tanggal selesai harus setelah tanggal mulai.',
             'status.required' => 'Status tahun ajaran wajib dipilih.',
-            'current_semester.required' => 'Semester berjalan wajib dipilih.',
         ]);
 
         $historyStudentId = $validated['history_student_id'] ?? null;
@@ -224,10 +219,6 @@ class AcademicYearController extends Controller
                 Rule::in(['active', 'inactive']),
             ],
 
-            'current_semester' => [
-                'required',
-                Rule::in(['Ganjil', 'Genap']),
-            ],
         ]);
 
         /*

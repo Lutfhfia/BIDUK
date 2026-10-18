@@ -8,11 +8,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
-            <div class="text-muted small mb-1">
-                Akademik / Semester
-            </div>
-
             <h3 class="fw-bold mb-1">
+                <i class="bi bi-calendar-range text-success me-2"></i>
                 Semester
             </h3>
 

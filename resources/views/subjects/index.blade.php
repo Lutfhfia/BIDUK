@@ -29,10 +29,12 @@
             </p>
         </div>
 
-        <a href="{{ route('subjects.create') }}" class="btn btn-biduk-primary">
-            <i class="bi bi-plus-lg me-1"></i>
-            Tambah Mata Pelajaran
-        </a>
+        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.create'))
+            <a href="{{ route('subjects.create') }}" class="btn btn-biduk-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                Tambah Mata Pelajaran
+            </a>
+        @endif
     </div>
 
 
@@ -261,35 +263,33 @@
 
 
                                                 {{-- Edit --}}
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.edit'))
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('subjects.edit', $subject) }}">
                                                         <i class="bi bi-pencil-square"></i>
                                                         Edit
                                                     </a>
                                                 </li>
+                                                @endif
 
 
-                                                <li>
-                                                    <hr class="dropdown-divider">
-                                                </li>
-
-
-                                                {{-- Hapus --}}
-                                                <li>
-                                                    <form action="{{ route('subjects.destroy', $subject) }}"
-                                                        method="POST"
-                                                        onsubmit="return confirm('Yakin ingin menghapus mata pelajaran ini?');">
-
-                                                        @csrf
-                                                        @method('DELETE')
-
-                                                        <button type="submit" class="dropdown-item text-danger">
-                                                            <i class="bi bi-trash"></i>
-                                                            Hapus
-                                                        </button>
-
-                                                    </form>
-                                                </li>
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.delete'))
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <li>
+                                                        <form action="{{ route('subjects.destroy', $subject) }}"
+                                                            method="POST"
+                                                            onsubmit="return confirm('Yakin ingin menghapus mata pelajaran ini?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="bi bi-trash"></i>
+                                                                Hapus
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
 
                                             </ul>
 
@@ -343,10 +343,12 @@
                         Belum ada mata pelajaran yang tersedia.
                     </p>
 
-                    <a href="{{ route('subjects.create') }}" class="btn btn-biduk-primary">
-                        <i class="bi bi-plus-lg me-1"></i>
-                        Tambah Mata Pelajaran
-                    </a>
+                    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('subjects.create'))
+                        <a href="{{ route('subjects.create') }}" class="btn btn-biduk-primary">
+                            <i class="bi bi-plus-lg me-1"></i>
+                            Tambah Mata Pelajaran
+                        </a>
+                    @endif
 
                 </div>
 
