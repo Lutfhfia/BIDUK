@@ -43,10 +43,11 @@
         }
 
         .student-report .page {
-            width: 100%;
+            width: 100% !important;
             margin: 0;
             min-height: 0 !important;
             padding: 0 !important;
+            box-sizing: border-box !important;
             position: relative;
             page-break-before: auto !important;
             page-break-after: auto !important;
@@ -55,8 +56,10 @@
         }
 
         .student-report.final-class-report .page {
-            width: 100%;
+            width: 100% !important;
             margin: 0;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         }
 
         h1,

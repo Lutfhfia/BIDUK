@@ -18,9 +18,9 @@ class UpdateStudentRequest extends FormRequest
         $studentId = $student instanceof \App\Models\Student ? $student->id : $student;
 
         return [
-            'nis' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nis')->ignore($studentId)],
-            'nisn' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nisn')->ignore($studentId)],
-            'nik' => 'nullable|string|max:20',
+            'nis' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nis')->whereNull('deleted_at')->ignore($studentId)],
+            'nisn' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nisn')->whereNull('deleted_at')->ignore($studentId)],
+            'nik' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nik')->whereNull('deleted_at')->ignore($studentId)],
             'school_code' => 'nullable|string|max:50',
             'district_code' => 'nullable|string|max:50',
             'city_code' => 'nullable|string|max:50',

@@ -24,10 +24,6 @@
                     <i class="bi bi-arrow-left me-1"></i>
                     Kembali
                 </a>
-
-                <button type="button" class="btn btn-danger" id="headerPdfButton">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                </button>
             </div>
         </div>
 
@@ -141,7 +137,7 @@
                                                 <i class="bi bi-search text-muted"></i>
                                             </span>
                                             <input type="text" name="search" id="studentSearch"
-                                                value="{{ $selectedStudent ? $selectedStudent->name . ' (' . ($selectedStudent->nis ?: '-') . ')' : request('search') }}"
+                                                value="{{ request('search') }}"
                                                 class="form-control border-start-0 ps-0"
                                                 placeholder="Cari nama siswa atau NIS..." autocomplete="off">
                                             <button type="button" class="btn btn-outline-secondary d-none" id="clearStudentSearch1" title="Hapus pencarian">
@@ -665,7 +661,6 @@
             const previewButton = document.getElementById('previewButton');
             const resetButton = document.getElementById('resetButton');
             const previewPdfButton = document.getElementById('previewPdfButton');
-            const headerPdfButton = document.getElementById('headerPdfButton');
 
             // Search Inputs in Card 1 & Card 2
             const studentSearch = document.getElementById('studentSearch'); // Card 1
@@ -780,7 +775,6 @@
                 if (studentSelect) studentSelect.value = student.id;
 
                 const displayVal = `${student.displayName} (${student.nis || '-'})`;
-                if (studentSearch) studentSearch.value = displayVal;
                 if (studentSearchInput) studentSearchInput.value = displayVal;
 
                 if (selectedStudentName) selectedStudentName.textContent = student.displayName;
@@ -994,7 +988,6 @@
                     item.querySelector('strong').textContent = student.name;
                     item.addEventListener('click', function() {
                         const parameters = reportParameters();
-                        parameters.set('print_type', 'individual');
                         parameters.set('student_id', student.id);
                         window.location.href = '{{ route('buku-induk.index') }}?' + parameters.toString();
                     });
@@ -1111,7 +1104,6 @@
                 window.location.href = '{{ url('/laporan/buku-induk/cetak') }}/' + studentId + '?' + parameters.toString();
             }
 
-            headerPdfButton?.addEventListener('click', downloadCurrentDocument);
             previewPdfButton?.addEventListener('click', downloadCurrentDocument);
 
 

@@ -274,7 +274,15 @@
                                                         font-weight: 600;
                                                     "
                                                 >
-                                                    {{ strtoupper(substr($class->homeroomTeacher->name, 0, 1)) }}
+                                                    @if ($class->homeroomTeacher->photo)
+                                                        <img
+                                                            src="{{ asset('storage/' . $class->homeroomTeacher->photo) }}"
+                                                            alt="Foto {{ $class->homeroomTeacher->name }}"
+                                                            style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
+                                                        >
+                                                    @else
+                                                        {{ strtoupper(substr($class->homeroomTeacher->name, 0, 1)) }}
+                                                    @endif
                                                 </div>
 
                                                 <span>

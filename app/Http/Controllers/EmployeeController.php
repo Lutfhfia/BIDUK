@@ -168,6 +168,10 @@ class EmployeeController extends Controller
                 if ($request->hasFile('photo')) {
                     $photoPath = $request->file('photo')
                         ->store('employees', 'public');
+
+                    if (!$photoPath) {
+                        throw new \RuntimeException('Foto pegawai gagal disimpan.');
+                    }
                 }
 
                 $employeeType = $this->employeeTypeFromPosition(
@@ -266,6 +270,19 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, Employee $pegawai)
     {
+        $employeeUser = $pegawai->user;
+        if (!$employeeUser) {
+            $username = $pegawai->nip ?: $pegawai->nuptk;
+            if ($username) {
+                $employeeUser = User::where('username', trim($username))
+                    ->where(function ($query) use ($pegawai) {
+                        $query->whereNull('employee_id')
+                            ->orWhere('employee_id', $pegawai->id);
+                    })
+                    ->first();
+            }
+        }
+
         $validated = $request->validate([
             'nip' => [
                 'nullable',
@@ -333,7 +350,7 @@ class EmployeeController extends Controller
                 'email',
                 'max:100',
                 Rule::unique('employees', 'email')->ignore($pegawai->id),
-                Rule::unique('users', 'email')->ignore($pegawai->user?->id),
+                Rule::unique('users', 'email')->ignore($employeeUser?->id),
             ],
 
             'address' => [
@@ -373,6 +390,10 @@ class EmployeeController extends Controller
                 if ($request->hasFile('photo')) {
                     $newPhotoPath = $request->file('photo')
                         ->store('employees', 'public');
+
+                    if (!$newPhotoPath) {
+                        throw new \RuntimeException('Foto pegawai gagal disimpan.');
+                    }
 
                     $validated['photo'] = $newPhotoPath;
                 }

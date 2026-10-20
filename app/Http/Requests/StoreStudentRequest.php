@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreStudentRequest extends FormRequest
 {
@@ -14,9 +15,9 @@ class StoreStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nis' => 'required|string|max:20|unique:students,nis',
-            'nisn' => 'required|string|max:20|unique:students,nisn',
-            'nik' => 'nullable|string|max:20',
+            'nis' => ['required', 'string', 'max:20', Rule::unique('students', 'nis')->whereNull('deleted_at')],
+            'nisn' => ['required', 'string', 'max:20', Rule::unique('students', 'nisn')->whereNull('deleted_at')],
+            'nik' => ['nullable', 'string', 'max:20', Rule::unique('students', 'nik')->whereNull('deleted_at')],
             'school_code' => 'nullable|string|max:50',
             'district_code' => 'nullable|string|max:50',
             'city_code' => 'nullable|string|max:50',

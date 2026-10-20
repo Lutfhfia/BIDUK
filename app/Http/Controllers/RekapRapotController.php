@@ -411,11 +411,9 @@ foreach ($subjects as $subject) {
     ): ?SchoolClass {
         return SchoolClass::query()
             ->where('academic_year_id', $academicYearId)
-            ->where('status', 'Aktif')
             ->when($classId !== null, fn ($query) => $query->whereKey($classId))
             ->whereHas('classStudents', function ($query) use ($student) {
-                $query->where('student_id', $student->id)
-                    ->where('status', 'Aktif');
+                $query->where('student_id', $student->id);
             })
             ->with('academicYear')
             ->orderBy('grade_level')
