@@ -5,8 +5,13 @@
     <title>Rekap Rapot</title>
 
     <style>
+        /*
+         * Margin cetak dikelola melalui padding .student-report.
+         * Cara ini menyamakan area cetak kelas 1-5 dan kelas 6,
+         * termasuk saat DomPDF memproses template kelas 6 yang di-include.
+         */
         @page {
-            margin: 12mm 15mm;
+            margin: 0;
             size: A4 portrait;
         }
 
@@ -14,27 +19,27 @@
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
+            padding: 0;
             font-family: Arial, Helvetica, sans-serif;
             color: #111;
             font-size: 9px;
         }
 
         /*
-         * =========================================================
-         * PEMISAH ANTAR SISWA
-         * =========================================================
-         *
-         * Setiap siswa dimulai dari halaman baru.
+         * Area cetak A4: 210 mm - margin kiri 15 mm - margin kanan 15 mm
+         * = 180 mm. Gunakan lebar eksplisit agar DomPDF tidak menambahkan
+         * padding horizontal ke width: 100% lalu memotong sisi kanan.
          */
         .student-report {
             display: block;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            width: 180mm;
+            margin: 0 15mm;
+            padding: 12mm 0;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
         }
 
         .student-report + .student-report {
@@ -42,24 +47,23 @@
             break-before: page !important;
         }
 
-        .student-report .page {
+        /*
+         * Reset ukuran/margin template yang di-include agar tidak
+         * menimpa margin cetak bersama, terutama untuk template kelas 6.
+         */
+        .student-report .page,
+        .student-report.final-class-report .page {
             width: 100% !important;
-            margin: 0;
             min-height: 0 !important;
+            margin: 0 !important;
             padding: 0 !important;
             box-sizing: border-box !important;
-            position: relative;
             page-break-before: auto !important;
             page-break-after: auto !important;
             break-before: auto !important;
             break-after: auto !important;
-        }
-
-        .student-report.final-class-report .page {
-            width: 100% !important;
-            margin: 0;
-            padding: 0 !important;
-            box-sizing: border-box !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
         }
 
         h1,
@@ -69,40 +73,44 @@
             margin: 0;
         }
 
-        /*
-         * =========================================================
-         * TABEL
-         * =========================================================
-         */
         table {
             border-collapse: collapse;
         }
 
-        /*
-         * Mencegah perubahan layout akibat include template.
-         */
         .student-report table {
             max-width: 100%;
         }
 
-        /*
-         * =========================================================
-         * BAGIAN E
-         * =========================================================
-         */
-        .attendance-promotion-table {
+        .attendance-promotion-table,
+        .signature-block {
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
-        /*
-         * =========================================================
-         * SIGNATURE
-         * =========================================================
-         */
-        .signature-block {
-            page-break-inside: avoid;
-            break-inside: avoid;
+        /* Margin fisik konsisten untuk PDF cetak semua kelas maupun per kelas. */
+        @media print {
+            html,
+            body {
+                width: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .student-report {
+                /* Lebar konten + kedua margin tepat memenuhi A4 (210 mm). */
+                width: 180mm !important;
+                min-height: 0 !important;
+                margin: 0 15mm !important;
+                padding: 12mm 0 !important;
+                box-sizing: content-box !important;
+                page-break-inside: auto !important;
+                break-inside: auto !important;
+            }
+
+            .student-report + .student-report {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
         }
 
         @media screen {
@@ -125,7 +133,8 @@
                 box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
             }
 
-            .student-report .page {
+            .student-report .page,
+            .student-report.final-class-report .page {
                 width: 100%;
                 min-height: 0;
                 margin: 0;
@@ -134,21 +143,16 @@
         }
     </style>
 </head>
-
 <body>
 
 @foreach($reports as $report)
-
-<div class="student-report{{ !empty($report['isFinalClass']) ? ' final-class-report' : '' }}">
-
-@if (!empty($report['isFinalClass']))
-    @include('reports.rekap-rapot.kelas-6', array_merge($report, ['isBulkReport' => true]))
-@else
-    @include('reports.rekap-rapot.print', array_merge($report, ['isBulkReport' => true]))
-@endif
-
-</div>
-
+    <div class="student-report{{ !empty($report['isFinalClass']) ? ' final-class-report' : '' }}">
+        @if (!empty($report['isFinalClass']))
+            @include('reports.rekap-rapot.kelas-6', array_merge($report, ['isBulkReport' => true]))
+        @else
+            @include('reports.rekap-rapot.print', array_merge($report, ['isBulkReport' => true]))
+        @endif
+    </div>
 @endforeach
 
 </body>
