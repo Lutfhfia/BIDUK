@@ -57,7 +57,7 @@
 
             <div class="d-flex align-items-center">
 
-                <div class="rounded-3 bg-primary-subtle text-primary
+                <div class="rounded-3 bg-success-subtle text-success
                             d-flex align-items-center justify-content-center me-3"
                      style="width: 44px; height: 44px;">
 
@@ -499,7 +499,7 @@
 
 
                     <button type="submit"
-                            class="btn btn-primary">
+                            class="btn btn-biduk-primary">
 
                         <i class="bi bi-check-lg me-1"></i>
                         Simpan Kelas

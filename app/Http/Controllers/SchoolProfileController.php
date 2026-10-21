@@ -7,6 +7,7 @@ use App\Models\SchoolAchievement;
 use App\Models\Extracurricular;
 use App\Models\SchoolNews;
 use App\Models\SchoolGallery;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -50,6 +51,8 @@ class SchoolProfileController extends Controller
             'organization_image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
+        $oldValues = $school->getAttributes();
+
         $fileFields = [
             'logo' => 'school-profiles/logo',
             'cover_image' => 'school-profiles/cover',
@@ -75,6 +78,33 @@ class SchoolProfileController extends Controller
         }
 
         $school->update($data);
+
+        $newValues = $school->fresh()->getAttributes();
+        unset($oldValues['created_at'], $oldValues['updated_at']);
+        unset($newValues['created_at'], $newValues['updated_at']);
+
+        $changedOldValues = [];
+        $changedNewValues = [];
+
+        foreach ($newValues as $key => $newValue) {
+            $oldValue = $oldValues[$key] ?? null;
+
+            if ((string) $oldValue !== (string) $newValue) {
+                $changedOldValues[$key] = $oldValue;
+                $changedNewValues[$key] = $newValue;
+            }
+        }
+
+        if ($changedNewValues) {
+            app(ActivityLogger::class)->log(
+                'updated',
+                'school_profile',
+                'Mengubah profil sekolah: ' . $school->name,
+                $school->fresh(),
+                $changedOldValues,
+                $changedNewValues
+            );
+        }
 
         return redirect()->route('school-profile.index')
             ->with('success', 'Profil dan informasi sekolah berhasil diperbarui.')

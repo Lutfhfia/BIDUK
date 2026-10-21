@@ -180,25 +180,16 @@
         INFO
     ====================================================== --}}
 
-        @if ($selectedAcademicYearId)
-            <div class="alert alert-light border mb-4">
-
-                <div class="d-flex align-items-center">
-
-                    <i class="bi bi-info-circle me-2"></i>
-
-                    <span>
-
-                        Menampilkan data prestasi peserta didik
-                        yang memiliki prestasi pada tahun ajaran
-                        yang dipilih.
-
-                    </span>
-
-                </div>
-
-            </div>
-        @endif
+        @php
+            $filteredYear = $academicYears->firstWhere('id', $selectedAcademicYearId);
+            $filteredClass = $classes->firstWhere('id', $selectedClassId);
+        @endphp
+        <div class="mb-4 text-muted">
+            Rentang filter: tahun ajaran
+            <strong>{{ $filteredYear?->name ?? 'semua tahun ajaran' }}</strong>,
+            kelas <strong>{{ $filteredClass ? $filteredClass->grade_level . ' ' . $filteredClass->name : 'semua kelas' }}</strong>,
+            pencarian <strong>{{ request('search') ?: 'semua siswa' }}</strong>.
+        </div>
 
 
         {{-- =====================================================
@@ -424,24 +415,47 @@
 
 @push('styles')
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
         @media print {
 
             body {
                 background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .sidebar,
+            .biduk-sidebar,
+            .sidebar-overlay,
             nav,
             .navbar,
+            .biduk-navbar,
             .btn,
             form,
             .card-header {
                 display: none !important;
             }
 
+            .bi {
+                display: none !important;
+            }
+
+            .biduk-main,
+            .biduk-content {
+                width: 100% !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
             .container-fluid {
                 width: 100% !important;
                 max-width: 100% !important;
+                padding: 0 !important;
             }
 
             .card {
@@ -449,13 +463,75 @@
                 box-shadow: none !important;
             }
 
+            .table-responsive {
+                overflow: visible !important;
+            }
+
             table {
                 width: 100% !important;
+                table-layout: fixed;
+                border-collapse: collapse !important;
+                border-left: 0 !important;
+            }
+
+            th:nth-child(1),
+            td:nth-child(1) {
+                width: 5%;
+                text-align: center;
+            }
+
+            th:nth-child(2),
+            td:nth-child(2) {
+                width: 20%;
+            }
+
+            th:nth-child(3),
+            td:nth-child(3),
+            th:nth-child(4),
+            td:nth-child(4) {
+                width: 10%;
+            }
+
+            th:nth-child(5),
+            td:nth-child(5) {
+                width: 8%;
+            }
+
+            th:nth-child(6),
+            td:nth-child(6) {
+                width: 15%;
+            }
+
+            th:nth-child(7),
+            td:nth-child(7) {
+                width: 10%;
+                text-align: center;
+            }
+
+            th:nth-child(8),
+            td:nth-child(8) {
+                width: 22%;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
 
             table th,
             table td {
-                font-size: 11px;
+                font-size: 7.5pt !important;
+                padding: 4px !important;
+                vertical-align: top;
+                overflow-wrap: break-word;
+            }
+
+            .table > :not(caption) > * > *:first-child {
+                border-left: 0 !important;
             }
 
         }

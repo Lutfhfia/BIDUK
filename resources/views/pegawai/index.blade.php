@@ -348,9 +348,18 @@
                                                 background:#e8f7ef;
                                                 color:#198754;
                                                 font-weight:700;
+                                                overflow:hidden;
                                             "
                                         >
-                                            {{ strtoupper(substr($employee->name, 0, 1)) }}
+                                            @if ($employee->photo)
+                                                <img
+                                                    src="{{ asset('storage/' . $employee->photo) }}"
+                                                    alt="Foto {{ $employee->name }}"
+                                                    style="width:100%;height:100%;object-fit:cover;"
+                                                >
+                                            @else
+                                                {{ strtoupper(substr($employee->name, 0, 1)) }}
+                                            @endif
                                         </div>
 
                                         <div>

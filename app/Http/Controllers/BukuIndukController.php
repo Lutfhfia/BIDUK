@@ -9,6 +9,7 @@ use App\Models\Student;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class BukuIndukController extends Controller
@@ -50,7 +51,7 @@ class BukuIndukController extends Controller
 
         $studentStatus = $request->input('status', 'aktif');
 
-        $students = Student::query()
+        $studentsQuery = Student::query()
             ->when($studentStatus !== '', function ($query) use ($studentStatus) {
                 $query->where(
                     'status',
@@ -65,13 +66,12 @@ class BukuIndukController extends Controller
                 $request,
                 $selectedAcademicYear
             ) {
-                $query->where('status', 'Aktif')
-                    ->when(
-                        $request->filled('class_id') && $request->input('print_type') !== 'all',
-                        function ($query) use ($request) {
-                            $query->where('class_id', $request->class_id);
-                        }
-                    )
+                $query->when(
+                    $request->filled('class_id') && $request->input('print_type') !== 'all',
+                    function ($query) use ($request) {
+                        $query->where('class_id', $request->class_id);
+                    }
+                )
                     ->whereHas('schoolClass', function ($query) use (
                         $selectedAcademicYear
                     ) {
@@ -90,24 +90,31 @@ class BukuIndukController extends Controller
                 'classAssignments' => function ($query) use (
                     $selectedAcademicYear
                 ) {
-                    $query->where('status', 'Aktif')
-                        ->whereHas('schoolClass', function ($query) use (
-                            $selectedAcademicYear
-                        ) {
-                            $query->when(
-                                $selectedAcademicYear,
-                                function ($query) use ($selectedAcademicYear) {
-                                    $query->where(
-                                        'academic_year_id',
-                                        $selectedAcademicYear
-                                    );
-                                }
-                            );
-                        });
+                    $query->whereHas('schoolClass', function ($query) use (
+                        $selectedAcademicYear
+                    ) {
+                        $query->when(
+                            $selectedAcademicYear,
+                            function ($query) use ($selectedAcademicYear) {
+                                $query->where(
+                                    'academic_year_id',
+                                    $selectedAcademicYear
+                                );
+                            }
+                        );
+                    });
                 },
-            ])
-            ->orderBy('name')
-            ->get();
+            ]);
+
+        $this->applyStudentClassOrdering(
+            $studentsQuery,
+            $selectedAcademicYear ? (int) $selectedAcademicYear : null,
+            $request->filled('class_id') && $request->input('print_type') !== 'all'
+                ? (int) $request->input('class_id')
+                : null
+        );
+
+        $students = $studentsQuery->get();
 
         $selectedStudent = null;
         if ($request->filled('student_id')) {
@@ -116,7 +123,7 @@ class BukuIndukController extends Controller
                 (int) $request->input('student_id')
             ) ?? Student::with([
                 'classAssignments.schoolClass.academicYear',
-                'classes.academicYear'
+                'classes.academicYear',
             ])->find($request->input('student_id'));
         }
 
@@ -142,7 +149,7 @@ class BukuIndukController extends Controller
 
         $studentStatus = $request->input('status', 'aktif');
 
-        $students = Student::query()
+        $studentsQuery = Student::query()
             ->when($studentStatus !== '', function ($query) use ($studentStatus) {
                 $query->where(
                     'status',
@@ -157,13 +164,12 @@ class BukuIndukController extends Controller
                 $request,
                 $selectedAcademicYear
             ) {
-                $query->where('status', 'Aktif')
-                    ->when(
-                        $request->filled('class_id'),
-                        function ($query) use ($request) {
-                            $query->where('class_id', $request->class_id);
-                        }
-                    )
+                $query->when(
+                    $request->filled('class_id'),
+                    function ($query) use ($request) {
+                        $query->where('class_id', $request->class_id);
+                    }
+                )
                     ->whereHas('schoolClass', function ($query) use (
                         $selectedAcademicYear
                     ) {
@@ -177,9 +183,15 @@ class BukuIndukController extends Controller
                             }
                         );
                     });
-            })
-            ->orderBy('name')
-            ->get();
+            });
+
+        $this->applyStudentClassOrdering(
+            $studentsQuery,
+            $selectedAcademicYear ? (int) $selectedAcademicYear : null,
+            $request->filled('class_id') ? (int) $request->input('class_id') : null
+        );
+
+        $students = $studentsQuery->get();
 
         $class = $request->filled('class_id')
             ? SchoolClass::where(
@@ -201,6 +213,12 @@ class BukuIndukController extends Controller
     public function print(Request $request, Student $student)
     {
         $reportData = $this->reportData($request, $student);
+        $classOrderNumbers = [];
+        $this->applyClassOrderNumber(
+            $reportData['student'],
+            $reportData['class'],
+            $classOrderNumbers
+        );
 
         $view = view('reports.buku-induk.print', $reportData);
 
@@ -225,7 +243,6 @@ class BukuIndukController extends Controller
         return $view;
     }
 
-
     /**
      * Membuat SATU file PDF untuk semua siswa yang dipilih.
      *
@@ -240,10 +257,21 @@ class BukuIndukController extends Controller
         $studentIds = $request->input('student_ids', []);
 
         if (is_array($studentIds) && count($studentIds)) {
-            $students = Student::query()
-                ->whereIn('id', $studentIds)
-                ->orderBy('name')
-                ->get();
+            $selectedAcademicYear = $request->input(
+                'academic_year_id',
+                AcademicYear::getActive()?->id
+            );
+            $selectedClassId = $request->input('print_type') === 'all'
+                ? null
+                : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
+
+            $studentsQuery = Student::query()->whereIn('id', $studentIds);
+            $this->applyStudentClassOrdering(
+                $studentsQuery,
+                $selectedAcademicYear ? (int) $selectedAcademicYear : null,
+                $selectedClassId
+            );
+            $students = $studentsQuery->get();
         } else {
             $selectedAcademicYear = $request->input(
                 'academic_year_id',
@@ -253,8 +281,20 @@ class BukuIndukController extends Controller
             $studentStatus = $request->input('status', 'aktif');
             $printType = $request->input('print_type');
             $classId = ($printType === 'all') ? null : $request->input('class_id');
+            $search = $request->input('search');
 
-            $students = Student::query()
+            if ($request->filled('student_id') && $request->filled('search')) {
+                $previewStudent = Student::find($request->input('student_id'));
+                $previewStudentLabel = $previewStudent
+                    ? $previewStudent->name.' ('.($previewStudent->nis ?: '-').')'
+                    : null;
+
+                if ($previewStudentLabel !== null && trim($search) === $previewStudentLabel) {
+                    $search = null;
+                }
+            }
+
+            $studentsQuery = Student::query()
                 ->when($studentStatus !== '', function ($query) use ($studentStatus) {
                     $query->where(
                         'status',
@@ -262,20 +302,19 @@ class BukuIndukController extends Controller
                     );
                 })
                 ->when(
-                    $request->filled('search'),
-                    fn ($query) => $query->search($request->search)
+                    $search !== null && $search !== '',
+                    fn ($query) => $query->search($search)
                 )
                 ->whereHas('classAssignments', function ($query) use (
                     $classId,
                     $selectedAcademicYear
                 ) {
-                    $query->where('status', 'Aktif')
-                        ->when(
-                            $classId,
-                            function ($query) use ($classId) {
-                                $query->where('class_id', $classId);
-                            }
-                        )
+                    $query->when(
+                        $classId,
+                        function ($query) use ($classId) {
+                            $query->where('class_id', $classId);
+                        }
+                    )
                         ->whereHas('schoolClass', function ($query) use (
                             $selectedAcademicYear
                         ) {
@@ -289,9 +328,14 @@ class BukuIndukController extends Controller
                                 }
                             );
                         });
-                })
-                ->orderBy('name')
-                ->get();
+                });
+
+            $this->applyStudentClassOrdering(
+                $studentsQuery,
+                $selectedAcademicYear ? (int) $selectedAcademicYear : null,
+                $classId ? (int) $classId : null
+            );
+            $students = $studentsQuery->get();
         }
 
         abort_if(
@@ -302,9 +346,15 @@ class BukuIndukController extends Controller
 
         $style = '';
         $studentPages = [];
+        $classOrderNumbers = [];
 
         foreach ($students as $student) {
             $reportData = $this->reportData($request, $student);
+            $this->applyClassOrderNumber(
+                $reportData['student'],
+                $reportData['class'],
+                $classOrderNumbers
+            );
 
             $html = view(
                 'reports.buku-induk.print',
@@ -378,9 +428,21 @@ class BukuIndukController extends Controller
             'Tidak ada siswa yang dipilih.'
         );
 
-        $students = Student::whereIn('id', $studentIds)
-            ->orderBy('name')
-            ->get();
+        $selectedAcademicYear = $request->input(
+            'academic_year_id',
+            AcademicYear::getActive()?->id
+        );
+        $selectedClassId = $request->input('print_type') === 'all'
+            ? null
+            : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
+
+        $studentsQuery = Student::whereIn('id', $studentIds);
+        $this->applyStudentClassOrdering(
+            $studentsQuery,
+            $selectedAcademicYear ? (int) $selectedAcademicYear : null,
+            $selectedClassId
+        );
+        $students = $studentsQuery->get();
 
         abort_if(
             $students->isEmpty(),
@@ -413,10 +475,17 @@ class BukuIndukController extends Controller
         );
 
         try {
+            $classOrderNumbers = [];
+
             foreach ($students as $student) {
                 $reportData = $this->reportData(
                     $request,
                     $student
+                );
+                $this->applyClassOrderNumber(
+                    $reportData['student'],
+                    $reportData['class'],
+                    $classOrderNumbers
                 );
 
                 /*
@@ -490,7 +559,7 @@ class BukuIndukController extends Controller
 
         $class = null;
 
-        if ($request->filled('class_id')) {
+        if ($request->filled('class_id') && $request->input('print_type') !== 'all') {
             $class = SchoolClass::with([
                 'academicYear',
                 'homeroomTeacher',
@@ -500,6 +569,15 @@ class BukuIndukController extends Controller
             )->find(
                 $request->class_id
             );
+        }
+
+        if (!$class) {
+            $class = $student->classAssignments
+                ->first(function ($assignment) use ($academicYear) {
+                    return $academicYear &&
+                        $assignment->schoolClass?->academic_year_id === $academicYear->id;
+                })
+                ?->schoolClass;
         }
 
         if (!$class) {
@@ -530,5 +608,79 @@ class BukuIndukController extends Controller
             'semester',
             'class'
         );
+    }
+
+    /**
+     * Mengurutkan daftar siswa berdasarkan tingkat kelas, nama kelas,
+     * lalu nama siswa. Subquery mengikuti kelas yang aktif pada tahun ajaran
+     * yang dipilih sehingga urutan cetak semua kelas menjadi konsisten.
+     */
+    private function applyStudentClassOrdering(
+        $query,
+        ?int $academicYearId,
+        ?int $classId = null
+    ): void {
+        $gradeOrder = DB::table('class_student as class_order_assignment')
+            ->join('classes as class_order', 'class_order.id', '=', 'class_order_assignment.class_id')
+            ->select('class_order.grade_level')
+            ->whereColumn('class_order_assignment.student_id', 'students.id')
+            ->where('class_order_assignment.status', 'Aktif')
+            ->when($academicYearId, function ($subquery) use ($academicYearId) {
+                $subquery->where('class_order.academic_year_id', $academicYearId);
+            })
+            ->when($classId, function ($subquery) use ($classId) {
+                $subquery->where('class_order.id', $classId);
+            })
+            ->orderBy('class_order.grade_level')
+            ->orderBy('class_order.name')
+            ->limit(1);
+
+        $classNameOrder = DB::table('class_student as class_name_assignment')
+            ->join('classes as class_name_order', 'class_name_order.id', '=', 'class_name_assignment.class_id')
+            ->select('class_name_order.name')
+            ->whereColumn('class_name_assignment.student_id', 'students.id')
+            ->where('class_name_assignment.status', 'Aktif')
+            ->when($academicYearId, function ($subquery) use ($academicYearId) {
+                $subquery->where('class_name_order.academic_year_id', $academicYearId);
+            })
+            ->when($classId, function ($subquery) use ($classId) {
+                $subquery->where('class_name_order.id', $classId);
+            })
+            ->orderBy('class_name_order.grade_level')
+            ->orderBy('class_name_order.name')
+            ->limit(1);
+
+        $query
+            ->orderBy($gradeOrder)
+            ->orderBy($classNameOrder)
+            ->orderBy('students.name')
+            ->orderBy('students.id');
+    }
+
+    private function applyClassOrderNumber(
+        Student $student,
+        ?SchoolClass $class,
+        array &$classOrderNumbers
+    ): void {
+        if (! $class) {
+            return;
+        }
+
+        if (! isset($classOrderNumbers[$class->id])) {
+            $classRoster = Student::query()
+                ->whereHas('classAssignments', function ($query) use ($class) {
+                    $query->where('class_id', $class->id);
+                })
+                ->orderBy('name')
+                ->orderBy('id')
+                ->pluck('id');
+
+            $classOrderNumbers[$class->id] = [];
+            foreach ($classRoster as $index => $studentId) {
+                $classOrderNumbers[$class->id][$studentId] = $index + 1;
+            }
+        }
+
+        $student->student_number = $classOrderNumbers[$class->id][$student->id] ?? '';
     }
 }

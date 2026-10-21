@@ -101,9 +101,9 @@ class AchievementReportController extends Controller
             'schoolClass',
             'academicYear'
         ])
-            ->where(
-                'academic_year_id',
-                $selectedAcademicYearId
+            ->when(
+                $selectedAcademicYearId,
+                fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
             );
 
         /*

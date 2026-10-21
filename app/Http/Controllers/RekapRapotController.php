@@ -200,7 +200,33 @@ class RekapRapotController extends Controller
             return $class
                 ? $this->buildReport($student, $class, $academicYearId, $semesterMode)
                 : null;
-        })->filter()->values();
+        })->filter();
+
+        // Urutkan hasil cetak berdasarkan tingkat kelas, nama kelas,
+        // lalu nama siswa. orderBy('name') pada query siswa saja tidak
+        // menjamin urutan kelas saat mencetak semua kelas.
+        $reports = $reports->sort(function (array $left, array $right) {
+            $gradeComparison = (int) ($left['class']->grade_level ?? 0)
+                <=> (int) ($right['class']->grade_level ?? 0);
+
+            if ($gradeComparison !== 0) {
+                return $gradeComparison;
+            }
+
+            $classComparison = strnatcasecmp(
+                (string) ($left['class']->name ?? ''),
+                (string) ($right['class']->name ?? '')
+            );
+
+            if ($classComparison !== 0) {
+                return $classComparison;
+            }
+
+            return strnatcasecmp(
+                (string) ($left['student']->name ?? ''),
+                (string) ($right['student']->name ?? '')
+            );
+        })->values();
 
         abort_unless($reports->isNotEmpty(), 422, 'Tidak ada rapor yang dapat dicetak untuk kelas/tahun ajaran tersebut.');
 
@@ -411,11 +437,9 @@ foreach ($subjects as $subject) {
     ): ?SchoolClass {
         return SchoolClass::query()
             ->where('academic_year_id', $academicYearId)
-            ->where('status', 'Aktif')
             ->when($classId !== null, fn ($query) => $query->whereKey($classId))
             ->whereHas('classStudents', function ($query) use ($student) {
-                $query->where('student_id', $student->id)
-                    ->where('status', 'Aktif');
+                $query->where('student_id', $student->id);
             })
             ->with('academicYear')
             ->orderBy('grade_level')

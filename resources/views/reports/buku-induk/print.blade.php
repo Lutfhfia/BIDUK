@@ -240,12 +240,12 @@
             position: absolute;
             top: 2px;
             right: 0;
-            width: 30mm;
+            width: 28mm;
         }
 
         .photo-box {
-            width: 30mm;
-            height: 40mm;
+            width: 28mm;
+            height: 37mm;
             border: 1px solid #000;
             margin: 0 auto;
             display: flex;
@@ -263,8 +263,8 @@
         }
 
         .photo-caption {
-            width: 30mm;
-            margin: 2mm auto 7mm;
+            width: 28mm;
+            margin: 1.5mm auto 5mm;
             text-align: center;
             font-size: 6pt;
             line-height: 1.15;
@@ -671,8 +671,8 @@
          *   akan di-resolve relatif ke .page (position:relative).
          * .student-data = display:block, width 154mm → data
          *   dan garis titik-titik BERHENTI di 154mm.
-         * .photo-column = position:absolute, top:26mm, right:0
-         *   → sejajar NOMOR URUT, TIDAK mempengaruhi tinggi.
+         * .photo-column = position:absolute, top:33mm, right:0
+         *   → berada di bawah NOMOR URUT dengan jarak, tidak mempengaruhi tinggi.
          */
         .pdf-export .student-section {
             display: block !important;
@@ -810,25 +810,25 @@
 
         /* =====================================================
            FOTO — position:absolute relative to .page
-           Berada di kanan atas, sejajar NOMOR URUT.
+           Berada di bawah kotak NOMOR URUT.
            TIDAK mempengaruhi tinggi konten halaman.
         ===================================================== */
 
         .pdf-export .photo-column {
             position: absolute !important;
-            top: 26mm !important;
+            top: 33mm !important;
             right: 2mm !important;
 
-            width: 30mm !important;
-            max-width: 30mm !important;
+            width: 28mm !important;
+            max-width: 28mm !important;
 
             box-sizing: border-box !important;
         }
 
         .pdf-export .photo-box {
-            width: 30mm !important;
-            height: 40mm !important;
-            max-width: 30mm !important;
+            width: 28mm !important;
+            height: 37mm !important;
+            max-width: 28mm !important;
 
             box-sizing: border-box !important;
             border: 1px solid #000 !important;
@@ -845,9 +845,9 @@
         }
 
         .pdf-export .photo-caption {
-            width: 30mm !important;
-            max-width: 30mm !important;
-            margin: 2mm auto 7mm !important;
+            width: 28mm !important;
+            max-width: 28mm !important;
+            margin: 1.5mm auto 5mm !important;
 
             text-align: center !important;
             font-size: 6pt !important;
@@ -1115,7 +1115,6 @@
 
 
             <div class="top-column">
-
                 <div class="top-row">
                     <span class="top-label">Nomor Kode Kecamatan</span>
                     <span class="top-colon">:</span>
@@ -1133,7 +1132,13 @@
                     <span class="top-colon">:</span>
                     <span class="top-value">{{ $student->province_code ?? '' }}</span>
                 </div>
-
+                <div class="top-row">
+                    <span class="top-label">Kelas</span>
+                    <span class="top-colon">:</span>
+                    <span class="top-value">
+                        {{ $class ? $class->grade_level . ' ' . $class->name : '-' }}
+                    </span>
+                </div>
             </div>
 
 

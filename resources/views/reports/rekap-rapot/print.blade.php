@@ -8,7 +8,9 @@
 
     <style>
 
+        @if (empty($isBulkReport))
         @page { margin: 12mm 15mm; size: A4 portrait; }
+        @endif
 
         * { box-sizing: border-box; }
 
