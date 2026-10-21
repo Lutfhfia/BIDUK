@@ -44,6 +44,11 @@ class ReportCardGradeController extends Controller
         session()->put('report_card_grades_index_url', $request->fullUrl());
 
         /*
+         * Kelas wali untuk Guru. Role lain tidak dibatasi helper ini.
+         */
+        $teacherClass = $this->teacherClassOrNull();
+
+        /*
          * Daftar Tahun Ajaran.
          */
         $academicYears = AcademicYear::orderByDesc('id')->get();
@@ -54,6 +59,19 @@ class ReportCardGradeController extends Controller
         $search = $request->input('search');
         $selectedAcademicYearId = $request->input('academic_year_id');
         $selectedClassId = $request->input('class_id');
+
+        /*
+         * Guru selalu menggunakan tahun ajaran dan kelas wali yang ditetapkan.
+         * Abaikan class_id / academic_year_id yang dikirim dari browser agar
+         * parameter URL tidak dapat digunakan untuk memilih kelas lain.
+         */
+        if ($teacherClass) {
+            $selectedAcademicYearId = $teacherClass->academic_year_id;
+            $selectedClassId = $teacherClass->id;
+            $academicYears = $academicYears
+                ->where('id', $teacherClass->academic_year_id)
+                ->values();
+        }
 
         /*
          * Ambil daftar kelas untuk dropdown filter.
@@ -68,6 +86,13 @@ class ReportCardGradeController extends Controller
         }
 
         $classes = $classesQuery->get();
+
+        // Guru hanya menerima satu pilihan kelas: kelas wali miliknya.
+        if ($teacherClass) {
+            $classes = collect([
+                $teacherClass->load('academicYear'),
+            ]);
+        }
 
         $selectedClass = null;
         $students = collect();
@@ -93,6 +118,9 @@ class ReportCardGradeController extends Controller
                 ->find($selectedClassId);
 
                 if ($selectedClass) {
+
+                    // Pertahanan backend: kelas terpilih harus kelas wali Guru.
+                    $this->ensureTeacherCanAccessClass($selectedClass, $teacherClass);
 
                     $studentsQuery = $selectedClass->students()
                         ->wherePivot('status', 'Aktif');
@@ -291,6 +319,9 @@ class ReportCardGradeController extends Controller
      */
     public function history(Request $request, Student $student)
     {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClass);
+
         $student->load([
             'classAssignments.schoolClass.academicYear',
             'reportCardGrades'
@@ -430,6 +461,9 @@ class ReportCardGradeController extends Controller
 
     public function storeClassHistory(Request $request, Student $student)
     {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClass);
+
         $validated = $request->validate([
             'history_id' => [
                 'nullable',
@@ -596,6 +630,9 @@ class ReportCardGradeController extends Controller
         if (!$student->exists) {
             abort(404, 'Siswa tidak ditemukan.');
         }
+
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
 
         $academicYearId = (int) (
             $request->input('academic_year_id')
@@ -794,6 +831,9 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+
         /*
          * Validasi siswa.
          */
@@ -1017,6 +1057,9 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+
         /*
          * ======================================================
          * VALIDASI SISWA
@@ -1530,6 +1573,9 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+
         /*
          * Pastikan siswa berada di kelas.
          */
@@ -1596,5 +1642,150 @@ class ReportCardGradeController extends Controller
                 . $student->name
                 . ' berhasil dihapus.'
             );
+    }
+
+    /**
+     * Mengambil kelas wali Guru pada tahun ajaran aktif.
+     * Role selain Guru tidak dibatasi oleh helper ini.
+     */
+    private function teacherClassOrNull(): ?SchoolClass
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        /*
+         * Deteksi role secara toleran terhadap perbedaan huruf besar/kecil
+         * atau spasi pada nama role. Jika role bukan role administrasi/Kepala
+         * Sekolah tetapi mempunyai izin mengelola nilai, perlakukan sebagai
+         * akun pengelola kelas (wali/Guru) agar tidak jatuh ke daftar semua siswa.
+         * Ini bersifat fail-closed: lebih baik membatasi kelas daripada membuka
+         * semua kelas bila label role tidak persis sama.
+         */
+        $roleName = mb_strtolower(trim((string) ($user->role?->name ?? '')));
+
+        $isSuperAdmin = $roleName === 'super admin'
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin());
+
+        $isAdmin = $roleName === 'admin'
+            || (method_exists($user, 'isAdmin') && $user->isAdmin());
+
+        $isKepalaSekolah = in_array($roleName, [
+            'kepala sekolah',
+            'kepala-sekolah',
+        ], true) || (method_exists($user, 'isKepalaSekolah') && $user->isKepalaSekolah());
+
+        $isGuru = $roleName === 'guru'
+            || str_starts_with($roleName, 'guru ')
+            || (method_exists($user, 'isGuru') && $user->isGuru());
+
+        if (!$isGuru && !$isSuperAdmin && !$isAdmin && !$isKepalaSekolah) {
+            $isGuru = method_exists($user, 'hasPermission')
+                && ($user->hasPermission('grades.edit') || $user->hasPermission('grades.create'));
+        }
+
+        if (!$isGuru || $isSuperAdmin || $isAdmin || $isKepalaSekolah) {
+            return null;
+        }
+
+        $employee = $user->employee;
+        $activeYear = AcademicYear::getActive();
+
+        abort_unless(
+            $employee && $activeYear,
+            403,
+            'Data guru atau tahun ajaran aktif tidak ditemukan.'
+        );
+
+        $teacherClasses = $employee->homeroomClasses()
+            ->where('classes.academic_year_id', $activeYear->id)
+            ->where('classes.status', 'Aktif')
+            ->whereHas('academicYear', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->get();
+
+        abort_unless(
+            $teacherClasses->count() === 1,
+            403,
+            'Guru harus ditetapkan sebagai wali tepat satu kelas pada tahun ajaran aktif.'
+        );
+
+        return $teacherClasses->first();
+    }
+
+    /**
+     * Memastikan kelas yang diminta sama dengan kelas wali Guru.
+     * Untuk role selain Guru, helper ini tidak membatasi kelas.
+     */
+    private function ensureTeacherCanAccessClass(
+        SchoolClass $class,
+        ?SchoolClass $teacherClass
+    ): void {
+        if (!$teacherClass) {
+            return;
+        }
+
+        abort_unless(
+            (int) $class->id === (int) $teacherClass->id
+            && (int) $class->academic_year_id === (int) $teacherClass->academic_year_id
+            && $class->status === 'Aktif',
+            403,
+            'Kamu tidak memiliki akses ke kelas ini.'
+        );
+    }
+
+    /**
+     * Memastikan siswa merupakan anggota aktif kelas wali Guru.
+     */
+    private function ensureTeacherCanAccessStudentInClass(
+        Student $student,
+        ?SchoolClass $teacherClass
+    ): void {
+        if (!$teacherClass) {
+            return;
+        }
+
+        $isStudentInTeacherClass = $teacherClass->students()
+            ->where('students.id', $student->id)
+            ->wherePivot('status', 'Aktif')
+            ->exists();
+
+        abort_unless(
+            $isStudentInTeacherClass,
+            403,
+            'Kamu tidak memiliki akses ke siswa di luar kelas wali.'
+        );
+    }
+
+    /**
+     * Memastikan Guru hanya mengakses siswa aktif pada kelas yang diizinkan.
+     */
+    private function ensureTeacherCanAccessStudent(
+        SchoolClass $class,
+        Student $student,
+        ?SchoolClass $teacherClass
+    ): void {
+        // Pemeriksaan keanggotaan tambahan hanya untuk Guru agar alur lama
+        // Admin/Super Admin (termasuk auto-assign yang sudah ada di update())
+        // tetap tidak berubah.
+        if (!$teacherClass) {
+            return;
+        }
+
+        $this->ensureTeacherCanAccessClass($class, $teacherClass);
+
+        $isStudentInClass = $class->students()
+            ->where('students.id', $student->id)
+            ->wherePivot('status', 'Aktif')
+            ->exists();
+
+        abort_unless(
+            $isStudentInClass,
+            404,
+            'Siswa tidak ditemukan dalam kelas tersebut.'
+        );
     }
 }

@@ -4,6 +4,16 @@
 
 @section('content')
 
+    @php
+        $currentUser = auth()->user();
+        $canViewGrades = $currentUser && (
+            $currentUser->isSuperAdmin() || $currentUser->hasPermission('grades.view')
+        );
+        $canEditGrades = $currentUser && (
+            $currentUser->isSuperAdmin() || $currentUser->hasPermission('grades.edit')
+        );
+    @endphp
+
     <div class="container-fluid py-4">
 
         {{-- =====================================================
@@ -440,7 +450,7 @@
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; min-width: 248px;">
 
                                                     {{-- Input / Edit Rapot --}}
-                                                    @if ($targetClass && (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit')))
+                                                    @if ($targetClass && $canEditGrades)
                                                         <a
                                                             href="{{ route('report-card-grades.edit', [
                                                                 'class' => $targetClass->id,
@@ -482,7 +492,7 @@
                                                     @endif
 
                                                     {{-- Tombol Riwayat Nilai Rapot Siswa --}}
-                                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
+                                                            @if ($canViewGrades)
                                                             <a
                                                         href="{{ route('report-card-grades.history', [
                                                             'student' => $student->id,

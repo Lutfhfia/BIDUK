@@ -9,6 +9,7 @@ use App\Models\ClassStudent;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,38 +23,64 @@ class StudentController extends Controller
      */
     public function index(Request $request): View
     {
-        $search  = $request->input('search');
-        $classId = $request->input('class_id');
-        $status  = $request->input('status');
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $teacherClass = $this->teacherClassOrNull();
+        $classId = $teacherClass?->id ?? $request->input('class_id');
 
-        $students = Student::query()
+        // Query dasar ini membatasi seluruh data yang dapat dijangkau Guru.
+        $visibleStudents = $this->applyTeacherClassScope(
+            Student::query(),
+            $teacherClass
+        );
+
+        $studentQuery = (clone $visibleStudents)
             ->search($search)
-            ->filterStatus($status)
-            ->filterClass($classId)
-            ->with(['classes' => function ($query) {
-                $query->whereHas('academicYear', fn($q) => $q->where('status', 'active'));
+            ->filterStatus($status);
+
+        // Filter kelas pilihan hanya dipakai untuk role selain Guru.
+        if (!$teacherClass) {
+            $studentQuery->filterClass($classId);
+        }
+
+        $students = $studentQuery
+            ->with(['classes' => function ($query) use ($teacherClass) {
+                $query->where('class_student.status', 'Aktif')
+                    ->whereHas('academicYear', function ($yearQuery) {
+                        $yearQuery->where('status', 'active');
+                    });
+
+                if ($teacherClass) {
+                    $query->where('classes.id', $teacherClass->id);
+                }
             }])
-            ->orderByRaw('CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC')
+            ->orderByRaw(
+                'CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC'
+            )
             ->paginate(10)
             ->withQueryString();
 
-        // Ambil kelas pada tahun ajaran aktif untuk dropdown filter
-        $classes = SchoolClass::currentYear()
-            ->active()
-            ->orderBy('grade_level')
-            ->orderBy('name')
-            ->get();
+        $classes = $teacherClass
+            ? collect([$teacherClass])
+            : SchoolClass::currentYear()
+                ->active()
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
 
         $statuses = ['Aktif', 'Pindah', 'Lulus', 'Alumni', 'Nonaktif'];
 
+        // Statistik hanya dihitung dari siswa yang boleh dilihat role ini.
         $stats = [
-            'total'  => Student::count(),
-            'active' => Student::where('status', 'Aktif')->count(),
-            'male'   => Student::where('gender', 'L')->count(),
-            'female' => Student::where('gender', 'P')->count(),
+            'total' => (clone $visibleStudents)->count(),
+            'active' => (clone $visibleStudents)->where('status', 'Aktif')->count(),
+            'male' => (clone $visibleStudents)->where('gender', 'L')->count(),
+            'female' => (clone $visibleStudents)->where('gender', 'P')->count(),
         ];
 
-        return view('students.index', compact('students', 'classes', 'statuses', 'search', 'classId', 'status', 'stats'));
+        return view('students.index', compact(
+            'students', 'classes', 'statuses', 'search', 'classId', 'status', 'stats'
+        ));
     }
 
     /**
@@ -61,16 +88,25 @@ class StudentController extends Controller
      */
     public function create(): View
     {
-        $classes = SchoolClass::currentYear()
-            ->active()
-            ->orderBy('grade_level')
+        $teacherClass = $this->teacherClassOrNull();
+
+        $classes = $teacherClass
+            ? collect([$teacherClass])
+            : SchoolClass::currentYear()
+                ->active()
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+
+        $academicYears = AcademicYear::orderBy('name')->get();
+        $semesters = Semester::with('academicYear')
+            ->orderBy('academic_year_id')
             ->orderBy('name')
             ->get();
 
-        $academicYears = AcademicYear::orderBy('name')->get();
-        $semesters = Semester::with('academicYear')->orderBy('academic_year_id')->orderBy('name')->get();
-
-        return view('students.create', compact('classes', 'academicYears', 'semesters'));
+        return view('students.create', compact(
+            'classes', 'academicYears', 'semesters'
+        ));
     }
 
     /**
@@ -78,7 +114,13 @@ class StudentController extends Controller
      */
     public function store(StoreStudentRequest $request): RedirectResponse
     {
+        $teacherClass = $this->teacherClassOrNull();
         $data = $request->validated();
+
+        // Guru tidak dapat menentukan class_id sendiri melalui request browser.
+        if ($teacherClass) {
+            $data['class_id'] = $teacherClass->id;
+        }
 
         // Tetapkan 4 kode administratif sebagai template resmi sekolah
         $data['school_code'] = Student::DEFAULT_SCHOOL_CODE;
@@ -181,9 +223,12 @@ app(ActivityLogger::class)->log(
      */
     public function show(Request $request, Student $student): View
     {
-        $search  = $request->input('search');
-        $classId = $request->input('class_id');
-        $status  = $request->input('status');
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $classId = $teacherClass?->id ?? $request->input('class_id');
 
         $student->load([
             'classes.academicYear',
@@ -199,28 +244,37 @@ app(ActivityLogger::class)->log(
 
         $baseQuery = Student::query()
             ->search($search)
-            ->filterStatus($status)
-            ->filterClass($classId);
+            ->filterStatus($status);
 
-        // Ambil urutan ID siswa berdasarkan NIS (sama persis dengan daftar tabel)
+        $this->applyTeacherClassScope($baseQuery, $teacherClass);
+
+        if (!$teacherClass) {
+            $baseQuery->filterClass($classId);
+        }
+
+        // Urutan navigasi detail harus memakai kumpulan siswa yang diizinkan.
         $studentIds = (clone $baseQuery)
-            ->orderByRaw('CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC, id ASC')
+            ->orderByRaw(
+                'CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC, id ASC'
+            )
             ->pluck('id')
             ->toArray();
 
         $currentIndex = array_search($student->id, $studentIds);
-
         $previousStudent = null;
+        $nextStudent = null;
+
         if ($currentIndex !== false && $currentIndex > 0) {
             $previousStudent = Student::find($studentIds[$currentIndex - 1]);
         }
 
-        $nextStudent = null;
         if ($currentIndex !== false && isset($studentIds[$currentIndex + 1])) {
             $nextStudent = Student::find($studentIds[$currentIndex + 1]);
         }
 
-        return view('students.show', compact('student', 'previousStudent', 'nextStudent', 'search', 'classId', 'status'));
+        return view('students.show', compact(
+            'student', 'previousStudent', 'nextStudent', 'search', 'classId', 'status'
+        ));
     }
 
     /**
@@ -228,19 +282,29 @@ app(ActivityLogger::class)->log(
      */
     public function edit(Student $student): View
     {
-        $classes = SchoolClass::currentYear()
-            ->active()
-            ->orderBy('grade_level')
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+
+        $classes = $teacherClass
+            ? collect([$teacherClass])
+            : SchoolClass::currentYear()
+                ->active()
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+
+        $academicYears = AcademicYear::orderBy('name')->get();
+        $semesters = Semester::with('academicYear')
+            ->orderBy('academic_year_id')
             ->orderBy('name')
             ->get();
 
-        $academicYears = AcademicYear::orderBy('name')->get();
-        $semesters = Semester::with('academicYear')->orderBy('academic_year_id')->orderBy('name')->get();
+        $currentClassId = $teacherClass?->id
+            ?? $student->currentClass()->first()?->id;
 
-        // Ambil kelas aktif siswa saat ini
-        $currentClassId = $student->currentClass()->first()?->id;
-
-        return view('students.edit', compact('student', 'classes', 'currentClassId', 'academicYears', 'semesters'));
+        return view('students.edit', compact(
+            'student', 'classes', 'currentClassId', 'academicYears', 'semesters'
+        ));
     }
 
     /**
@@ -248,7 +312,15 @@ app(ActivityLogger::class)->log(
      */
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+
         $data = $request->validated();
+
+        // Guru boleh mengelola siswa kelasnya, tetapi tidak memindahkannya ke kelas lain.
+        if ($teacherClass) {
+            $data['class_id'] = $teacherClass->id;
+        }
 
         // Tetapkan 4 kode administratif sebagai template resmi sekolah
         $data['school_code'] = Student::DEFAULT_SCHOOL_CODE;
@@ -334,8 +406,12 @@ app(ActivityLogger::class)->log(
             }
         }
 
-        // Update penempatan kelas jika berubah
-        if ($classId) {
+        // Update penempatan kelas jika berubah.
+        $currentClassId = $student->currentClass()->first()?->id;
+        $shouldUpdateClass = $classId
+            && (!$teacherClass || (int) $currentClassId !== (int) $teacherClass->id);
+
+        if ($shouldUpdateClass) {
             $activeYear = AcademicYear::getActive();
             if ($activeYear) {
                 // Nonaktifkan penempatan kelas lama pada tahun ajaran aktif
@@ -400,6 +476,9 @@ if (!empty($changedNewValues)) {
      */
     public function destroy(Student $student): RedirectResponse
     {
+        $teacherClass = $this->teacherClassOrNull();
+        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+
         $oldStudentValues = $student->getAttributes();
         $student->delete();
         app(ActivityLogger::class)->log(
@@ -415,4 +494,89 @@ if (!empty($changedNewValues)) {
             ->route('students.index')
             ->with('success', 'Data siswa berhasil dihapus.');
     }
+
+    /**
+     * Mengembalikan kelas wali Guru pada tahun ajaran aktif.
+     * Role selain Guru tidak dibatasi oleh helper ini.
+     */
+    private function teacherClassOrNull(): ?SchoolClass
+    {
+        $user = auth()->user();
+
+        if (!$user || !$user->isGuru()) {
+            return null;
+        }
+
+        $employee = $user->employee;
+        $activeYear = AcademicYear::getActive();
+
+        abort_unless(
+            $employee && $activeYear,
+            403,
+            'Data guru atau tahun ajaran aktif tidak ditemukan.'
+        );
+
+        $teacherClasses = $employee->homeroomClasses()
+            ->where('classes.academic_year_id', $activeYear->id)
+            ->where('classes.status', 'Aktif')
+            ->whereHas('academicYear', function ($query) {
+                $query->where('status', 'active');
+            })
+            ->get();
+
+        abort_unless(
+            $teacherClasses->count() === 1,
+            403,
+            'Guru harus ditetapkan sebagai wali tepat satu kelas pada tahun ajaran aktif.'
+        );
+
+        return $teacherClasses->first();
+    }
+
+    /**
+     * Menambahkan batas kelas wali pada query siswa.
+     */
+    private function applyTeacherClassScope(
+        Builder $query,
+        ?SchoolClass $teacherClass
+    ): Builder {
+        if (!$teacherClass) {
+            return $query;
+        }
+
+        return $query->whereHas('classes', function ($classQuery) use ($teacherClass) {
+            $classQuery
+                ->where('classes.id', $teacherClass->id)
+                ->where('classes.academic_year_id', $teacherClass->academic_year_id)
+                ->where('classes.status', 'Aktif')
+                ->where('class_student.status', 'Aktif');
+        });
+    }
+
+    /**
+     * Menolak akses langsung ke detail, edit, update, atau hapus
+     * siswa yang bukan anggota aktif kelas wali Guru.
+     */
+    private function ensureTeacherCanAccessStudent(
+        Student $student,
+        ?SchoolClass $teacherClass
+    ): void {
+        if (!$teacherClass) {
+            return;
+        }
+
+        $allowed = $student->classes()
+            ->where('classes.id', $teacherClass->id)
+            ->where('classes.academic_year_id', $teacherClass->academic_year_id)
+            ->where('classes.status', 'Aktif')
+            ->where('class_student.status', 'Aktif')
+            ->exists();
+
+        abort_unless(
+            $allowed,
+            403,
+            'Kamu tidak memiliki akses ke data siswa di luar kelas wali.'
+        );
+    }
+
 }

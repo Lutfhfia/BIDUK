@@ -14,14 +14,16 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Concerns\Import;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Throwable;
 
-class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkReading
+class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
 {
     /**
      * Data siswa dimulai pada baris ke-4:
@@ -49,6 +51,40 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
 
     public function collection(Collection $rows): void
     {
+        $user = Auth::user();
+        $teacherClass = null;
+
+        /*
+         * Guru hanya dapat mengimpor ke kelas yang diampunya
+         * pada tahun ajaran aktif.
+         */
+        if ($user && $user->isGuru()) {
+            $employee = $user->employee;
+            $activeYear = AcademicYear::getActive();
+
+            if (!$employee) {
+                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
+            }
+
+            if (!$activeYear) {
+                abort(403, 'Tahun ajaran aktif belum ditentukan.');
+            }
+
+            $teacherClasses = $employee->homeroomClasses()
+                ->where('classes.academic_year_id', $activeYear->id)
+                ->where('classes.status', 'Aktif')
+                ->get();
+
+            if ($teacherClasses->count() !== 1) {
+                abort(
+                    403,
+                    'Akun Guru harus memiliki tepat satu kelas wali pada tahun ajaran aktif.'
+                );
+            }
+
+            $teacherClass = $teacherClasses->first();
+        }
+
         foreach ($rows as $rowIndex => $row) {
             $data = array_values($row->toArray());
 
@@ -59,16 +95,47 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
             $excelRowNum = self::START_ROW + $rowIndex;
 
             try {
-                DB::transaction(function () use ($data) {
+                DB::transaction(function () use (
+                    $data,
+                    $user,
+                    $teacherClass
+                ) {
                     $student = $this->findExistingStudent($data);
+
+                    /*
+                     * Jika siswa sudah terdaftar, Guru hanya boleh
+                     * memperbarui data siswa yang aktif di kelasnya.
+                     */
+                    if ($user && $user->isGuru() && $student) {
+                        $belongsToTeacherClass = $student->classes()
+                            ->where('classes.id', $teacherClass->id)
+                            ->where(
+                                'classes.academic_year_id',
+                                $teacherClass->academic_year_id
+                            )
+                            ->wherePivot('status', 'Aktif')
+                            ->exists();
+
+                        if (!$belongsToTeacherClass) {
+                            throw new RuntimeException(
+                                'Data siswa "' . $student->name .
+                                '" bukan siswa aktif di kelas yang Anda ampu. Baris dilewati.'
+                            );
+                        }
+                    }
+
                     $payload = $this->studentPayload($data);
 
                     if (!$student) {
                         $student = Student::create($payload);
                         $this->importedCount++;
                     } else {
-                        // Jangan overwrite data yang ada jika payload menghasilkan null
-                        $cleanPayload = array_filter($payload, fn ($v) => $v !== null);
+                        // Jangan menimpa data yang sudah ada dengan nilai null.
+                        $cleanPayload = array_filter(
+                            $payload,
+                            fn ($value) => $value !== null
+                        );
+
                         $student->update($cleanPayload);
                         $this->updatedCount++;
                     }
@@ -76,11 +143,24 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
                     $this->savePreviousEducation($student, $data);
                     $this->saveHealth($student, $data);
                     $this->savePhysique($student, $data);
-                    $this->syncClass($student, $data);
+
+                    /*
+                     * Guru diarahkan ke kelas wali miliknya.
+                     * Role lain tetap menggunakan data kelas dari Excel
+                     * sesuai proses import yang sudah ada.
+                     */
+                    $this->syncClass(
+                        $student,
+                        $data,
+                        $user && $user->isGuru() ? $teacherClass : null
+                    );
                 });
             } catch (Throwable $e) {
                 $this->skippedCount++;
-                $studentName = $this->nullableString($this->value($data, 4)) ?? 'Baris #' . $excelRowNum;
+
+                $studentName = $this->nullableString(
+                    $this->value($data, 4)
+                ) ?? 'Baris #' . $excelRowNum;
 
                 $this->errors[] = [
                     'row' => $this->value($data, 1) ?? $excelRowNum,
@@ -88,11 +168,14 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
                     'message' => $e->getMessage(),
                 ];
 
-                Log::error('Import Siswa Gagal pada baris ' . $excelRowNum, [
-                    'row' => $excelRowNum,
-                    'name' => $studentName,
-                    'message' => $e->getMessage(),
-                ]);
+                Log::error(
+                    'Import Siswa Gagal pada baris ' . $excelRowNum,
+                    [
+                        'row' => $excelRowNum,
+                        'name' => $studentName,
+                        'message' => $e->getMessage(),
+                    ]
+                );
             }
         }
     }
@@ -274,33 +357,83 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
         );
     }
 
-    private function syncClass(Student $student, array $r): void
-    {
-        $className = $this->nullableString($this->value($r, 64));
-
-        if (!$className) {
-            return;
-        }
-
+    private function syncClass(
+        Student $student,
+        array $r,
+        ?SchoolClass $forcedClass = null
+    ): void {
         $activeYear = AcademicYear::getActive();
 
         if (!$activeYear) {
             return;
         }
 
-        $class = SchoolClass::where('academic_year_id', $activeYear->id)
-            ->where(function ($q) use ($className) {
-                $q->where('name', $className)
-                    ->orWhere('name', 'like', '%' . $className . '%');
-            })
-            ->first();
+        /*
+         * Jika dipanggil oleh Guru, kelas ditentukan oleh sistem,
+         * bukan oleh nilai nama kelas di Excel.
+         */
+        if ($forcedClass !== null) {
+            if ((int) $forcedClass->academic_year_id !== (int) $activeYear->id) {
+                throw new RuntimeException(
+                    'Kelas tujuan bukan bagian dari tahun ajaran aktif.'
+                );
+            }
 
-        if (!$class) {
+            $class = $forcedClass;
+        } else {
+            // Proses import Admin/Super Admin tetap mengikuti Excel.
+            $className = $this->nullableString(
+                $this->value($r, 64)
+            );
+
+            if (!$className) {
+                return;
+            }
+
+            $class = SchoolClass::where(
+                'academic_year_id',
+                $activeYear->id
+            )
+                ->where(function ($query) use ($className) {
+                    $query->where('name', $className)
+                        ->orWhere(
+                            'name',
+                            'like',
+                            '%' . $className . '%'
+                        );
+                })
+                ->first();
+
+            if (!$class) {
+                return;
+            }
+        }
+
+        // Jika Guru melakukan import, jangan sentuh penempatan kelas lain.
+        // Siswa baru diarahkan ke kelas wali; siswa yang sudah ada hanya
+        // dapat diproses jika validasi di collection() menyatakan bahwa
+        // siswa tersebut memang aktif di kelas wali.
+        if ($forcedClass !== null) {
+            ClassStudent::updateOrCreate(
+                [
+                    'class_id' => $class->id,
+                    'student_id' => $student->id,
+                ],
+                [
+                    'status' => 'Aktif',
+                    'entry_date' => now()->toDateString(),
+                    'exit_date' => null,
+                ]
+            );
+
             return;
         }
 
+        // Untuk Admin/Super Admin, proses penempatan dari Excel tetap berlaku.
         ClassStudent::where('student_id', $student->id)
-            ->whereHas('schoolClass', fn ($q) => $q->where('academic_year_id', $activeYear->id))
+            ->whereHas('schoolClass', function ($query) use ($activeYear) {
+                $query->where('academic_year_id', $activeYear->id);
+            })
             ->where('status', 'Aktif')
             ->update([
                 'status' => 'Naik Kelas',
@@ -319,7 +452,6 @@ class StudentsImport implements Import, ToCollection, WithStartRow, WithChunkRea
             ]
         );
     }
-
     private function findExistingStudent(array $r): ?Student
     {
         $nisn = $this->nullableString($this->value($r, 3));
