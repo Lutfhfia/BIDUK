@@ -8,214 +8,356 @@ use Illuminate\Database\Seeder;
 class PermissionSeeder extends Seeder
 {
     /**
-     * Seed data permission.
+     * Mendaftarkan permission yang digunakan oleh aplikasi BIDUK.
+     *
+     * Seeder ini hanya membuat atau memperbarui data permission.
+     * Pemberian permission kepada setiap role dilakukan melalui
+     * halaman Hak Akses Role.
      */
     public function run(): void
     {
         $permissions = [
+
+            // =================================================
+            // DASHBOARD
+            // =================================================
+
             [
                 'name' => 'dashboard.view',
-                'description' => 'Melihat dashboard',
+                'description' => 'Lihat Dashboard',
             ],
+
+            // =================================================
+            // DATA SISWA
+            // =================================================
 
             [
                 'name' => 'students.view',
-                'description' => 'Melihat data siswa',
+                'description' => 'Lihat Data Siswa',
             ],
             [
                 'name' => 'students.create',
-                'description' => 'Menambah data siswa',
+                'description' => 'Tambah Siswa',
             ],
             [
                 'name' => 'students.edit',
-                'description' => 'Mengubah data siswa',
+                'description' => 'Ubah Data Siswa',
             ],
             [
                 'name' => 'students.delete',
-                'description' => 'Menghapus data siswa',
+                'description' => 'Hapus Siswa',
             ],
+            [
+                'name' => 'students.import',
+                'description' => 'Import Data Siswa',
+            ],
+            [
+                'name' => 'students.export',
+                'description' => 'Export Data Siswa',
+            ],
+
+            // =================================================
+            // DATA PEGAWAI
+            // =================================================
 
             [
                 'name' => 'employees.view',
-                'description' => 'Melihat data pegawai',
+                'description' => 'Lihat Data Pegawai',
             ],
             [
                 'name' => 'employees.create',
-                'description' => 'Menambah data pegawai',
+                'description' => 'Tambah Pegawai',
             ],
             [
                 'name' => 'employees.edit',
-                'description' => 'Mengubah data pegawai',
+                'description' => 'Ubah Data Pegawai',
             ],
             [
                 'name' => 'employees.delete',
-                'description' => 'Menghapus data pegawai',
+                'description' => 'Hapus Pegawai',
             ],
+            [
+                'name' => 'employees.import',
+                'description' => 'Import Data Pegawai',
+            ],
+            [
+                'name' => 'employees.export',
+                'description' => 'Export Data Pegawai',
+            ],
+
+            // =================================================
+            // DATA KELAS
+            // =================================================
 
             [
                 'name' => 'classes.view',
-                'description' => 'Melihat data kelas',
+                'description' => 'Lihat Data Kelas',
             ],
             [
                 'name' => 'classes.create',
-                'description' => 'Menambah data kelas',
+                'description' => 'Tambah Kelas',
             ],
             [
                 'name' => 'classes.edit',
-                'description' => 'Mengubah data kelas',
+                'description' => 'Ubah Data Kelas',
             ],
             [
                 'name' => 'classes.delete',
-                'description' => 'Menghapus data kelas',
+                'description' => 'Hapus Data Kelas',
             ],
+
+            // =================================================
+            // TAHUN AJARAN
+            // =================================================
 
             [
                 'name' => 'academic_years.view',
-                'description' => 'Melihat tahun ajaran',
+                'description' => 'Lihat Tahun Ajaran',
             ],
             [
                 'name' => 'academic_years.create',
-                'description' => 'Menambah tahun ajaran',
+                'description' => 'Tambah Tahun Ajaran',
             ],
             [
                 'name' => 'academic_years.edit',
-                'description' => 'Mengubah tahun ajaran',
+                'description' => 'Ubah Tahun Ajaran',
             ],
             [
                 'name' => 'academic_years.delete',
-                'description' => 'Menghapus tahun ajaran',
+                'description' => 'Hapus Tahun Ajaran',
             ],
+
+            // =================================================
+            // MATA PELAJARAN
+            // =================================================
 
             [
                 'name' => 'subjects.view',
-                'description' => 'Melihat mata pelajaran',
+                'description' => 'Lihat Mata Pelajaran',
             ],
             [
                 'name' => 'subjects.create',
-                'description' => 'Menambah mata pelajaran',
+                'description' => 'Tambah Mata Pelajaran',
             ],
             [
                 'name' => 'subjects.edit',
-                'description' => 'Mengubah mata pelajaran',
+                'description' => 'Ubah Mata Pelajaran',
             ],
             [
                 'name' => 'subjects.delete',
-                'description' => 'Menghapus mata pelajaran',
+                'description' => 'Hapus Mata Pelajaran',
             ],
 
-            [
-                'name' => 'attendance.view',
-                'description' => 'Melihat rekap absensi',
-            ],
-            [
-                'name' => 'attendance.create',
-                'description' => 'Menambah rekap absensi',
-            ],
-            [
-                'name' => 'attendance.edit',
-                'description' => 'Mengubah rekap absensi',
-            ],
-            [
-                'name' => 'attendance.delete',
-                'description' => 'Menghapus rekap absensi',
-            ],
+            // =================================================
+            // NILAI RAPOR
+            // Nilai akhir/ijazah tetap menjadi bagian fitur ini.
+            // =================================================
 
             [
                 'name' => 'grades.view',
-                'description' => 'Melihat nilai rapot',
+                'description' => 'Lihat Nilai Rapor',
             ],
             [
                 'name' => 'grades.create',
-                'description' => 'Menambah nilai rapot',
+                'description' => 'Tambah Nilai Rapor',
             ],
             [
                 'name' => 'grades.edit',
-                'description' => 'Mengubah nilai rapot',
+                'description' => 'Ubah Nilai Rapor',
             ],
             [
                 'name' => 'grades.delete',
-                'description' => 'Menghapus nilai rapot',
+                'description' => 'Hapus Nilai Rapor',
+            ],
+            [
+                'name' => 'grades.import',
+                'description' => 'Import Nilai Rapor',
             ],
 
-            [
-                'name' => 'reports.view',
-                'description' => 'Melihat laporan',
-            ],
+            // =================================================
+            // REKAP ABSENSI
+            // =================================================
 
             [
-                'name' => 'users.manage',
-                'description' => 'Mengelola pengguna',
+                'name' => 'attendance.view',
+                'description' => 'Lihat Rekap Absensi',
+            ],
+            [
+                'name' => 'attendance.create',
+                'description' => 'Tambah Rekap Absensi',
+            ],
+            [
+                'name' => 'attendance.edit',
+                'description' => 'Ubah Rekap Absensi',
+            ],
+            [
+                'name' => 'attendance.delete',
+                'description' => 'Hapus Rekap Absensi',
+            ],
+            [
+                'name' => 'attendance.export',
+                'description' => 'Unduh Rekap Absensi',
             ],
 
-            [
-                'name' => 'roles.manage',
-                'description' => 'Mengelola hak akses role',
-            ],
-
-            [
-                'name' => 'semesters.view',
-                'description' => 'Melihat data semester',
-            ],
-            [
-                'name' => 'semesters.create',
-                'description' => 'Menambah data semester',
-            ],
-            [
-                'name' => 'semesters.edit',
-                'description' => 'Mengubah data semester',
-            ],
-            [
-                'name' => 'semesters.delete',
-                'description' => 'Menghapus data semester',
-            ],
+            // =================================================
+            // BUKU INDUK
+            // =================================================
 
             [
                 'name' => 'student_records.view',
-                'description' => 'Melihat Buku Induk siswa',
+                'description' => 'Lihat Buku Induk',
             ],
+            [
+                'name' => 'student_records.print',
+                'description' => 'Cetak Buku Induk',
+            ],
+            [
+                'name' => 'student_records.export',
+                'description' => 'Unduh Buku Induk',
+            ],
+
+            // =================================================
+            // REKAP RAPOR
+            // =================================================
 
             [
                 'name' => 'report_cards.view',
-                'description' => 'Melihat rekap rapot',
+                'description' => 'Lihat Rekap Rapor',
             ],
+            [
+                'name' => 'report_cards.print',
+                'description' => 'Cetak Rekap Rapor',
+            ],
+            [
+                'name' => 'report_cards.export',
+                'description' => 'Unduh Rekap Rapor',
+            ],
+
+            // =================================================
+            // REKAP PRESTASI
+            // =================================================
 
             [
                 'name' => 'achievements.view',
-                'description' => 'Melihat rekap prestasi',
+                'description' => 'Lihat Rekap Prestasi',
+            ],
+            [
+                'name' => 'achievements.create',
+                'description' => 'Tambah Data Prestasi',
+            ],
+            [
+                'name' => 'achievements.edit',
+                'description' => 'Ubah Data Prestasi',
+            ],
+            [
+                'name' => 'achievements.delete',
+                'description' => 'Hapus Data Prestasi',
+            ],
+            [
+                'name' => 'achievements.print',
+                'description' => 'Cetak Rekap Prestasi',
+            ],
+            [
+                'name' => 'achievements.export',
+                'description' => 'Unduh Rekap Prestasi',
             ],
 
+            // =================================================
+            // PROFIL SEKOLAH
+            // =================================================
+
+            [
+                'name' => 'school_profile.view',
+                'description' => 'Lihat Profil Sekolah',
+            ],
             [
                 'name' => 'school_profile.manage',
-                'description' => 'Mengelola profil sekolah',
+                'description' => 'Kelola Profil Sekolah',
             ],
+
+            // =================================================
+            // BERITA SEKOLAH
+            // Dipertahankan untuk mendukung konten sekolah.
+            // =================================================
 
             [
                 'name' => 'news.view',
-                'description' => 'Melihat berita sekolah',
+                'description' => 'Lihat Berita Sekolah',
             ],
             [
                 'name' => 'news.create',
-                'description' => 'Menambah berita sekolah',
+                'description' => 'Tambah Berita Sekolah',
             ],
             [
                 'name' => 'news.edit',
-                'description' => 'Mengubah berita sekolah',
+                'description' => 'Ubah Berita Sekolah',
             ],
             [
                 'name' => 'news.delete',
-                'description' => 'Menghapus berita sekolah',
+                'description' => 'Hapus Berita Sekolah',
             ],
+
+            // =================================================
+            // MANAJEMEN USER
+            // =================================================
+
+            [
+                'name' => 'users.view',
+                'description' => 'Lihat Pengguna',
+            ],
+            [
+                'name' => 'users.create',
+                'description' => 'Tambah Pengguna',
+            ],
+            [
+                'name' => 'users.edit',
+                'description' => 'Ubah Pengguna',
+            ],
+            [
+                'name' => 'users.delete',
+                'description' => 'Hapus Pengguna',
+            ],
+            [
+                'name' => 'users.manage',
+                'description' => 'Kelola Manajemen Pengguna',
+            ],
+
+            // =================================================
+            // HAK AKSES ROLE
+            // =================================================
+
+            [
+                'name' => 'roles.manage',
+                'description' => 'Kelola Hak Akses Role',
+            ],
+
+            // =================================================
+            // LOG AKTIVITAS
+            // =================================================
 
             [
                 'name' => 'activity_logs.view',
-                'description' => 'Melihat log aktivitas',
+                'description' => 'Lihat Log Aktivitas',
+            ],
+
+            // =================================================
+            // LAPORAN UMUM
+            // =================================================
+
+            [
+                'name' => 'reports.view',
+                'description' => 'Lihat Laporan',
             ],
         ];
 
         foreach ($permissions as $permission) {
-            Permission::firstOrCreate(
-                ['name' => $permission['name']],
-                $permission
+            Permission::updateOrCreate(
+                [
+                    'name' => $permission['name'],
+                ],
+                [
+                    'description' => $permission['description'],
+                ]
             );
         }
     }

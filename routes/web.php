@@ -177,21 +177,21 @@ Route::get(
         'students/import',
         [StudentImportExportController::class, 'form']
     )
-        ->middleware('permission:students.view')
+        ->middleware('permission:students.import')
         ->name('students.import.form');
 
     Route::post(
         'students/import',
         [StudentImportExportController::class, 'import']
     )
-        ->middleware('permission:students.create')
+        ->middleware('permission:students.import')
         ->name('students.import');
 
     Route::get(
         'students/export/excel',
         [StudentImportExportController::class, 'exportExcel']
     )
-        ->middleware('permission:students.view')
+        ->middleware('permission:students.export')
         ->name('students.export.excel');
 
     Route::get(

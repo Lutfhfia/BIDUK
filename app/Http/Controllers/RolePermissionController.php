@@ -19,14 +19,15 @@ class RolePermissionController extends Controller
 
         abort_unless(
             $user && $user->isSuperAdmin(),
-            403
+            403,
+            'Anda tidak memiliki akses untuk mengelola hak akses role.'
         );
     }
 
     /**
      * Menampilkan halaman Hak Akses Role.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorizeAccess();
 
@@ -49,20 +50,33 @@ class RolePermissionController extends Controller
     {
         $this->authorizeAccess();
 
-        $request->validate([
+        /*
+         * Pastikan permission yang dikirim memang ada
+         * di database.
+         */
+        $validated = $request->validate([
             'permissions' => ['nullable', 'array'],
-            'permissions.*' => [
-                'integer',
-                'exists:permissions,id',
-            ],
+            'permissions.*' => ['integer', 'exists:permissions,id'],
         ]);
 
-        $role->permissions()->sync(
-            $request->permissions ?? []
-        );
+        /*
+         * Jika tidak ada permission yang dicentang,
+         * gunakan array kosong.
+         */
+        $permissionIds = $validated['permissions'] ?? [];
+
+        /*
+         * Sinkronisasi permission role.
+         *
+         * Permission lama yang tidak dicentang akan dihapus,
+         * sedangkan permission baru akan ditambahkan.
+         */
+        $role->permissions()->sync($permissionIds);
 
         return redirect()
-            ->route('role-permissions.index')
+            ->route('role-permissions.index', [
+                'role' => $role->id,
+            ])
             ->with(
                 'success',
                 'Hak akses role berhasil diperbarui.'

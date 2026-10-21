@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\AcademicYear;
 use App\Models\Student;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\Export;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -13,104 +12,159 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use Illuminate\Support\Facades\Auth;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class StudentsExport implements Export, FromCollection, WithHeadings, ShouldAutoSize, WithEvents
+class StudentsExport implements FromCollection, WithHeadings, ShouldAutoSize, WithEvents
 {
     public function collection(): Collection
     {
-        return Student::with(['previousEducation', 'classes', 'physiques'])
-            ->orderBy('name')
-            ->get()
-            ->map(function (Student $s, int $index) {
-                $pe = $s->previousEducation;
-                $class = $s->classes->first();
-                $activeYear = AcademicYear::getActive();
-                $physique = $activeYear
-                    ? $s->physiques->where('academic_year_id', $activeYear->id)->sortByDesc('id')->first()
-                    : $s->physiques->sortByDesc('id')->first();
+        $user = Auth::user();
+        $activeYear = AcademicYear::getActive();
 
-                return [
-                    $index + 1,
-                    $s->nis,
-                    $s->nisn,
-                    $s->name,
-                    $s->nickname,
-                    $s->gender,
-                    $s->birth_place,
-                    optional($s->birth_date)->format('Y-m-d'),
-                    $s->religion,
-                    $s->citizenship,
-                    $s->child_position,
-                    $s->siblings_biological,
-                    $s->siblings_step,
-                    $s->siblings_adopted,
-                    $s->daily_language,
-                    $physique?->weight,
-                    $physique?->height,
-                    $s->blood_type,
-                    $s->diseases,
-                    $s->immunizations,
-                    $s->address,
-                    $s->rt,
-                    $s->rw,
-                    $s->village,
-                    $s->district,
-                    $s->city,
-                    $s->province,
-                    $s->postal_code,
-                    $s->living_with,
-                    $s->distance_to_school,
+        $query = Student::with([
+            'previousEducation',
+            'classes' => function ($classQuery) use ($activeYear) {
+                $classQuery
+                    ->where('class_student.status', 'Aktif')
+                    ->whereHas('academicYear', function ($yearQuery) {
+                        $yearQuery->where('status', 'active');
+                    });
 
-                    $s->father_name,
-                    $s->father_birth_place,
-                    optional($s->father_birth_date)->format('Y-m-d'),
-                    $s->father_education,
-                    $s->father_job,
-                    $s->father_address,
-                    $s->father_phone,
-                    $s->father_citizenship,
+                if ($activeYear) {
+                    $classQuery->where('classes.academic_year_id', $activeYear->id);
+                }
+            },
+            'physiques',
+        ])->orderBy('name');
 
-                    $s->mother_name,
-                    $s->mother_birth_place,
-                    optional($s->mother_birth_date)->format('Y-m-d'),
-                    $s->mother_education,
-                    $s->mother_job,
-                    $s->mother_address,
-                    $s->mother_phone,
-                    $s->mother_citizenship,
+        // Guru wajib memiliki tepat satu kelas wali pada tahun ajaran aktif.
+        // Data ekspor kemudian dibatasi pada keanggotaan aktif di kelas itu.
+        if ($user && $user->isGuru()) {
+            $employee = $user->employee;
 
-                    $s->guardian_name,
-                    $s->guardian_birth_place,
-                    optional($s->guardian_birth_date)->format('Y-m-d'),
-                    $s->guardian_education,
-                    $s->guardian_job,
-                    $s->guardian_address,
-                    $s->guardian_phone,
-                    $s->guardian_citizenship,
-                    $s->guardian_relation,
+            if (!$employee || !$activeYear) {
+                abort(403, 'Data guru atau tahun ajaran aktif tidak ditemukan.');
+            }
 
-                    $s->student_origin,
-                    $pe?->kindergarten_name,
-                    $pe?->kindergarten_address,
-                    optional($pe?->sttb_date)->format('Y-m-d'),
-                    $pe?->sttb_number,
-                    $pe?->transfer_from_school ?? $pe?->previous_school_name,
-                    $pe?->transfer_from_grade,
-                    optional($pe?->transfer_accepted_date)->format('Y-m-d'),
-                    $pe?->transfer_to_class ?? $class?->name,
+            $teacherClasses = $employee->homeroomClasses()
+                ->where('classes.academic_year_id', $activeYear->id)
+                ->where('classes.status', 'Aktif')
+                ->whereHas('academicYear', function ($yearQuery) {
+                    $yearQuery->where('status', 'active');
+                })
+                ->get();
 
-                    $s->scholarship_type,
-                    $s->graduation_year,
-                    $s->continued_school,
-                    $s->transfer_left_grade,
-                    $s->transfer_to_school,
-                    $s->transfer_to_grade,
-                    optional($s->transfer_date)->format('Y-m-d'),
-                    optional($s->leaving_date)->format('Y-m-d'),
-                    $s->leaving_reason,
-                ];
+            if ($teacherClasses->count() !== 1) {
+                abort(403, 'Guru harus ditetapkan sebagai wali tepat satu kelas pada tahun ajaran aktif.');
+            }
+
+            $teacherClass = $teacherClasses->first();
+
+            $query->whereHas('classes', function ($classQuery) use ($teacherClass, $activeYear) {
+                $classQuery
+                    ->where('classes.id', $teacherClass->id)
+                    ->where('classes.academic_year_id', $activeYear->id)
+                    ->where('classes.status', 'Aktif')
+                    ->where('class_student.status', 'Aktif');
             });
+        }
+
+        return $query->get()->map(function (Student $s, int $index) use ($activeYear) {
+
+            $pe = $s->previousEducation;
+            $class = $s->classes->first();
+
+            $physique = $activeYear
+                ? $s->physiques
+                    ->where('academic_year_id', $activeYear->id)
+                    ->sortByDesc('id')
+                    ->first()
+                : $s->physiques
+                    ->sortByDesc('id')
+                    ->first();
+
+            return [
+                $index + 1,
+                $s->nis,
+                $s->nisn,
+                $s->name,
+                $s->nickname,
+                $s->gender,
+                $s->birth_place,
+                optional($s->birth_date)->format('Y-m-d'),
+                $s->religion,
+                $s->citizenship,
+                $s->child_position,
+                $s->siblings_biological,
+                $s->siblings_step,
+                $s->siblings_adopted,
+                $s->daily_language,
+                $physique?->weight,
+                $physique?->height,
+                $s->blood_type,
+                $s->diseases,
+                $s->immunizations,
+                $s->address,
+                $s->rt,
+                $s->rw,
+                $s->village,
+                $s->district,
+                $s->city,
+                $s->province,
+                $s->postal_code,
+                $s->living_with,
+                $s->distance_to_school,
+
+                $s->father_name,
+                $s->father_birth_place,
+                optional($s->father_birth_date)->format('Y-m-d'),
+                $s->father_education,
+                $s->father_job,
+                $s->father_address,
+                $s->father_phone,
+                $s->father_citizenship,
+
+                $s->mother_name,
+                $s->mother_birth_place,
+                optional($s->mother_birth_date)->format('Y-m-d'),
+                $s->mother_education,
+                $s->mother_job,
+                $s->mother_address,
+                $s->mother_phone,
+                $s->mother_citizenship,
+
+                $s->guardian_name,
+                $s->guardian_birth_place,
+                optional($s->guardian_birth_date)->format('Y-m-d'),
+                $s->guardian_education,
+                $s->guardian_job,
+                $s->guardian_address,
+                $s->guardian_phone,
+                $s->guardian_citizenship,
+                $s->guardian_relation,
+
+                $s->student_origin,
+                $pe?->kindergarten_name,
+                $pe?->kindergarten_address,
+                optional($pe?->sttb_date)->format('Y-m-d'),
+                $pe?->sttb_number,
+                $pe?->transfer_from_school ?? $pe?->previous_school_name,
+                $pe?->transfer_from_grade,
+                optional($pe?->transfer_accepted_date)->format('Y-m-d'),
+                $pe?->transfer_to_class ?? $class?->name,
+
+                $s->scholarship_type,
+                $s->graduation_year,
+                $s->continued_school,
+                $s->transfer_left_grade,
+                $s->transfer_to_school,
+                $s->transfer_to_grade,
+                optional($s->transfer_date)->format('Y-m-d'),
+                optional($s->leaving_date)->format('Y-m-d'),
+                $s->leaving_reason,
+            ];
+        });
     }
 
     public function headings(): array
