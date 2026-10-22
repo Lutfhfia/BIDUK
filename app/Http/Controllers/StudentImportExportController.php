@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StudentsTemplateExport;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
@@ -65,7 +66,16 @@ class StudentImportExportController extends Controller
                 ]);
         }
     }
-
+/**
+ * Download template kosong untuk import siswa.
+ */
+public function downloadTemplate()
+{
+    return Excel::download(
+        new StudentsTemplateExport(),
+        'Template_Import_Data_Siswa.xlsx'
+    );
+}
     /**
      * Export siswa. StudentsExport membatasi hasil untuk kelas wali Guru.
      */

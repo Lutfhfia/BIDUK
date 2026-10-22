@@ -14,7 +14,7 @@ class EmployeeTemplateExport implements
     WithTitle
 {
     /**
-     * Template tidak memiliki data.
+     * Template tidak memiliki data pegawai.
      */
     public function array(): array
     {
@@ -22,7 +22,7 @@ class EmployeeTemplateExport implements
     }
 
     /**
-     * Kolom yang tersedia pada template.
+     * Kolom template yang sesuai dengan proses import.
      */
     public function headings(): array
     {
@@ -33,13 +33,12 @@ class EmployeeTemplateExport implements
             'Jenis Kelamin',
             'Tempat Lahir',
             'Tanggal Lahir',
-            'Jenis Pegawai',
             'Status Kepegawaian',
             'Jabatan',
-            'No. HP',
+            'Nomor HP',
             'Email',
             'Alamat',
-            'Status',
+            'Status Pegawai',
         ];
     }
 

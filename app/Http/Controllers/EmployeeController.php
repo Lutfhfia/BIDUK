@@ -110,13 +110,17 @@ class EmployeeController extends Controller
             ],
 
             'position' => [
-                'required',
-                Rule::in([
-                    'Guru',
-                    'Kepala Sekolah',
-                    'Tata Usaha',
-                ]),
-            ],
+    'required',
+    Rule::in([
+        'Guru',
+        'Kepala Sekolah',
+        'Tata Usaha',
+        'Tenaga Administrasi',
+        'OPS',
+        'Perpstk',
+        'Keamanan',
+    ]),
+],
 
             'status' => [
                 'required',
@@ -325,14 +329,18 @@ class EmployeeController extends Controller
                 Rule::in(['PNS', 'PPPK', 'Non-ASN']),
             ],
 
-            'position' => [
-                'required',
-                Rule::in([
-                    'Guru',
-                    'Kepala Sekolah',
-                    'Tata Usaha',
-                ]),
-            ],
+           'position' => [
+    'required',
+    Rule::in([
+        'Guru',
+        'Kepala Sekolah',
+        'Tata Usaha',
+        'Tenaga Administrasi',
+        'OPS',
+        'Perpstk',
+        'Keamanan',
+    ]),
+],
 
             'status' => [
                 'required',
@@ -611,8 +619,8 @@ class EmployeeController extends Controller
     {
         return match ($position) {
             'Kepala Sekolah' => 'Kepala Sekolah',
-            'Tata Usaha' => 'Tenaga Kependidikan',
-            default => 'Guru',
+            'Guru' => 'Guru',
+            default => 'Tenaga Kependidikan',
         };
     }
 
@@ -635,15 +643,28 @@ class EmployeeController extends Controller
     /**
      * Menentukan role BIDUK berdasarkan jabatan.
      */
-    private function roleNameFromPosition(string $position): string
-    {
-        return match ($position) {
-            'Kepala Sekolah' => 'Kepala Sekolah',
-            'Tata Usaha' => 'Admin',
-            default => 'Guru',
-        };
-    }
+   /**
+ * Menentukan role BIDUK berdasarkan jabatan.
+ */
+private function roleNameFromPosition(string $position): string
+{
+    return match ($position) {
+        'Kepala Sekolah' => 'Kepala Sekolah',
+        'Guru' => 'Guru',
+        default => 'Admin',
+    };
+}
+/**
+ * Mempertahankan role Super Admin saat data pegawai disinkronkan.
+ */
+private function roleIdForSync(User $user, Role $defaultRole): int
+{
+    $currentRoleName = Role::whereKey($user->role_id)->value('name');
 
+    return $currentRoleName === 'Super Admin'
+        ? (int) $user->role_id
+        : (int) $defaultRole->id;
+}
     /**
      * Username otomatis.
      */
@@ -747,7 +768,7 @@ private function createOrSyncUser(Employee $employee): User
             'employee_id' => $employee->id,
             'name' => $employee->name,
             'email' => $employee->email,
-            'role_id' => $role->id,
+           'role_id' => $this->roleIdForSync($existingUser, $role),
             'status' => $employee->status,
         ]);
 
@@ -808,7 +829,7 @@ private function createOrSyncUser(Employee $employee): User
             'name' => $employee->name,
             'username' => $username,
             'email' => $employee->email,
-            'role_id' => $role->id,
+           'role_id' => $this->roleIdForSync($user, $role),
             'status' => $employee->status,
         ]);
 
