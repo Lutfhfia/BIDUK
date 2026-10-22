@@ -476,7 +476,7 @@
 
             <colgroup>
 
-                <col style="width:4%"><col style="width:22%"><col style="width:8%"><col style="width:29%"><col style="width:8%"><col style="width:29%">
+                <col style="width:4%"><col style="width:22%"><col style="width:10%"><col style="width:27%"><col style="width:10%"><col style="width:27%">
 
             </colgroup>
 
@@ -497,11 +497,8 @@
                 <tr>
 
                     <th>NILAI AKHIR</th>
-
                     <th>CAPAIAN PEMBELAJARAN</th>
-
                     <th>NILAI AKHIR</th>
-
                     <th>CAPAIAN PEMBELAJARAN</th>
 
                 </tr>
@@ -528,25 +525,44 @@
 
                         <td class="center">{{ $g?->score ?? '' }}</td>
 
-                        <td>{{ $g?->learning_outcome ?? '' }}</td>
+                        <td>
+                            @if($g?->learning_outcome)
+                                <div>{{ $g->learning_outcome }}</div>
+                            @endif
+                            @if($g?->skill_learning_outcome)
+                                <div>{{ $g->skill_learning_outcome }}</div>
+                            @endif
+                        </td>
 
                         <td class="center">{{ $e?->score ?? '' }}</td>
 
-                        <td>{{ $e?->learning_outcome ?? '' }}</td>
+                        <td>
+                            @if($e?->learning_outcome)
+                                <div>{{ $e->learning_outcome }}</div>
+                            @endif
+                            @if($e?->skill_learning_outcome)
+                                <div>{{ $e->skill_learning_outcome }}</div>
+                            @endif
+                        </td>
 
                     </tr>
 
                 @endforeach
 
+                @php
+                    $ganjilScores = $gradeMapGanjil->pluck('score')->filter(fn ($score) => $score !== null)->map(fn ($score) => (float) $score);
+                    $genapScores = $gradeMapGenap->pluck('score')->filter(fn ($score) => $score !== null)->map(fn ($score) => (float) $score);
+                @endphp
+
                 <tr>
 
                     <th colspan="2" class="center">Jumlah Nilai</th>
 
-                    <td class="center">{{ $gradeMapGanjil->sum(fn($g) => (float)$g->score) ?: '' }}</td>
+                    <td class="center">{{ $ganjilScores->isNotEmpty() ? $ganjilScores->sum() : '' }}</td>
 
                     <td></td>
 
-                    <td class="center">{{ $gradeMapGenap->sum(fn($g) => (float)$g->score) ?: '' }}</td>
+                    <td class="center">{{ $genapScores->isNotEmpty() ? $genapScores->sum() : '' }}</td>
 
                     <td></td>
 
@@ -556,11 +572,11 @@
 
                     <th colspan="2" class="center">RATA - RATA</th>
 
-                    <td class="center">{{ $gradeMapGanjil->count() ? number_format($gradeMapGanjil->avg(fn($g) => (float)$g->score), 2, ',', '.') : '' }}</td>
+                    <td class="center">{{ $ganjilScores->isNotEmpty() ? number_format($ganjilScores->avg(), 2, ',', '.') : '' }}</td>
 
                     <td></td>
 
-                    <td class="center">{{ $gradeMapGenap->count() ? number_format($gradeMapGenap->avg(fn($g) => (float)$g->score), 2, ',', '.') : '' }}</td>
+                    <td class="center">{{ $genapScores->isNotEmpty() ? number_format($genapScores->avg(), 2, ',', '.') : '' }}</td>
 
                     <td></td>
 

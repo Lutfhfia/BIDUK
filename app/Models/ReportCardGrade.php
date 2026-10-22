@@ -17,10 +17,15 @@ class ReportCardGrade extends Model
         'semester_id',
         'score',
         'learning_outcome',
+        'knowledge_predicate',
+        'skill_score',
+        'skill_predicate',
+        'skill_learning_outcome',
     ];
 
     protected $casts = [
         'score' => 'decimal:2',
+        'skill_score' => 'decimal:2',
     ];
 
     /**

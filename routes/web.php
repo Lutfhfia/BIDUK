@@ -8,10 +8,13 @@ use App\Http\Controllers\BukuIndukController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExtracurricularController;
-use App\Http\Controllers\LandingController;
-use App\Http\Controllers\RekapAbsensiController;
 use App\Http\Controllers\FinalGradeController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RekapAbsensiController;
+use App\Http\Controllers\RekapRapotController;
 use App\Http\Controllers\ReportCardGradeController;
+use App\Http\Controllers\ReportCardGradeImportController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\SchoolAchievementController;
 use App\Http\Controllers\SchoolClassController;
@@ -20,14 +23,10 @@ use App\Http\Controllers\SchoolNewsController;
 use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\SemesterController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentImportExportController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\RekapRapotController;
-use App\Http\Controllers\StudentImportExportController;
-
 use Illuminate\Support\Facades\Route;
-
 
 // =====================================================
 // LANDING PAGE
@@ -35,7 +34,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [LandingController::class, 'index'])
     ->name('landing');
-
 
 // =====================================================
 // LOGIN
@@ -50,7 +48,6 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::get('/forgot-password', [AuthController::class, 'forgotPassword'])
     ->name('password.forgot');
 
-
 // =====================================================
 // ROUTE SETELAH LOGIN
 // =====================================================
@@ -64,14 +61,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-
     // =================================================
     // LOGOUT
     // =================================================
 
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
-
 
     // =================================================
     // LAPORAN - BUKU INDUK
@@ -107,34 +102,33 @@ Route::middleware('auth')->group(function () {
     )->middleware('permission:student_records.view')
         ->name('buku-induk.download-all');
 
-     // =================================================
-// REKAP RAPOT
-// =================================================
+    // =================================================
+    // REKAP RAPOT
+    // =================================================
 
-Route::get(
-    '/laporan/rekap-rapot',
-    [RekapRapotController::class, 'index']
-)->middleware('permission:report_cards.view')
-    ->name('rekap-rapot.index');
+    Route::get(
+        '/laporan/rekap-rapot',
+        [RekapRapotController::class, 'index']
+    )->middleware('permission:report_cards.view')
+        ->name('rekap-rapot.index');
 
-Route::get(
-    '/laporan/rekap-rapot/cetak/{student}',
-    [RekapRapotController::class, 'print']
-)->middleware('permission:report_cards.view')
-    ->name('rekap-rapot.print');
+    Route::get(
+        '/laporan/rekap-rapot/cetak/{student}',
+        [RekapRapotController::class, 'print']
+    )->middleware('permission:report_cards.view')
+        ->name('rekap-rapot.print');
 
-Route::get(
-    '/laporan/rekap-rapot/cetak-batch',
-    [RekapRapotController::class, 'batch']
-)->middleware('permission:report_cards.view')
-    ->name('rekap-rapot.batch');
+    Route::get(
+        '/laporan/rekap-rapot/cetak-batch',
+        [RekapRapotController::class, 'batch']
+    )->middleware('permission:report_cards.view')
+        ->name('rekap-rapot.batch');
 
-Route::get(
-    '/laporan/rekap-rapot/unduh-semua',
-    [RekapRapotController::class, 'downloadAll']
-)->middleware('permission:report_cards.view')
-    ->name('rekap-rapot.download-all');
-
+    Route::get(
+        '/laporan/rekap-rapot/unduh-semua',
+        [RekapRapotController::class, 'downloadAll']
+    )->middleware('permission:report_cards.view')
+        ->name('rekap-rapot.download-all');
 
     // =================================================
     // REKAP PRESTASI
@@ -145,7 +139,6 @@ Route::get(
         [AchievementReportController::class, 'index']
     )->middleware('permission:achievements.view')
         ->name('achievement-reports.index');
-
 
     // =================================================
     // DATA SISWA
@@ -222,9 +215,6 @@ Route::get(
         ->middleware('permission:students.delete')
         ->name('students.destroy');
 
-
-
-
     // =================================================
     // DATA KELAS
     // =================================================
@@ -278,7 +268,6 @@ Route::get(
         ->middleware('permission:classes.delete')
         ->name('classes.destroy');
 
-
     // =================================================
     // PENGELOLAAN SISWA DALAM KELAS
     // =================================================
@@ -310,7 +299,6 @@ Route::get(
     )
         ->middleware('permission:classes.edit')
         ->name('classes.students.remove');
-
 
     // =================================================
     // MATA PELAJARAN
@@ -365,7 +353,6 @@ Route::get(
         ->middleware('permission:subjects.delete')
         ->name('subjects.destroy');
 
-
     // =================================================
     // TAHUN AJARAN
     // =================================================
@@ -401,7 +388,6 @@ Route::get(
         ->middleware('permission:semesters.delete')
         ->name('semesters.destroy');
 
-
     // =================================================
     // REKAP ABSENSI
     // =================================================
@@ -416,7 +402,6 @@ Route::get(
         RekapAbsensiController::class
     );
 
-
     // =================================================
     // NILAI RAPOT
     // =================================================
@@ -426,6 +411,30 @@ Route::get(
         [ReportCardGradeController::class, 'index']
     )->middleware('permission:grades.view')
         ->name('report-card-grades.index');
+
+    Route::get(
+        'report-card-grades/import/template',
+        [ReportCardGradeImportController::class, 'downloadTemplate']
+    )->middleware('permission:grades.view')
+        ->name('report-card-grades.import.template');
+
+    Route::post(
+        'report-card-grades/import/preview',
+        [ReportCardGradeImportController::class, 'preview']
+    )->middleware('permission:grades.edit')
+        ->name('report-card-grades.import.preview');
+
+    Route::post(
+        'report-card-grades/import/confirm',
+        [ReportCardGradeImportController::class, 'confirm']
+    )->middleware('permission:grades.edit')
+        ->name('report-card-grades.import.confirm');
+
+    Route::post(
+        'report-card-grades/import/cancel',
+        [ReportCardGradeImportController::class, 'cancel']
+    )->middleware('permission:grades.edit')
+        ->name('report-card-grades.import.cancel');
 
     Route::get(
         'report-card-grades/{student}/history',
@@ -464,7 +473,6 @@ Route::get(
     )->middleware('permission:grades.delete')
         ->name('report-card-grades.destroy');
 
-
     // =================================================
     // NILAI AKHIR / IJAZAH (KELAS 6 SEMESTER GENAP)
     // =================================================
@@ -487,7 +495,6 @@ Route::get(
     )->middleware('permission:grades.view')
         ->name('final-grades.print');
 
-
     // =================================================
     // HAK AKSES ROLE
     // =================================================
@@ -506,22 +513,20 @@ Route::get(
         ->middleware('permission:roles.manage')
         ->name('role-permissions.update');
 
-
     // =================================================
     // MANAJEMEN USER
     // =================================================
-// Reset password user
-Route::post(
-    'users/{user}/reset-password',
-    [UserController::class, 'resetPassword']
-)->middleware('permission:users.manage')
-    ->name('users.reset-password');
+    // Reset password user
+    Route::post(
+        'users/{user}/reset-password',
+        [UserController::class, 'resetPassword']
+    )->middleware('permission:users.manage')
+        ->name('users.reset-password');
 
-Route::resource(
-    'users',
-    UserController::class
-)->middleware('permission:users.manage');
-
+    Route::resource(
+        'users',
+        UserController::class
+    )->middleware('permission:users.manage');
 
     // =================================================
     // DATA PEGAWAI
@@ -604,7 +609,6 @@ Route::resource(
         ->middleware('permission:employees.delete')
         ->name('pegawai.destroy');
 
-
     // =================================================
     // PROFIL SEKOLAH & PENGATURAN KONTEN
     // =================================================
@@ -621,7 +625,6 @@ Route::resource(
     )->middleware('permission:school_profile.manage')
         ->name('school-profile.update');
 
-
     // =================================================
     // PRESTASI SEKOLAH
     // =================================================
@@ -632,9 +635,8 @@ Route::resource(
     )->only([
         'store',
         'update',
-        'destroy'
+        'destroy',
     ])->middleware('permission:school_profile.manage');
-
 
     // =================================================
     // EKSTRAKURIKULER
@@ -646,9 +648,8 @@ Route::resource(
     )->only([
         'store',
         'update',
-        'destroy'
+        'destroy',
     ])->middleware('permission:school_profile.manage');
-
 
     // =================================================
     // BERITA SEKOLAH
@@ -660,9 +661,8 @@ Route::resource(
     )->only([
         'store',
         'update',
-        'destroy'
+        'destroy',
     ])->middleware('permission:school_profile.manage');
-
 
     // =================================================
     // GALERI SEKOLAH
@@ -674,9 +674,8 @@ Route::resource(
     )->only([
         'store',
         'update',
-        'destroy'
+        'destroy',
     ])->middleware('permission:school_profile.manage');
-
 
     // =================================================
     // LOG AKTIVITAS
@@ -693,13 +692,13 @@ Route::resource(
     )->name('activity-logs.show');
 
     // PROFIL SAYA
-Route::get('/profile', [ProfileController::class, 'show'])
-->name('profile.show');
+    Route::get('/profile', [ProfileController::class, 'show'])
+        ->name('profile.show');
 
-Route::get('/profile/edit', [ProfileController::class, 'edit'])
-->name('profile.edit');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
 
-Route::put('/profile', [ProfileController::class, 'update'])
-->name('profile.update');
+    Route::put('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
 
 });

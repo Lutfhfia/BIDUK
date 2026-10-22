@@ -822,250 +822,91 @@
     </div>
 
     <table class="report-table">
-
         <colgroup>
-
             <col style="width: 4%">
-
             <col style="width: 21%">
-
             <col style="width: 7%">
-
             <col style="width: 18%">
-
             <col style="width: 7%">
-
             <col style="width: 18%">
-
             <col style="width: 7%">
-
             <col style="width: 18%">
-
         </colgroup>
-
-
         <thead>
-
             <tr>
-
-                <th rowspan="2">
-                    NO.
-                </th>
-
-                <th rowspan="2">
-                    MATA PELAJARAN
-                </th>
-
-                <th colspan="2">
-                    NILAI RATA-RATA RAPOR
-                </th>
-
-                <th colspan="2">
-                    NILAI UJIAN SEKOLAH
-                </th>
-
-                <th colspan="2">
-                    NILAI SEKOLAH
-                </th>
-
+                <th rowspan="2">NO.</th>
+                <th rowspan="2">MATA PELAJARAN</th>
+                <th colspan="2">NILAI RATA-RATA RAPOR</th>
+                <th colspan="2">NILAI UJIAN SEKOLAH</th>
+                <th colspan="2">NILAI SEKOLAH</th>
             </tr>
-
-
             <tr>
-
-                <th>
-                    NILAI<br>AKHIR
-                </th>
-
-                <th>
-                    CAPAIAN<br>PEMBELAJARAN
-                </th>
-
-                <th>
-                    NILAI<br>AKHIR
-                </th>
-
-                <th>
-                    CAPAIAN<br>PEMBELAJARAN
-                </th>
-
-                <th>
-                    NILAI<br>AKHIR
-                </th>
-
-                <th>
-                    CAPAIAN<br>PEMBELAJARAN
-                </th>
-
+                <th>NILAI AKHIR</th>
+                <th>CAPAIAN PEMBELAJARAN</th>
+                <th>NILAI AKHIR</th>
+                <th>CAPAIAN PEMBELAJARAN</th>
+                <th>NILAI AKHIR</th>
+                <th>CAPAIAN PEMBELAJARAN</th>
             </tr>
-
         </thead>
-
-
         <tbody>
-
-            @php
-                $currentTopGroup = null;
-            @endphp
-
-
+            @php $currentTopGroup = null; @endphp
             @foreach ($subjects as $index => $subject)
-
                 @php
-
-                    $gradeGanjil =
-                        $gradeMapGanjil->get($subject->id);
-
-                    $gradeGenap =
-                        $gradeMapGenap->get($subject->id);
-
-                    $storedGrade =
-                        $finalGrades->get($subject->id);
-
-                    $reportAverage =
-                        $reportAverageScores[$subject->id]
-                        ?? null;
-
-                    $reportOutcome =
-                        $gradeGenap?->learning_outcome
-                        ?:
-                        ($gradeGanjil?->learning_outcome ?? '');
-
-                    $subjectGroup =
-                        trim(
-                            (string)
-                            ($subject->group_name ?? '')
-                        );
-
+                    $gradeGanjil = $gradeMapGanjil->get($subject->id);
+                    $gradeGenap = $gradeMapGenap->get($subject->id);
+                    $storedGrade = $finalGrades->get($subject->id);
+                    $reportAverage = $reportAverageScores[$subject->id] ?? null;
+                    $reportOutcomes = collect([
+                        $gradeGanjil?->learning_outcome,
+                        $gradeGanjil?->skill_learning_outcome,
+                        $gradeGenap?->learning_outcome,
+                        $gradeGenap?->skill_learning_outcome,
+                    ])->filter(fn ($outcome) => is_string($outcome) && trim($outcome) !== '')
+                        ->unique()
+                        ->values();
+                    $subjectGroup = trim((string) ($subject->group_name ?? ''));
                 @endphp
-
-
-                @if (
-                    $subjectGroup !== ''
-                    &&
-                    $subjectGroup !== $currentTopGroup
-                )
-
-                    @php
-                        $currentTopGroup =
-                            $subjectGroup;
-                    @endphp
-
+                @if ($subjectGroup !== '' && $subjectGroup !== $currentTopGroup)
+                    @php $currentTopGroup = $subjectGroup; @endphp
                     <tr class="group-row">
-
-                        <td colspan="8">
-                            {{ $currentTopGroup }}
-                        </td>
-
+                        <td colspan="8">{{ $currentTopGroup }}</td>
                     </tr>
-
                 @endif
-
-
                 <tr>
-
-                    <td class="center">
-                        {{ $index + 1 }}
-                    </td>
-
-
-                    <td class="left">
-                        {{ $subject->name }}
-                    </td>
-
-
-                    <td class="score">
-                        {{ $formatScore($reportAverage) }}
-                    </td>
-
-
+                    <td class="center">{{ $index + 1 }}</td>
+                    <td class="left">{{ $subject->name }}</td>
+                    <td class="score">{{ $formatScore($reportAverage) }}</td>
                     <td class="outcome">
-                        {{ $reportOutcome }}
+                        @foreach ($reportOutcomes as $outcome)
+                            <div>{{ $outcome }}</div>
+                        @endforeach
                     </td>
-
-
-                    <td class="score">
-                        {{ $formatScore($storedGrade?->exam_score) }}
-                    </td>
-
-
-                    <td class="outcome">
-                    </td>
-
-                    <td class="score">
-                        {{ $formatScore($storedGrade?->school_score) }}
-                    </td>
-
-
-                    <td class="outcome">
-                        {{ $storedGrade?->school_learning_outcome ?? '' }}
-                    </td>
-
-
+                    <td class="score">{{ $formatScore($storedGrade?->exam_score) }}</td>
+                    <td class="outcome"></td>
+                    <td class="score">{{ $formatScore($storedGrade?->school_score) }}</td>
+                    <td class="outcome">{{ $storedGrade?->school_learning_outcome ?? '' }}</td>
                 </tr>
-
             @endforeach
-
-
             <tr class="total-row">
-
-                <td colspan="2" class="center">
-                    JUMLAH NILAI
-                </td>
-
-                <td class="score">
-                    {{
-                        $reportScoreValues->isNotEmpty()
-                            ? $formatScore(
-                                $reportScoreValues->sum()
-                            )
-                            : '-'
-                    }}
-                </td>
-
+                <td colspan="2" class="center">JUMLAH NILAI</td>
+                <td class="score">{{ $reportScoreValues->isNotEmpty() ? $formatScore($reportScoreValues->sum()) : '-' }}</td>
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
             </tr>
-
-
             <tr class="average-row">
-
-                <td colspan="2" class="center">
-                    RATA - RATA
-                </td>
-
-                <td class="score">
-                    {{
-                        $reportScoreValues->isNotEmpty()
-                            ? $formatScore(
-                                $reportScoreValues->avg()
-                            )
-                            : '-'
-                    }}
-                </td>
-
+                <td colspan="2" class="center">RATA - RATA</td>
+                <td class="score">{{ $reportScoreValues->isNotEmpty() ? $formatScore($reportScoreValues->avg()) : '-' }}</td>
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
                 <td></td>
-
             </tr>
-
         </tbody>
-
     </table>
 
 

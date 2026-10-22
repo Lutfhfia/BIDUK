@@ -4,17 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
 use App\Models\Achievement;
-use App\Models\ClassStudent;
+use App\Models\Employee;
+use App\Models\RekapAbsensi;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
-use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
 use App\Models\StudentClassHistory;
-use App\Models\Employee;
-use App\Models\RekapAbsensi;
 use App\Models\StudentPromotion;
 use App\Models\Subject;
+use App\Services\ReportCardGradeImportContext;
 use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -86,6 +85,7 @@ class ReportCardGradeController extends Controller
         }
 
         $classes = $classesQuery->get();
+        $importOptions = app(ReportCardGradeImportContext::class)->options($request->user());
 
         // Guru hanya menerima satu pilihan kelas: kelas wali miliknya.
         if ($teacherClass) {
@@ -138,7 +138,7 @@ class ReportCardGradeController extends Controller
                     $semesterGanjil = $semesters->first(
                         fn ($s) => strtolower($s->name) === 'ganjil'
                     );
-                    
+
                     $semesterGenap = $semesters->first(
                         fn ($s) => strtolower($s->name) === 'genap'
                     );
@@ -173,6 +173,7 @@ class ReportCardGradeController extends Controller
                             $student->genap_grades_count = $semesterGenap
                                 ? $studentGrades->where('semester_id', $semesterGenap->id)->count()
                                 : 0;
+
                             return $student;
                         });
 
@@ -184,6 +185,7 @@ class ReportCardGradeController extends Controller
                             $student->has_genap = (bool) $semesterGenap;
                             $student->ganjil_grades_count = 0;
                             $student->genap_grades_count = 0;
+
                             return $student;
                         });
 
@@ -304,7 +306,8 @@ class ReportCardGradeController extends Controller
                 'selectedClassId',
                 'selectedClass',
                 'searched',
-                'search'
+                'search',
+                'importOptions'
             )
         );
     }
@@ -611,7 +614,6 @@ class ReportCardGradeController extends Controller
             ->with('success', 'Riwayat kelas berhasil disimpan.');
     }
 
-
     /**
      * ==========================================================
      * CETAK RAPOT (TAMPILAN REKAP RAPOT KURIKULUM MERDEKA)
@@ -815,7 +817,6 @@ class ReportCardGradeController extends Controller
 
         return $profile;
     }
-
 
     /**
      * ==========================================================
@@ -1040,7 +1041,6 @@ class ReportCardGradeController extends Controller
         );
     }
 
-
     /**
      * ==========================================================
      * UPDATE
@@ -1146,6 +1146,10 @@ class ReportCardGradeController extends Controller
                 'nullable',
                 'array',
             ],
+            'ganjil_predicates' => ['nullable', 'array'],
+            'ganjil_skill_scores' => ['nullable', 'array'],
+            'ganjil_skill_predicates' => ['nullable', 'array'],
+            'ganjil_skill_learning_outcomes' => ['nullable', 'array'],
 
             /*
              * Genap
@@ -1159,6 +1163,10 @@ class ReportCardGradeController extends Controller
                 'nullable',
                 'array',
             ],
+            'genap_predicates' => ['nullable', 'array'],
+            'genap_skill_scores' => ['nullable', 'array'],
+            'genap_skill_predicates' => ['nullable', 'array'],
+            'genap_skill_learning_outcomes' => ['nullable', 'array'],
 
             /*
              * Ekstrakurikuler
@@ -1242,6 +1250,10 @@ class ReportCardGradeController extends Controller
                 'string',
                 'max:2000',
             ];
+            $rules['ganjil_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
+            $rules['ganjil_skill_scores.'.$subject->id] = ['nullable', 'numeric', 'min:0', 'max:100'];
+            $rules['ganjil_skill_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
+            $rules['ganjil_skill_learning_outcomes.'.$subject->id] = ['nullable', 'string', 'max:2000'];
 
             /*
              * Nilai Genap
@@ -1265,6 +1277,10 @@ class ReportCardGradeController extends Controller
                 'string',
                 'max:2000',
             ];
+            $rules['genap_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
+            $rules['genap_skill_scores.'.$subject->id] = ['nullable', 'numeric', 'min:0', 'max:100'];
+            $rules['genap_skill_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
+            $rules['genap_skill_learning_outcomes.'.$subject->id] = ['nullable', 'string', 'max:2000'];
         }
 
         /*
@@ -1306,6 +1322,10 @@ class ReportCardGradeController extends Controller
                         $validated[
                             'ganjil_learning_outcomes'
                         ][$subject->id] ?? null;
+                    $knowledgePredicate = $validated['ganjil_predicates'][$subject->id] ?? null;
+                    $skillScore = $validated['ganjil_skill_scores'][$subject->id] ?? null;
+                    $skillPredicate = $validated['ganjil_skill_predicates'][$subject->id] ?? null;
+                    $skillLearningOutcome = $validated['ganjil_skill_learning_outcomes'][$subject->id] ?? null;
 
                     /*
                      * Jika keduanya kosong,
@@ -1319,6 +1339,10 @@ class ReportCardGradeController extends Controller
                             ||
                             $learningOutcome === ''
                         )
+                        && ($knowledgePredicate === null || $knowledgePredicate === '')
+                        && ($skillScore === null || $skillScore === '')
+                        && ($skillPredicate === null || $skillPredicate === '')
+                        && ($skillLearningOutcome === null || $skillLearningOutcome === '')
                     ) {
 
                         ReportCardGrade::where([
@@ -1344,6 +1368,10 @@ class ReportCardGradeController extends Controller
                         [
                             'score' => $score,
                             'learning_outcome' => $learningOutcome,
+                            'knowledge_predicate' => $knowledgePredicate,
+                            'skill_score' => $skillScore,
+                            'skill_predicate' => $skillPredicate,
+                            'skill_learning_outcome' => $skillLearningOutcome,
                         ]
                     );
                 }
@@ -1368,6 +1396,10 @@ class ReportCardGradeController extends Controller
                         $validated[
                             'genap_learning_outcomes'
                         ][$subject->id] ?? null;
+                    $knowledgePredicate = $validated['genap_predicates'][$subject->id] ?? null;
+                    $skillScore = $validated['genap_skill_scores'][$subject->id] ?? null;
+                    $skillPredicate = $validated['genap_skill_predicates'][$subject->id] ?? null;
+                    $skillLearningOutcome = $validated['genap_skill_learning_outcomes'][$subject->id] ?? null;
 
                     /*
                      * Jika keduanya kosong,
@@ -1381,6 +1413,10 @@ class ReportCardGradeController extends Controller
                             ||
                             $learningOutcome === ''
                         )
+                        && ($knowledgePredicate === null || $knowledgePredicate === '')
+                        && ($skillScore === null || $skillScore === '')
+                        && ($skillPredicate === null || $skillPredicate === '')
+                        && ($skillLearningOutcome === null || $skillLearningOutcome === '')
                     ) {
 
                         ReportCardGrade::where([
@@ -1406,6 +1442,10 @@ class ReportCardGradeController extends Controller
                         [
                             'score' => $score,
                             'learning_outcome' => $learningOutcome,
+                            'knowledge_predicate' => $knowledgePredicate,
+                            'skill_score' => $skillScore,
+                            'skill_predicate' => $skillPredicate,
+                            'skill_learning_outcome' => $skillLearningOutcome,
                         ]
                     );
                 }
@@ -1562,7 +1602,6 @@ class ReportCardGradeController extends Controller
             );
     }
 
-
     /**
      * ==========================================================
      * DESTROY
@@ -1643,7 +1682,6 @@ class ReportCardGradeController extends Controller
                 . ' berhasil dihapus.'
             );
     }
-
     /**
      * Mengambil kelas wali Guru pada tahun ajaran aktif.
      * Role selain Guru tidak dibatasi oleh helper ini.

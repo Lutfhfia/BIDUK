@@ -200,10 +200,9 @@
                                                         {{ strtoupper(substr($student->name, 0, 1)) }}
                                                     </div>
                                                 @endif
-                                                <a href="{{ route('students.show', $student->id) }}"
-                                                    class="fw-medium text-dark text-decoration-none hover-primary">
+                                                <span class="fw-medium text-dark">
                                                     {{ $student->name }}
-                                                </a>
+                                                </span>
                                             </div>
                                         </td>
                                         <td>

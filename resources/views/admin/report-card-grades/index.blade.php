@@ -61,6 +61,146 @@
             </div>
         @endif
 
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if ($importOptions['can_import'])
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold mb-1">Import Nilai Rapot</h6>
+                        <p class="text-muted small mb-0">Pilih tahun ajaran, kelas, dan semester. Template hanya memuat mata pelajaran aktif yang ditetapkan pada kelas tersebut; satu file hanya untuk satu semester.</p>
+                    </div>
+                    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit'))
+                        <form
+                            id="report-card-import-form"
+                            method="POST"
+                            action="{{ route('report-card-grades.import.preview') }}"
+                            enctype="multipart/form-data"
+                        >
+                            @csrf
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label for="import-academic-year" class="form-label">Tahun Ajaran</label>
+                                    @if ($importOptions['is_teacher'])
+                                        <input
+                                            type="hidden"
+                                            name="academic_year_id"
+                                            id="import-academic-year"
+                                            value="{{ $importOptions['active_academic_year_id'] }}"
+                                        >
+                                        <input
+                                            type="text"
+                                            class="form-control"
+                                            value="{{ $importOptions['academic_years']->first()?->name ?? 'Tahun ajaran aktif belum tersedia' }}"
+                                            readonly
+                                        >
+                                    @else
+                                        <select name="academic_year_id" id="import-academic-year" class="form-select" required>
+                                            <option value="">Pilih tahun ajaran</option>
+                                            @foreach ($importOptions['academic_years'] as $year)
+                                                <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="import-class" class="form-label">Kelas</label>
+                                    <select name="class_id" id="import-class" class="form-select" required>
+                                        <option value="">Pilih kelas</option>
+                                        @foreach ($importOptions['classes'] as $class)
+                                            <option
+                                                value="{{ $class->id }}"
+                                                data-academic-year="{{ $class->academic_year_id }}"
+                                                @selected($importOptions['is_teacher'] && $loop->first)
+                                            >
+                                                Kelas {{ $class->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="import-semester" class="form-label">Semester</label>
+                                    <select name="semester_id" id="import-semester" class="form-select" required>
+                                        <option value="">Pilih semester</option>
+                                        @foreach ($importOptions['semesters'] as $semester)
+                                            <option value="{{ $semester->id }}" data-academic-year="{{ $semester->academic_year_id }}">
+                                                {{ $semester->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="import-file" class="form-label">File template (.xlsx)</label>
+                                    <input type="file" name="file" id="import-file" class="form-control" accept=".xlsx" required>
+                                </div>
+                                <div class="col-12 d-flex flex-wrap justify-content-end gap-2">
+                                    <a
+                                        id="download-import-template"
+                                        href="{{ route('report-card-grades.import.template') }}"
+                                        class="btn btn-outline-success"
+                                    >
+                                        <i class="bi bi-download me-1"></i>Download Template Import
+                                    </a>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-upload me-1"></i>Upload & Preview
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    @else
+                        <div class="alert alert-info mb-0">Akun ini tidak memiliki izin untuk mengimpor nilai rapor.</div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+        @if ($importOptions['can_import'] && (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit')))
+            <script>
+                (() => {
+                    const year = document.getElementById('import-academic-year');
+                    const classSelect = document.getElementById('import-class');
+                    const semesterSelect = document.getElementById('import-semester');
+                    const downloadLink = document.getElementById('download-import-template');
+
+                    const updateImportOptions = () => {
+                        const yearId = year.value;
+                        [classSelect, semesterSelect].forEach((select) => {
+                            Array.from(select.options).forEach((option) => {
+                                if (!option.value) return;
+                                const visible = option.dataset.academicYear === yearId;
+                                option.hidden = !visible;
+                                option.disabled = !visible;
+                                if (!visible && option.selected) select.value = '';
+                            });
+                        });
+
+                        const params = new URLSearchParams({
+                            academic_year_id: yearId,
+                            class_id: classSelect.value,
+                            semester_id: semesterSelect.value,
+                        });
+                        downloadLink.href = `{{ route('report-card-grades.import.template') }}?${params.toString()}`;
+                        downloadLink.classList.toggle(
+                            'disabled',
+                            !yearId || !classSelect.value || !semesterSelect.value
+                        );
+                    };
+
+                    [year, classSelect, semesterSelect].forEach((select) => {
+                        select.addEventListener('change', updateImportOptions);
+                    });
+                    updateImportOptions();
+                })();
+            </script>
+        @endif
 
         {{-- =====================================================
             FILTER PENCARIAN

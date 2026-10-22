@@ -354,6 +354,7 @@
                                                 class="btn btn-sm btn-light border-0"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
+                                                data-bs-display="static"
                                                 aria-expanded="false"
                                             >
                                                 <i class="bi bi-three-dots-vertical"></i>
@@ -526,3 +527,55 @@
 
 </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('shown.bs.dropdown', (event) => {
+            const dropdown = event.target.closest('.action-dropdown');
+            const menu = dropdown?.querySelector('.dropdown-menu');
+            const button = event.target;
+
+            if (!menu) return;
+
+            menu.classList.add('class-action-menu-fixed');
+            menu.style.position = 'fixed';
+            menu.style.inset = 'auto';
+            menu.style.top = '0';
+            menu.style.left = '0';
+            menu.style.transform = 'none';
+            menu.style.margin = '0';
+
+            const buttonRect = button.getBoundingClientRect();
+            const menuRect = menu.getBoundingClientRect();
+            const gap = 4;
+            const viewportPadding = 8;
+            const opensBelow = buttonRect.bottom + gap + menuRect.height <= window.innerHeight - viewportPadding;
+            const top = opensBelow
+                ? buttonRect.bottom + gap
+                : Math.max(viewportPadding, buttonRect.top - menuRect.height - gap);
+            const maximumLeft = Math.max(
+                viewportPadding,
+                window.innerWidth - menuRect.width - viewportPadding
+            );
+            const left = Math.min(
+                Math.max(viewportPadding, buttonRect.right - menuRect.width),
+                maximumLeft
+            );
+
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
+            menu.style.maxHeight = `calc(100vh - ${viewportPadding * 2}px)`;
+            menu.style.overflowY = 'auto';
+        });
+
+        document.addEventListener('hidden.bs.dropdown', (event) => {
+            const dropdown = event.target.closest('.action-dropdown');
+            const menu = dropdown?.querySelector('.dropdown-menu');
+
+            if (!menu) return;
+
+            menu.classList.remove('class-action-menu-fixed');
+            menu.removeAttribute('style');
+        });
+    </script>
+@endpush
