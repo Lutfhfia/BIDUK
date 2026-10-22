@@ -208,7 +208,7 @@
                                         <td>
                                             <span class="badge {{ $student->gender === 'L' ? 'badge-l' : 'badge-p' }}"
                                                 style="font-size: 0.75rem;">
-                                                {{ $student->gender === 'L' ? 'L' : 'P' }}
+                                                {{ $student->gender === 'L' ? 'L' : ($student->gender === 'P' ? 'P' : '—') }}
                                             </span>
                                         </td>
                                         <td>
