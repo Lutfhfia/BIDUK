@@ -181,51 +181,41 @@
 
         <div class="row g-3 mb-4">
 
-            <div class="col-md-4">
+        <div class="col-md-4">
+    <label class="form-label">
+        Jabatan
+        <span class="text-danger">*</span>
+    </label>
 
-                <label class="form-label">
-                    Jabatan
-                    <span class="text-danger">*</span>
-                </label>
+    <select
+        name="position"
+        class="form-select"
+        required
+    >
+        <option value="">Pilih jabatan...</option>
 
-                <select
-                    name="position"
-                    class="form-select"
-                    required
-                >
+        @foreach ([
+            'Guru',
+            'Kepala Sekolah',
+            'Tata Usaha',
+            'Tenaga Administrasi',
+            'OPS',
+            'Perpstk',
+            'Keamanan',
+        ] as $position)
+            <option
+                value="{{ $position }}"
+                @selected(old('position', $employee->position ?? '') === $position)
+            >
+                {{ $position }}
+            </option>
+        @endforeach
+    </select>
 
-                    <option value="">
-                        Pilih jabatan...
-                    </option>
-
-                    <option
-                        value="Guru"
-                        @selected(old('position', $employee->position ?? '') === 'Guru')
-                    >
-                        Guru
-                    </option>
-
-                    <option
-                        value="Kepala Sekolah"
-                        @selected(old('position', $employee->position ?? '') === 'Kepala Sekolah')
-                    >
-                        Kepala Sekolah
-                    </option>
-
-                    <option
-                        value="Tata Usaha"
-                        @selected(old('position', $employee->position ?? '') === 'Tata Usaha')
-                    >
-                        Tata Usaha
-                    </option>
-
-                </select>
-
-                <div class="form-text">
-                    Mata pelajaran tidak dikelola pada halaman ini.
-                </div>
-
-            </div>
+    <div class="form-text">
+        Mata pelajaran tidak dikelola pada halaman ini.
+    </div>
+</div>
 
 
             <div class="col-md-4">

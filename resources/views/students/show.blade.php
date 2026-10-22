@@ -1,4 +1,29 @@
 @extends('layouts.app')
+@push('styles')
+<style>
+    #studentTab .nav-link {
+        color: #6c757d;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        background: transparent;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    #studentTab .nav-link.active,
+    #studentTab .nav-link[aria-selected="true"] {
+        color: #198754;
+        border-bottom-color: #198754;
+        font-weight: 600;
+    }
+
+    #studentTab .nav-link:focus-visible {
+        outline: 2px solid rgba(25, 135, 84, 0.35);
+        outline-offset: 2px;
+        box-shadow: none;
+    }
+</style>
+@endpush
 
 @section('title', 'Detail Siswa')
 
@@ -122,51 +147,94 @@
             <div class="col-12 col-lg-8">
                 <div class="biduk-card h-100">
                     <div class="card-header bg-transparent border-bottom-0 pt-3 px-4 pb-0">
-                        <ul class="nav nav-tabs border-bottom-0 gap-3 flex-wrap" id="studentTab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button
-                                    class="nav-link active fw-medium px-1 py-2 text-dark border-bottom border-3 border-success bg-transparent"
-                                    id="keterangan-tab" data-bs-toggle="tab" data-bs-target="#keterangan" type="button"
-                                    role="tab" style="border-radius: 0;">
-                                    Keterangan Siswa
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-medium px-1 py-2 text-muted border-0 bg-transparent"
-                                    id="ortu-tab" data-bs-toggle="tab" data-bs-target="#ortu" type="button" role="tab"
-                                    style="border-radius: 0;">
-                                    Orang Tua / Wali
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-medium px-1 py-2 text-muted border-0 bg-transparent"
-                                    id="perkembangan-tab" data-bs-toggle="tab" data-bs-target="#perkembangan" type="button"
-                                    role="tab" style="border-radius: 0;">
-                                    Perkembangan
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-medium px-1 py-2 text-muted border-0 bg-transparent"
-                                    id="physique-tab" data-bs-toggle="tab" data-bs-target="#physique" type="button"
-                                    role="tab" style="border-radius: 0;">
-                                    Tinggi & Berat Badan
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-medium px-1 py-2 text-muted border-0 bg-transparent"
-                                    id="health-tab" data-bs-toggle="tab" data-bs-target="#health" type="button"
-                                    role="tab" style="border-radius: 0;">
-                                    Kesehatan
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-medium px-1 py-2 text-muted border-0 bg-transparent"
-                                    id="lainnya-tab" data-bs-toggle="tab" data-bs-target="#lainnya" type="button"
-                                    role="tab" style="border-radius: 0;">
-                                    Bagian Lainnya
-                                </button>
-                            </li>
-                        </ul>
+                    <ul class="nav nav-tabs border-bottom-0 gap-3 flex-wrap"
+    id="studentTab"
+    role="tablist">
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="keterangan-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#keterangan"
+            type="button"
+            role="tab"
+            aria-controls="keterangan"
+            aria-selected="true">
+            Keterangan Siswa
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="ortu-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#ortu"
+            type="button"
+            role="tab"
+            aria-controls="ortu"
+            aria-selected="false">
+            Orang Tua / Wali
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="perkembangan-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#perkembangan"
+            type="button"
+            role="tab"
+            aria-controls="perkembangan"
+            aria-selected="false">
+            Perkembangan
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="physique-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#physique"
+            type="button"
+            role="tab"
+            aria-controls="physique"
+            aria-selected="false">
+            Tinggi &amp; Berat Badan
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="health-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#health"
+            type="button"
+            role="tab"
+            aria-controls="health"
+            aria-selected="false">
+            Kesehatan
+        </button>
+    </li>
+
+    <li class="nav-item" role="presentation">
+        <button
+            class="nav-link fw-medium px-1 py-2"
+            id="lainnya-tab"
+            data-bs-toggle="tab"
+            data-bs-target="#lainnya"
+            type="button"
+            role="tab"
+            aria-controls="lainnya"
+            aria-selected="false">
+            Bagian Lainnya
+        </button>
+    </li>
+</ul>
                         <hr class="m-0 text-muted opacity-25">
                     </div>
 

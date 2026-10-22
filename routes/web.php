@@ -164,7 +164,12 @@ Route::middleware('auth')->group(function () {
     )
         ->middleware('permission:students.create')
         ->name('students.store');
-
+        Route::get(
+            'students/import/template',
+            [StudentImportExportController::class, 'downloadTemplate']
+        )
+            ->middleware('permission:students.import')
+            ->name('students.import.template');
     // Import & Export harus SEBELUM students/{student} agar tidak tertangkap wildcard
     Route::get(
         'students/import',
