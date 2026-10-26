@@ -259,7 +259,13 @@
                                     {{-- Wali Kelas --}}
                                     <td>
 
-                                        @if ($class->homeroomTeacher)
+                                        @php
+                                            $assignedTeacher = $class->homeroomTeacherUser ?? $class->homeroomTeacher;
+                                            $teacherPhoto = $class->homeroomTeacherUser?->employee?->photo
+                                                ?? $class->homeroomTeacher?->photo;
+                                        @endphp
+
+                                        @if ($assignedTeacher)
 
                                             <div class="d-flex align-items-center gap-2">
 
@@ -274,19 +280,19 @@
                                                         font-weight: 600;
                                                     "
                                                 >
-                                                    @if ($class->homeroomTeacher->photo)
+                                                    @if ($teacherPhoto)
                                                         <img
-                                                            src="{{ asset('storage/' . $class->homeroomTeacher->photo) }}"
-                                                            alt="Foto {{ $class->homeroomTeacher->name }}"
+                                                            src="{{ asset('storage/' . $teacherPhoto) }}"
+                                                            alt="Foto {{ $assignedTeacher->name }}"
                                                             style="width:100%;height:100%;object-fit:cover;border-radius:50%;"
                                                         >
                                                     @else
-                                                        {{ strtoupper(substr($class->homeroomTeacher->name, 0, 1)) }}
+                                                        {{ strtoupper(substr($assignedTeacher->name, 0, 1)) }}
                                                     @endif
                                                 </div>
 
                                                 <span>
-                                                    {{ $class->homeroomTeacher->name }}
+                                                    {{ $assignedTeacher->name }}
                                                 </span>
 
                                             </div>

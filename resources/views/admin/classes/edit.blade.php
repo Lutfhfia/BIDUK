@@ -223,7 +223,7 @@
                         {{-- Wali Kelas --}}
                         <div class="col-md-6">
 
-                            <label for="homeroom_teacher_id"
+                            <label for="homeroom_teacher_user_id"
                                 class="form-label fw-semibold">
 
                                 Wali Kelas
@@ -231,24 +231,30 @@
                             </label>
 
                             <select
-                                name="homeroom_teacher_id"
-                                id="homeroom_teacher_id"
-                                class="form-select @error('homeroom_teacher_id') is-invalid @enderror">
+                                name="homeroom_teacher_user_id"
+                                id="homeroom_teacher_user_id"
+                                class="form-select @error('homeroom_teacher_user_id') is-invalid @enderror">
 
                                 <option value="">
                                     -- Belum Ditentukan --
                                 </option>
 
+                                @if (!$class->homeroom_teacher_user_id && $class->homeroom_teacher_id && $class->homeroomTeacher)
+                                    <option value="legacy" @selected(old('homeroom_teacher_user_id', 'legacy') === 'legacy')>
+                                        {{ $class->homeroomTeacher->name }} — data wali lama (akun belum ditautkan)
+                                    </option>
+                                @endif
+
                                 @foreach ($teachers as $teacher)
 
                                     <option
                                         value="{{ $teacher->id }}"
-                                        {{ old('homeroom_teacher_id', $class->homeroom_teacher_id) == $teacher->id ? 'selected' : '' }}>
+                                        {{ old('homeroom_teacher_user_id', $class->homeroom_teacher_user_id) == $teacher->id ? 'selected' : '' }}>
 
                                         {{ $teacher->name }}
 
-                                        @if ($teacher->nip)
-                                            — NIP: {{ $teacher->nip }}
+                                        @if ($teacher->employee?->nip)
+                                            — NIP: {{ $teacher->employee->nip }}
                                         @endif
 
                                     </option>
@@ -258,11 +264,10 @@
                             </select>
 
                             <div class="form-text">
-                                Satu guru hanya dapat menjadi wali kelas untuk satu kelas
-                                pada tahun ajaran yang sama.
+                                Pilih akun aktif dengan role Guru. Satu akun hanya dapat menjadi wali kelas untuk satu kelas pada tahun ajaran yang sama.
                             </div>
 
-                            @error('homeroom_teacher_id')
+                            @error('homeroom_teacher_user_id')
 
                                 <div class="invalid-feedback">
                                     {{ $message }}

@@ -227,7 +227,7 @@
                     {{-- Wali Kelas --}}
                     <div class="col-md-6">
 
-                        <label for="homeroom_teacher_id"
+                        <label for="homeroom_teacher_user_id"
                                class="form-label fw-semibold">
 
                             Wali Kelas
@@ -235,9 +235,9 @@
                         </label>
 
                         <select
-                            name="homeroom_teacher_id"
-                            id="homeroom_teacher_id"
-                            class="form-select @error('homeroom_teacher_id') is-invalid @enderror">
+                            name="homeroom_teacher_user_id"
+                            id="homeroom_teacher_user_id"
+                            class="form-select @error('homeroom_teacher_user_id') is-invalid @enderror">
 
                             <option value="">
                                 -- Belum Ditentukan --
@@ -247,12 +247,12 @@
 
                                 <option
                                     value="{{ $teacher->id }}"
-                                    {{ old('homeroom_teacher_id') == $teacher->id ? 'selected' : '' }}>
+                                    {{ old('homeroom_teacher_user_id') == $teacher->id ? 'selected' : '' }}>
 
                                     {{ $teacher->name }}
 
-                                    @if($teacher->nip)
-                                        — NIP {{ $teacher->nip }}
+                                    @if($teacher->employee?->nip)
+                                        — NIP {{ $teacher->employee->nip }}
                                     @endif
 
                                 </option>
@@ -261,7 +261,11 @@
 
                         </select>
 
-                        @error('homeroom_teacher_id')
+                        <div class="form-text">
+                            Pilih akun aktif dengan role Guru. Tidak perlu menghubungkan akun ke Profil Pegawai.
+                        </div>
+
+                        @error('homeroom_teacher_user_id')
 
                             <div class="invalid-feedback">
                                 {{ $message }}

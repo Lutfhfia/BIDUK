@@ -71,7 +71,7 @@
                     </div>
 
                     <div class="fw-semibold">
-                        {{ $class->homeroomTeacher->name ?? 'Belum ditentukan' }}
+                        {{ $class->homeroomTeacherUser?->name ?? $class->homeroomTeacher?->name ?? 'Belum ditentukan' }}
                     </div>
                 </div>
 

@@ -3,8 +3,6 @@
 namespace App\Imports;
 
 use App\Models\Employee;
-use App\Models\Role;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +37,6 @@ class EmployeeImport implements
         $seenNip = [];
         $seenNuptk = [];
         $seenEmail = [];
-        $seenUsername = [];
 
         foreach ($rows as $index => $row) {
 
@@ -329,52 +326,11 @@ class EmployeeImport implements
                         'email',
                         $data['email']
                     )->exists()
-                    ||
-                    User::where(
-                        'email',
-                        $data['email']
-                    )->exists()
                 )
             ) {
 
                 $errors[] =
                     "Baris {$excelRow}: Email {$data['email']} sudah digunakan.";
-
-                continue;
-            }
-
-
-            /*
-             * =====================================================
-             * 8. TENTUKAN USERNAME
-             * =====================================================
-             */
-            $username =
-                $data['nip']
-                ?:
-                $data['nuptk'];
-
-
-            /*
-             * =====================================================
-             * 9. CEK USERNAME DUPLIKAT
-             * =====================================================
-             */
-            if (
-                in_array(
-                    $username,
-                    $seenUsername,
-                    true
-                )
-                ||
-                User::where(
-                    'username',
-                    $username
-                )->exists()
-            ) {
-
-                $errors[] =
-                    "Baris {$excelRow}: Username {$username} sudah digunakan.";
 
                 continue;
             }
@@ -394,15 +350,8 @@ class EmployeeImport implements
             $seenEmail[] =
                 $data['email'];
 
-            $seenUsername[] =
-                $username;
-
-
             $preparedRows[] = [
                 ...$data,
-
-                'username' =>
-                    $username,
 
                 'excel_row' =>
                     $excelRow,
@@ -475,7 +424,7 @@ class EmployeeImport implements
                      * SIMPAN PEGAWAI
                      * =================================================
                      */
-                    $employee = Employee::create([
+                    Employee::create([
 
                         'nip' =>
                             $data['nip'],
@@ -517,75 +466,6 @@ class EmployeeImport implements
                             $data['status'],
                     ]);
 
-
-                    /*
-                     * =================================================
-                     * TENTUKAN ROLE BIDUK
-                     * =================================================
-                     */
-                    $roleName =
-                        $this->roleNameFromPosition(
-                            $data['position']
-                        );
-
-
-                    /*
-                     * Cari role.
-                     */
-                    $role =
-                        Role::where(
-                            'name',
-                            $roleName
-                        )->first();
-
-
-                    if (!$role) {
-
-                        throw new \RuntimeException(
-                            "Role '{$roleName}' belum tersedia."
-                        );
-                    }
-
-
-                    /*
-                     * =================================================
-                     * PASSWORD AWAL
-                     * =================================================
-                     */
-                    $password =
-                        $this->initialPassword(
-                            $data['username']
-                        );
-
-
-                    /*
-                     * =================================================
-                     * BUAT AKUN USER
-                     * =================================================
-                     */
-                    User::create([
-
-                        'employee_id' =>
-                            $employee->id,
-
-                        'name' =>
-                            $employee->name,
-
-                        'username' =>
-                            $data['username'],
-
-                        'email' =>
-                            $employee->email,
-
-                        'password' =>
-                            $password,
-
-                        'role_id' =>
-                            $role->id,
-
-                        'status' =>
-                            $employee->status,
-                    ]);
                 }
 
 
@@ -990,76 +870,4 @@ class EmployeeImport implements
     }
 
 
-    /**
-     * =========================================================
-     * ROLE BIDUK
-     * =========================================================
-     *
-     * Guru            -> Guru
-     * Kepala Sekolah  -> Kepala Sekolah
-     * Selain itu      -> Admin
-     *
-     * Jadi:
-     * OPS       -> Admin
-     * TU        -> Admin
-     * Perpstk   -> Admin
-     * Keamanan  -> Admin
-     */
-    private function roleNameFromPosition(
-        string $position
-    ): string {
-
-        $normalized =
-            strtolower(
-                trim($position)
-            );
-
-        return match ($normalized) {
-
-            'kepala sekolah'
-                => 'Kepala Sekolah',
-
-            'guru'
-                => 'Guru',
-
-            default
-                => 'Admin',
-        };
-    }
-
-
-    /**
-     * =========================================================
-     * PASSWORD AWAL
-     * =========================================================
-     *
-     * Contoh:
-     * NIP 198507012010011001
-     * menjadi:
-     * BIDUK@1001
-     */
-    private function initialPassword(
-        string $username
-    ): string {
-
-        $digits =
-            preg_replace(
-                '/\D+/',
-                '',
-                $username
-            );
-
-        $lastFour =
-            substr(
-                str_pad(
-                    $digits,
-                    4,
-                    '0',
-                    STR_PAD_LEFT
-                ),
-                -4
-            );
-
-        return 'BIDUK@' . $lastFour;
-    }
 }

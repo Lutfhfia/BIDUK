@@ -51,70 +51,71 @@
 
             <div class="row g-4">
 
-                {{-- Nama --}}
+                {{-- Pegawai --}}
                 <div class="col-md-6">
-                    <label for="name" class="form-label">
-                        Nama <span class="text-danger">*</span>
+                    <label for="employee_id" class="form-label">
+                        Pilih Pegawai <span class="text-danger">*</span>
                     </label>
 
-                    <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        class="form-control @error('name') is-invalid @enderror"
-                        value="{{ old('name', $user->name) }}"
+                    <select
+                        name="employee_id"
+                        id="employee_id"
+                        class="form-select @error('employee_id') is-invalid @enderror"
                         required
                     >
+                        <option value="">Pilih Pegawai</option>
+                        @foreach ($employees as $employee)
+                            <option
+                                value="{{ $employee->id }}"
+                                data-name="{{ $employee->name }}"
+                                data-nip="{{ $employee->nip }}"
+                                data-nuptk="{{ $employee->nuptk }}"
+                                data-email="{{ $employee->email }}"
+                                {{ old('employee_id', $user->employee_id) == $employee->id ? 'selected' : '' }}
+                            >
+                                {{ $employee->name }}
+                                @if ($employee->nip)
+                                    — NIP {{ $employee->nip }}
+                                @elseif ($employee->nuptk)
+                                    — NUPTK {{ $employee->nuptk }}
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
 
-                    @error('name')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
+                    <div class="form-text">
+                        Akun ditautkan ke pegawai yang sudah ada. Data identitas akun mengikuti Data Pegawai.
+                    </div>
+
+                    @error('employee_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                {{-- Username --}}
                 <div class="col-md-6">
-                    <label for="username" class="form-label">
-                        Username <span class="text-danger">*</span>
-                    </label>
-
-                    <input
-                        type="text"
-                        name="username"
-                        id="username"
-                        class="form-control @error('username') is-invalid @enderror"
-                        value="{{ old('username', $user->username) }}"
-                        required
-                    >
-
-                    @error('username')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                    @enderror
+                    <label for="employee_name" class="form-label">Nama</label>
+                    <input id="employee_name" class="form-control" readonly>
                 </div>
 
-                {{-- Email --}}
                 <div class="col-md-6">
-                    <label for="email" class="form-label">
-                        Email <span class="text-danger">*</span>
-                    </label>
+                    <label for="employee_nip" class="form-label">NIP</label>
+                    <input id="employee_nip" class="form-control" readonly>
+                </div>
 
-                    <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        class="form-control @error('email') is-invalid @enderror"
-                        value="{{ old('email', $user->email) }}"
-                        required
-                    >
+                <div class="col-md-6">
+                    <label for="employee_nuptk" class="form-label">NUPTK</label>
+                    <input id="employee_nuptk" class="form-control" readonly>
+                </div>
 
-                    @error('email')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                    @enderror
+                <div class="col-md-6">
+                    <label for="employee_email" class="form-label">Email</label>
+                    <input id="employee_email" type="email" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="username_preview" class="form-label">Username</label>
+                    <input id="username_preview" class="form-control" readonly>
+                    <div class="form-text">Username menggunakan NIP, atau NUPTK jika NIP kosong.</div>
                 </div>
 
                 {{-- Role --}}
@@ -142,41 +143,6 @@
                     </select>
 
                     @error('role_id')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
-
-                {{-- Pegawai --}}
-                <div class="col-md-6">
-                    <label for="employee_id" class="form-label">
-                        Pegawai
-                    </label>
-
-                    <select
-                        name="employee_id"
-                        id="employee_id"
-                        class="form-select @error('employee_id') is-invalid @enderror"
-                    >
-                        <option value="">
-                            Tidak dikaitkan dengan pegawai
-                        </option>
-
-                        @foreach ($employees as $employee)
-                            <option
-                                value="{{ $employee->id }}"
-                                {{ old('employee_id', $user->employee_id) == $employee->id ? 'selected' : '' }}
-                            >
-                                {{ $employee->name }}
-                                @if ($employee->nip)
-                                    - {{ $employee->nip }}
-                                @endif
-                            </option>
-                        @endforeach
-                    </select>
-
-                    @error('employee_id')
                         <div class="invalid-feedback">
                             {{ $message }}
                         </div>
@@ -250,3 +216,29 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    const employeeSelect = document.getElementById('employee_id');
+    const employeeName = document.getElementById('employee_name');
+    const employeeNip = document.getElementById('employee_nip');
+    const employeeNuptk = document.getElementById('employee_nuptk');
+    const employeeEmail = document.getElementById('employee_email');
+    const usernamePreview = document.getElementById('username_preview');
+
+    function updateEmployeeDetails() {
+        const option = employeeSelect.selectedOptions[0];
+        const nip = option?.dataset.nip?.trim() ?? '';
+        const nuptk = option?.dataset.nuptk?.trim() ?? '';
+
+        employeeName.value = option?.dataset.name ?? '';
+        employeeNip.value = nip;
+        employeeNuptk.value = nuptk;
+        employeeEmail.value = option?.dataset.email ?? '';
+        usernamePreview.value = nip || nuptk;
+    }
+
+    employeeSelect.addEventListener('change', updateEmployeeDetails);
+    updateEmployeeDetails();
+</script>
+@endpush

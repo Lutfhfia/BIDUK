@@ -109,7 +109,7 @@
         {{-- Search & Filter --}}
         <div class="biduk-card mb-4">
             <div class="card-body p-3">
-                <form method="GET" action="{{ route('students.index') }}">
+                <form id="student-filters" method="GET" action="{{ route('students.index') }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-12 col-md-4">
                             <label class="form-label">
@@ -118,7 +118,19 @@
                             <input type="text" name="search" class="form-control"
                                 placeholder="Cari Nama, NIS, atau NISN..." value="{{ $search }}">
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
+                            <label class="form-label">
+                                <i class="bi bi-calendar3 me-1"></i> Tahun Ajaran
+                            </label>
+                            <select id="student-academic-year" name="academic_year_id" class="form-select">
+                                @foreach ($academicYears as $academicYear)
+                                    <option value="{{ $academicYear->id }}" @selected((string) $academicYearId === (string) $academicYear->id)>
+                                        {{ $academicYear->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
                             <label class="form-label">
                                 <i class="bi bi-funnel me-1"></i> Kelas
                             </label>
@@ -131,7 +143,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label class="form-label">
                                 <i class="bi bi-filter me-1"></i> Status
                             </label>
@@ -148,7 +160,7 @@
                             <button type="submit" class="btn btn-biduk-primary w-100">
                                 <i class="bi bi-search"></i> Filter
                             </button>
-                            @if ($search || $classId || $status)
+                            @if ($search || $classId || $status || $academicYearId)
                                 <a href="{{ route('students.index') }}" class="btn btn-outline-secondary" title="Reset">
                                     <i class="bi bi-x-lg"></i>
                                 </a>
@@ -241,7 +253,7 @@
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center align-items-center gap-1">
-                                                <a href="{{ route('students.show', $student->id) }}"
+                                                <a href="{{ route('students.show', array_merge(['student' => $student->id], request()->only(['search', 'class_id', 'status', 'academic_year_id']))) }}"
                                                     class="btn btn-sm btn-outline-primary" title="Lihat Detail">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
@@ -304,3 +316,20 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const yearSelect = document.getElementById('student-academic-year');
+            const classSelect = document.querySelector('#student-filters select[name="class_id"]');
+            const filterForm = document.getElementById('student-filters');
+
+            if (!yearSelect || !classSelect || !filterForm) return;
+
+            yearSelect.addEventListener('change', function () {
+                classSelect.value = '';
+                filterForm.requestSubmit();
+            });
+        });
+    </script>
+@endpush

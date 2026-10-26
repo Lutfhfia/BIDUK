@@ -9,6 +9,7 @@ use App\Models\ClassStudent;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Services\TeacherClassAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,33 +26,99 @@ class StudentController extends Controller
     {
         $search = $request->input('search');
         $status = $request->input('status');
-        $teacherClass = $this->teacherClassOrNull();
-        $classId = $teacherClass?->id ?? $request->input('class_id');
+        $user = $request->user();
+        $isTeacher = $user?->isGuru() ?? false;
+        $teacherClassIds = $isTeacher
+            ? app(TeacherClassAccess::class)->classIds($user)
+            : null;
+        $classId = $request->input('class_id');
+        $academicYearId = $request->input('academic_year_id');
+        $academicYears = collect();
 
-        // Query dasar ini membatasi seluruh data yang dapat dijangkau Guru.
-        $visibleStudents = $this->applyTeacherClassScope(
-            Student::query(),
-            $teacherClass
-        );
+        if ($isTeacher) {
+            $teacherClasses = SchoolClass::query()
+                ->with('academicYear')
+                ->whereIn('id', $teacherClassIds)
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+            $academicYears = AcademicYear::query()
+                ->whereIn('id', $teacherClasses->pluck('academic_year_id')->unique())
+                ->orderByDesc('start_date')
+                ->get();
 
-        $studentQuery = (clone $visibleStudents)
-            ->search($search)
-            ->filterStatus($status);
+            if ($academicYearId !== null && !$academicYears->contains('id', (int) $academicYearId)) {
+                abort(403, 'Anda tidak memiliki penugasan wali kelas pada tahun ajaran tersebut.');
+            }
 
-        // Filter kelas pilihan hanya dipakai untuk role selain Guru.
-        if (!$teacherClass) {
-            $studentQuery->filterClass($classId);
+            if (!$academicYearId) {
+                $activeYear = AcademicYear::getActive();
+                $academicYearId = $academicYears->contains('id', $activeYear?->id)
+                    ? $activeYear?->id
+                    : $academicYears->first()?->id;
+            }
+
+            $classes = $teacherClasses
+                ->where('academic_year_id', $academicYearId)
+                ->values();
+
+            if ($classId !== null && $classId !== '' && !$classes->contains('id', (int) $classId)) {
+                abort(403, 'Anda tidak memiliki akses ke kelas tersebut.');
+            }
+        } else {
+            $teacherClasses = collect();
+            $academicYears = AcademicYear::query()
+                ->orderByDesc('start_date')
+                ->orderByDesc('id')
+                ->get();
+
+            if (!$academicYearId || !$academicYears->contains('id', (int) $academicYearId)) {
+                $activeYear = AcademicYear::getActive();
+                $academicYearId = $academicYears->contains('id', $activeYear?->id)
+                    ? $activeYear?->id
+                    : $academicYears->first()?->id;
+            }
+
+            $classes = SchoolClass::query()
+                ->when($academicYearId, fn ($query) => $query->where('academic_year_id', $academicYearId))
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+
+            if ($classId !== null && $classId !== '' && !$classes->contains('id', (int) $classId)) {
+                $classId = null;
+            }
         }
 
-        $students = $studentQuery
-            ->with(['classes' => function ($query) use ($teacherClass) {
-                $query->where('class_student.status', 'Aktif')
-                    ->whereHas('academicYear', function ($yearQuery) {
-                        $yearQuery->where('status', 'active');
-                    });
+        $visibleStudents = Student::query();
+        if ($isTeacher) {
+            $visibleStudents->whereHas('classes', function ($query) use (
+                $teacherClassIds,
+                $academicYearId,
+                $classId
+            ) {
+                $query->whereIn('classes.id', $teacherClassIds)
+                    ->where('classes.academic_year_id', $academicYearId)
+                    ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
+            });
+        } elseif ($academicYearId) {
+            $visibleStudents->whereHas('classes', function ($query) use ($academicYearId, $classId) {
+                $query->where('classes.academic_year_id', $academicYearId)
+                    ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
+            });
+        }
 
-                if ($teacherClass) {
-                    $query->where('classes.id', $teacherClass->id);
+        $students = (clone $visibleStudents)
+            ->search($search)
+            ->filterStatus($status)
+            ->with(['classes' => function ($query) use ($isTeacher, $teacherClassIds, $academicYearId, $classId) {
+                if ($isTeacher) {
+                    $query->whereIn('classes.id', $teacherClassIds)
+                        ->where('classes.academic_year_id', $academicYearId)
+                        ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
+                } elseif ($academicYearId) {
+                    $query->where('classes.academic_year_id', $academicYearId)
+                        ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
                 }
             }])
             ->orderByRaw(
@@ -59,14 +126,6 @@ class StudentController extends Controller
             )
             ->paginate(10)
             ->withQueryString();
-
-        $classes = $teacherClass
-            ? collect([$teacherClass])
-            : SchoolClass::currentYear()
-                ->active()
-                ->orderBy('grade_level')
-                ->orderBy('name')
-                ->get();
 
         $statuses = ['Aktif', 'Pindah', 'Lulus', 'Alumni', 'Nonaktif'];
 
@@ -79,7 +138,8 @@ class StudentController extends Controller
         ];
 
         return view('students.index', compact(
-            'students', 'classes', 'statuses', 'search', 'classId', 'status', 'stats'
+            'students', 'classes', 'statuses', 'search', 'classId', 'status', 'stats',
+            'isTeacher', 'academicYears', 'academicYearId'
         ));
     }
 
@@ -223,33 +283,87 @@ app(ActivityLogger::class)->log(
      */
     public function show(Request $request, Student $student): View
     {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
-
         $search = $request->input('search');
         $status = $request->input('status');
-        $classId = $teacherClass?->id ?? $request->input('class_id');
+        $user = $request->user();
+        $isTeacher = $user?->isGuru() ?? false;
+        $teacherClassIds = $isTeacher
+            ? app(TeacherClassAccess::class)->classIds($user)
+            : null;
+        $classId = $request->input('class_id');
+        $academicYearId = $request->input('academic_year_id');
+        $baseQuery = Student::query()->search($search)->filterStatus($status);
 
-        $student->load([
-            'classes.academicYear',
-            'classes.homeroomTeacher',
-            'classAssignments.schoolClass.academicYear',
-            'classAssignments.schoolClass.homeroomTeacher',
-            'previousEducation',
-            'physiques.academicYear',
-            'physiques.semester',
-            'healths.academicYear',
-            'healths.semester',
-        ]);
+        if ($isTeacher) {
+            $teacherClasses = SchoolClass::with('academicYear')
+                ->whereIn('id', $teacherClassIds)
+                ->get();
+            $teacherAcademicYearIds = $teacherClasses->pluck('academic_year_id')->unique();
+            if ($academicYearId !== null && !$teacherAcademicYearIds->contains((int) $academicYearId)) {
+                abort(403, 'Anda tidak memiliki penugasan wali kelas pada tahun ajaran tersebut.');
+            }
+            if (!$academicYearId) {
+                $activeYear = AcademicYear::getActive();
+                $academicYearId = $teacherAcademicYearIds->contains($activeYear?->id)
+                    ? $activeYear?->id
+                    : $teacherClasses->sortByDesc(fn (SchoolClass $class) => $class->academicYear?->start_date?->getTimestamp() ?? 0)
+                        ->first()?->academic_year_id;
+            }
 
-        $baseQuery = Student::query()
-            ->search($search)
-            ->filterStatus($status);
+            $matchingClasses = $teacherClasses
+                ->where('academic_year_id', $academicYearId);
+            if ($classId !== null && $classId !== '' && !$matchingClasses->contains('id', (int) $classId)) {
+                abort(403, 'Anda tidak memiliki akses ke kelas tersebut.');
+            }
 
-        $this->applyTeacherClassScope($baseQuery, $teacherClass);
+            $studentClassQuery = $student->classes()
+                ->whereIn('classes.id', $matchingClasses->pluck('id'))
+                ->where('classes.academic_year_id', $academicYearId)
+                ->when($classId !== null && $classId !== '', fn ($query) => $query->whereKey($classId));
+            abort_unless(
+                $studentClassQuery->exists(),
+                403,
+                'Anda tidak memiliki akses ke data siswa di luar kelas wali.'
+            );
 
-        if (!$teacherClass) {
+            $baseQuery->whereHas('classes', function ($query) use ($matchingClasses, $academicYearId, $classId) {
+                $query->whereIn('classes.id', $matchingClasses->pluck('id'))
+                    ->where('classes.academic_year_id', $academicYearId)
+                    ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
+            });
+            $student->load([
+                'classes' => fn ($query) => $query
+                    ->whereIn('classes.id', $matchingClasses->pluck('id'))
+                    ->where('classes.academic_year_id', $academicYearId)
+                    ->with('academicYear', 'homeroomTeacher'),
+                'classAssignments' => fn ($query) => $query
+                    ->whereHas(
+                        'schoolClass',
+                        fn ($classQuery) => $classQuery
+                            ->whereIn('classes.id', $matchingClasses->pluck('id'))
+                            ->where('classes.academic_year_id', $academicYearId)
+                    )
+                    ->with('schoolClass.academicYear', 'schoolClass.homeroomTeacher'),
+                'previousEducation',
+                'physiques.academicYear',
+                'physiques.semester',
+                'healths.academicYear',
+                'healths.semester',
+            ]);
+        } else {
+            $this->applyTeacherClassScope($baseQuery, null);
             $baseQuery->filterClass($classId);
+            $student->load([
+                'classes.academicYear',
+                'classes.homeroomTeacher',
+                'classAssignments.schoolClass.academicYear',
+                'classAssignments.schoolClass.homeroomTeacher',
+                'previousEducation',
+                'physiques.academicYear',
+                'physiques.semester',
+                'healths.academicYear',
+                'healths.semester',
+            ]);
         }
 
         // Urutan navigasi detail harus memakai kumpulan siswa yang diizinkan.

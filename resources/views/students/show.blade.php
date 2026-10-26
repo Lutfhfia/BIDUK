@@ -49,7 +49,7 @@
                 {{-- Prev / Next Navigation --}}
                 <div class="btn-group me-1" role="group">
                     @if ($previousStudent)
-                        <a href="{{ route('students.show', array_merge(['student' => $previousStudent], request()->only(['search', 'class_id', 'status']))) }}"
+                        <a href="{{ route('students.show', array_merge(['student' => $previousStudent], request()->only(['search', 'class_id', 'status', 'academic_year_id']))) }}"
                            class="btn btn-outline-secondary"
                            title="Sebelumnya: {{ $previousStudent->name }}">
                             <i class="bi bi-chevron-left me-1"></i> Prev
@@ -61,7 +61,7 @@
                     @endif
 
                     @if ($nextStudent)
-                        <a href="{{ route('students.show', array_merge(['student' => $nextStudent], request()->only(['search', 'class_id', 'status']))) }}"
+                        <a href="{{ route('students.show', array_merge(['student' => $nextStudent], request()->only(['search', 'class_id', 'status', 'academic_year_id']))) }}"
                            class="btn btn-outline-secondary"
                            title="Berikutnya: {{ $nextStudent->name }}">
                             Next <i class="bi bi-chevron-right ms-1"></i>
@@ -73,7 +73,7 @@
                     @endif
                 </div>
 
-                <a href="{{ route('students.index', request()->only(['search', 'class_id', 'status'])) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('students.index', request()->only(['search', 'class_id', 'status', 'academic_year_id'])) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Kembali
                 </a>
                 @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))

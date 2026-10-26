@@ -1,6 +1,5 @@
 # PROMPT PERBAIKAN FITUR KELOLA RIWAYAT KELAS PADA BIDUK
 
-
 ## 1. Tambahkan fitur Kelola Riwayat Kelas
 
 Pada kartu kelas yang berstatus Belum Ada, sediakan tombol **Lengkapi Riwayat** atau **Kelola Riwayat**.

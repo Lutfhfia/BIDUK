@@ -16,6 +16,7 @@ use App\Models\Subject;
 use App\Services\ReportCardGradeImportContext;
 use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -45,12 +46,17 @@ class ReportCardGradeController extends Controller
         /*
          * Kelas wali untuk Guru. Role lain tidak dibatasi helper ini.
          */
-        $teacherClass = $this->teacherClassOrNull();
+        $teacherClasses = $this->teacherClassesOrNull();
+        $isTeacher = $teacherClasses !== null;
 
         /*
          * Daftar Tahun Ajaran.
          */
-        $academicYears = AcademicYear::orderByDesc('id')->get();
+        $academicYears = AcademicYear::query()
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get();
+        $activeAcademicYear = AcademicYear::getActive();
 
         /*
          * Parameter filter.
@@ -58,27 +64,71 @@ class ReportCardGradeController extends Controller
         $search = $request->input('search');
         $selectedAcademicYearId = $request->input('academic_year_id');
         $selectedClassId = $request->input('class_id');
+        $hasAcademicYearFilter = $request->query->has('academic_year_id');
+
+        if (! $hasAcademicYearFilter && $teacherClasses === null) {
+            $selectedClassAcademicYearId = $selectedClassId
+                ? SchoolClass::query()
+                    ->where('status', 'Aktif')
+                    ->whereKey($selectedClassId)
+                    ->value('academic_year_id')
+                : null;
+            $selectedAcademicYearId = $selectedClassAcademicYearId
+                ?? $activeAcademicYear?->id
+                ?? $academicYears->first()?->id;
+        }
 
         /*
-         * Guru selalu menggunakan tahun ajaran dan kelas wali yang ditetapkan.
-         * Abaikan class_id / academic_year_id yang dikirim dari browser agar
-         * parameter URL tidak dapat digunakan untuk memilih kelas lain.
+         * Guru hanya dapat memilih pasangan tahun ajaran dan kelas yang
+         * tersimpan sebagai penugasan wali pada salah satu tahun.
          */
-        if ($teacherClass) {
-            $selectedAcademicYearId = $teacherClass->academic_year_id;
-            $selectedClassId = $teacherClass->id;
-            $academicYears = $academicYears
-                ->where('id', $teacherClass->academic_year_id)
-                ->values();
+        if ($teacherClasses !== null) {
+            $academicYearIds = $teacherClasses->pluck('academic_year_id')->unique()->values();
+            $requestedClass = $selectedClassId
+                ? $teacherClasses->firstWhere('id', $selectedClassId)
+                : null;
+            abort_if(
+                $selectedAcademicYearId && ! $academicYearIds->contains((int) $selectedAcademicYearId),
+                403,
+                'Kamu tidak memiliki akses ke tahun ajaran ini.'
+            );
+            $academicYears = $academicYears->whereIn('id', $academicYearIds)->values();
+            if (! $selectedAcademicYearId) {
+                $selectedAcademicYearId = $requestedClass?->academic_year_id
+                    ?? ($academicYears->contains('id', $activeAcademicYear?->id)
+                        ? $activeAcademicYear?->id
+                        : $academicYears->first()?->id);
+            }
+
+            abort_if($selectedClassId && ! $requestedClass, 403, 'Kamu tidak memiliki akses ke kelas ini.');
+            if (
+                $requestedClass
+                && $selectedAcademicYearId
+                && (int) $requestedClass->academic_year_id !== (int) $selectedAcademicYearId
+            ) {
+                $requestedClass = null;
+            }
+
+            if ($requestedClass) {
+                $selectedClassId = $requestedClass->id;
+                $selectedAcademicYearId = $requestedClass->academic_year_id;
+            } else {
+                $selectedClassId = null;
+            }
         }
 
         /*
          * Ambil daftar kelas untuk dropdown filter.
          */
         $classesQuery = SchoolClass::with('academicYear')
-            ->where('status', 'Aktif')
             ->orderBy('grade_level')
             ->orderBy('name');
+
+        if ($teacherClasses !== null) {
+            $classesQuery->whereIn('id', $teacherClasses->pluck('id'));
+        } else {
+            $classesQuery->where('status', 'Aktif');
+        }
 
         if ($selectedAcademicYearId) {
             $classesQuery->where('academic_year_id', $selectedAcademicYearId);
@@ -86,13 +136,6 @@ class ReportCardGradeController extends Controller
 
         $classes = $classesQuery->get();
         $importOptions = app(ReportCardGradeImportContext::class)->options($request->user());
-
-        // Guru hanya menerima satu pilihan kelas: kelas wali miliknya.
-        if ($teacherClass) {
-            $classes = collect([
-                $teacherClass->load('academicYear'),
-            ]);
-        }
 
         $selectedClass = null;
         $students = collect();
@@ -110,20 +153,28 @@ class ReportCardGradeController extends Controller
                  * FILTER BERDASARKAN KELAS SPESIFIK
                  * ------------------------------------------------------
                  */
-                $selectedClass = SchoolClass::with([
+                $selectedClassQuery = SchoolClass::with([
                     'academicYear.semesters',
                     'subjects'
-                ])
-                ->where('status', 'Aktif')
-                ->find($selectedClassId);
+                ]);
+                if ($teacherClasses !== null) {
+                    $selectedClassQuery->whereIn('id', $teacherClasses->pluck('id'));
+                } else {
+                    $selectedClassQuery->where('status', 'Aktif');
+                }
+                $selectedClass = $selectedClassQuery->find($selectedClassId);
 
                 if ($selectedClass) {
 
-                    // Pertahanan backend: kelas terpilih harus kelas wali Guru.
-                    $this->ensureTeacherCanAccessClass($selectedClass, $teacherClass);
+                    $this->ensureTeacherCanAccessClass($selectedClass, $teacherClasses);
 
-                    $studentsQuery = $selectedClass->students()
-                        ->wherePivot('status', 'Aktif');
+                    $studentsQuery = $selectedClass->students();
+                    if (
+                        $selectedClass->status === 'Aktif'
+                        && $selectedClass->academicYear?->status === 'active'
+                    ) {
+                        $studentsQuery->wherePivot('status', 'Aktif');
+                    }
 
                     if ($search) {
                         $studentsQuery->where(function ($q) use ($search) {
@@ -146,6 +197,10 @@ class ReportCardGradeController extends Controller
                         $semesterGanjil?->id,
                         $semesterGenap?->id,
                     ])->filter();
+                    $subjectIds = $selectedClass->subjects
+                        ->where('status', 'Aktif')
+                        ->pluck('id')
+                        ->values();
 
                     $studentsList = $studentsQuery
                         ->orderByRaw('CASE WHEN students.nis IS NULL OR students.nis = \'\' THEN 1 ELSE 0 END')
@@ -162,11 +217,13 @@ class ReportCardGradeController extends Controller
                             ->get()
                             ->groupBy('student_id');
 
-                        $studentsList->transform(function ($student) use ($grades, $semesterGanjil, $semesterGenap, $selectedClass) {
+                        $studentsList->transform(function ($student) use ($grades, $semesterGanjil, $semesterGenap, $selectedClass, $subjectIds) {
                             $studentGrades = $grades->get($student->id, collect());
                             $student->target_class = $selectedClass;
                             $student->has_ganjil = (bool) $semesterGanjil;
                             $student->has_genap = (bool) $semesterGenap;
+                            $student->ganjil_is_complete = $this->semesterGradesAreComplete($studentGrades, $semesterGanjil, $subjectIds);
+                            $student->genap_is_complete = $this->semesterGradesAreComplete($studentGrades, $semesterGenap, $subjectIds);
                             $student->ganjil_grades_count = $semesterGanjil
                                 ? $studentGrades->where('semester_id', $semesterGanjil->id)->count()
                                 : 0;
@@ -183,6 +240,8 @@ class ReportCardGradeController extends Controller
                             $student->target_class = $selectedClass;
                             $student->has_ganjil = (bool) $semesterGanjil;
                             $student->has_genap = (bool) $semesterGenap;
+                            $student->ganjil_is_complete = false;
+                            $student->genap_is_complete = false;
                             $student->ganjil_grades_count = 0;
                             $student->genap_grades_count = 0;
 
@@ -211,6 +270,15 @@ class ReportCardGradeController extends Controller
                     });
                 }
 
+                if ($teacherClasses !== null) {
+                    $query->whereHas('classes', function ($classQuery) use ($teacherClasses, $selectedAcademicYearId) {
+                        $classQuery->whereIn('classes.id', $teacherClasses->pluck('id'));
+                        if ($selectedAcademicYearId) {
+                            $classQuery->where('academic_year_id', $selectedAcademicYearId);
+                        }
+                    });
+                }
+
                 if ($selectedAcademicYearId) {
                     $query->whereHas('classes', function ($q) use ($selectedAcademicYearId) {
                         $q->where('academic_year_id', $selectedAcademicYearId);
@@ -218,11 +286,14 @@ class ReportCardGradeController extends Controller
                 }
 
                 $query->with([
-                    'classes' => function ($q) use ($selectedAcademicYearId) {
+                    'classes' => function ($q) use ($selectedAcademicYearId, $teacherClasses) {
+                        if ($teacherClasses !== null) {
+                            $q->whereIn('classes.id', $teacherClasses->pluck('id'));
+                        }
                         if ($selectedAcademicYearId) {
                             $q->where('academic_year_id', $selectedAcademicYearId);
                         }
-                        $q->with('academicYear.semesters')
+                        $q->with('academicYear.semesters', 'subjects')
                             ->orderByDesc('academic_year_id');
                     },
                     'reportCardGrades'
@@ -263,6 +334,20 @@ class ReportCardGradeController extends Controller
 
                         $student->has_ganjil = (bool) $semesterGanjil;
                         $student->has_genap = (bool) $semesterGenap;
+                        $subjectIds = $targetClass->subjects
+                            ->where('status', 'Aktif')
+                            ->pluck('id')
+                            ->values();
+                        $student->ganjil_is_complete = $this->semesterGradesAreComplete(
+                            $student->reportCardGrades->where('class_id', $targetClass->id),
+                            $semesterGanjil,
+                            $subjectIds
+                        );
+                        $student->genap_is_complete = $this->semesterGradesAreComplete(
+                            $student->reportCardGrades->where('class_id', $targetClass->id),
+                            $semesterGenap,
+                            $subjectIds
+                        );
 
                         $student->ganjil_grades_count = $semesterGanjil
                             ? $student->reportCardGrades
@@ -280,6 +365,8 @@ class ReportCardGradeController extends Controller
                     } else {
                         $student->has_ganjil = false;
                         $student->has_genap = false;
+                        $student->ganjil_is_complete = false;
+                        $student->genap_is_complete = false;
                         $student->ganjil_grades_count = 0;
                         $student->genap_grades_count = 0;
                     }
@@ -307,7 +394,8 @@ class ReportCardGradeController extends Controller
                 'selectedClass',
                 'searched',
                 'search',
-                'importOptions'
+                'importOptions',
+                'isTeacher'
             )
         );
     }
@@ -322,8 +410,8 @@ class ReportCardGradeController extends Controller
      */
     public function history(Request $request, Student $student)
     {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClass);
+        $teacherClasses = $this->teacherClassesOrNull();
+        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClasses);
 
         $student->load([
             'classAssignments.schoolClass.academicYear',
@@ -334,9 +422,23 @@ class ReportCardGradeController extends Controller
             ->with('schoolClass.academicYear')
             ->orderByDesc('created_at')
             ->get();
+        if ($teacherClasses !== null) {
+            $authorizedClassIds = $teacherClasses->pluck('id');
+            $classAssignments = $classAssignments
+                ->whereIn('class_id', $authorizedClassIds)
+                ->values();
+        }
         $manualHistories = $student->classHistories()
             ->get()
             ->keyBy('grade_level');
+        if ($teacherClasses !== null) {
+            $manualHistories = $manualHistories->filter(
+                fn ($history) => $teacherClasses->contains(
+                    fn (SchoolClass $class) => mb_strtolower(trim($class->name)) === mb_strtolower(trim($history->rombel))
+                        && trim((string) $class->academicYear?->name) === trim($history->academic_year)
+                )
+            );
+        }
 
         $currentActiveAssignment = $classAssignments->first(fn ($assignment) => $assignment->status === 'Aktif');
         $currentGradeLevel = $currentActiveAssignment?->schoolClass?->grade_level;
@@ -346,9 +448,18 @@ class ReportCardGradeController extends Controller
             ->groupBy(fn ($assignment) => (int) $assignment->schoolClass->grade_level);
         $masterClassesByGrade = SchoolClass::with('academicYear')
             ->whereBetween('grade_level', [1, 6])
+            ->when(
+                $teacherClasses !== null,
+                fn ($query) => $query->whereIn('id', $teacherClasses->pluck('id'))
+            )
             ->get()
             ->groupBy('grade_level');
         $academicYears = AcademicYear::orderByDesc('start_date')->get();
+        if ($teacherClasses !== null) {
+            $academicYears = $academicYears
+                ->whereIn('id', $teacherClasses->pluck('academic_year_id'))
+                ->values();
+        }
 
         $gradeLevelsData = [];
 
@@ -400,6 +511,8 @@ class ReportCardGradeController extends Controller
                         : null,
                     'has_ganjil' => false,
                     'has_genap' => false,
+                    'ganjil_is_complete' => false,
+                    'genap_is_complete' => false,
                     'ganjil_count' => 0,
                     'genap_count' => 0,
                     'has_data' => false,
@@ -426,6 +539,12 @@ class ReportCardGradeController extends Controller
                     ->where('semester_id', $semGenap->id)
                     ->count()
                 : 0;
+            $subjectIds = $class->subjects
+                ->where('status', 'Aktif')
+                ->pluck('id')
+                ->values();
+            $studentGrades = $student->reportCardGrades
+                ->where('class_id', $class->id);
 
             $gradeLevelsData[$level] = [
                 'level' => $level,
@@ -440,9 +559,12 @@ class ReportCardGradeController extends Controller
                 'academic_year_master' => $academicYear,
                 'has_ganjil' => (bool) $semGanjil,
                 'has_genap' => (bool) $semGenap,
+                'ganjil_is_complete' => $this->semesterGradesAreComplete($studentGrades, $semGanjil, $subjectIds),
+                'genap_is_complete' => $this->semesterGradesAreComplete($studentGrades, $semGenap, $subjectIds),
                 'ganjil_count' => $ganjilCount,
                 'genap_count' => $genapCount,
-                'has_data' => ($ganjilCount > 0 || $genapCount > 0),
+                'has_data' => $this->semesterHasValues($studentGrades, $semGanjil)
+                    || $this->semesterHasValues($studentGrades, $semGenap),
             ];
         }
 
@@ -464,8 +586,14 @@ class ReportCardGradeController extends Controller
 
     public function storeClassHistory(Request $request, Student $student)
     {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClass);
+        abort_if(
+            $request->user()?->isGuru(),
+            403,
+            'Guru tidak memiliki akses untuk mengubah riwayat kelas siswa.'
+        );
+
+        $teacherClasses = $this->teacherCurrentClassesOrNull();
+        $this->ensureTeacherCanAccessStudentInClass($student, $teacherClasses);
 
         $validated = $request->validate([
             'history_id' => [
@@ -633,8 +761,8 @@ class ReportCardGradeController extends Controller
             abort(404, 'Siswa tidak ditemukan.');
         }
 
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+        $teacherClasses = $this->teacherClassesOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClasses);
 
         $academicYearId = (int) (
             $request->input('academic_year_id')
@@ -705,14 +833,14 @@ class ReportCardGradeController extends Controller
 
         $subjects = $class->subjects()
             ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.sort_order')
-            ->orderBy('subjects.name')
+            ->orderBy('subjects.code')
+            ->orderBy('subjects.id')
             ->get();
 
         if ($subjects->isEmpty()) {
             $subjects = Subject::where('status', 'Aktif')
-                ->orderBy('sort_order')
-                ->orderBy('name')
+                ->orderBy('code')
+                ->orderBy('id')
                 ->get();
         }
 
@@ -747,9 +875,9 @@ class ReportCardGradeController extends Controller
             ->limit(3)
             ->get();
 
-        $homeroomTeacher = $class->homeroom_teacher_id
-            ? Employee::find($class->homeroom_teacher_id)
-            : ($class->homeroomTeacher ?? null);
+        $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
+            ?? $class->homeroomTeacher;
+        $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
 
         $headmaster = Employee::query()
             ->where('status', 'Aktif')
@@ -832,8 +960,8 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+        $teacherClasses = $this->teacherClassesOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClasses);
 
         /*
          * Validasi siswa.
@@ -888,8 +1016,8 @@ class ReportCardGradeController extends Controller
 
         $subjects = $class->subjects()
             ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.sort_order')
-            ->orderBy('subjects.name')
+            ->orderBy('subjects.code')
+            ->orderBy('subjects.id')
             ->get();
 
         /*
@@ -1057,8 +1185,8 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+        $teacherClasses = $this->teacherClassesOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClasses);
 
         /*
          * ======================================================
@@ -1113,8 +1241,8 @@ class ReportCardGradeController extends Controller
 
          $subjects = $class->subjects()
          ->where('subjects.status', 'Aktif')
-         ->orderBy('subjects.sort_order')
-         ->orderBy('subjects.name')
+         ->orderBy('subjects.code')
+         ->orderBy('subjects.id')
          ->get();
 
         if ($subjects->isEmpty()) {
@@ -1147,9 +1275,6 @@ class ReportCardGradeController extends Controller
                 'array',
             ],
             'ganjil_predicates' => ['nullable', 'array'],
-            'ganjil_skill_scores' => ['nullable', 'array'],
-            'ganjil_skill_predicates' => ['nullable', 'array'],
-            'ganjil_skill_learning_outcomes' => ['nullable', 'array'],
 
             /*
              * Genap
@@ -1164,9 +1289,6 @@ class ReportCardGradeController extends Controller
                 'array',
             ],
             'genap_predicates' => ['nullable', 'array'],
-            'genap_skill_scores' => ['nullable', 'array'],
-            'genap_skill_predicates' => ['nullable', 'array'],
-            'genap_skill_learning_outcomes' => ['nullable', 'array'],
 
             /*
              * Ekstrakurikuler
@@ -1251,9 +1373,6 @@ class ReportCardGradeController extends Controller
                 'max:2000',
             ];
             $rules['ganjil_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
-            $rules['ganjil_skill_scores.'.$subject->id] = ['nullable', 'numeric', 'min:0', 'max:100'];
-            $rules['ganjil_skill_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
-            $rules['ganjil_skill_learning_outcomes.'.$subject->id] = ['nullable', 'string', 'max:2000'];
 
             /*
              * Nilai Genap
@@ -1278,9 +1397,6 @@ class ReportCardGradeController extends Controller
                 'max:2000',
             ];
             $rules['genap_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
-            $rules['genap_skill_scores.'.$subject->id] = ['nullable', 'numeric', 'min:0', 'max:100'];
-            $rules['genap_skill_predicates.'.$subject->id] = ['nullable', 'in:A,B,C,D'];
-            $rules['genap_skill_learning_outcomes.'.$subject->id] = ['nullable', 'string', 'max:2000'];
         }
 
         /*
@@ -1323,9 +1439,6 @@ class ReportCardGradeController extends Controller
                             'ganjil_learning_outcomes'
                         ][$subject->id] ?? null;
                     $knowledgePredicate = $validated['ganjil_predicates'][$subject->id] ?? null;
-                    $skillScore = $validated['ganjil_skill_scores'][$subject->id] ?? null;
-                    $skillPredicate = $validated['ganjil_skill_predicates'][$subject->id] ?? null;
-                    $skillLearningOutcome = $validated['ganjil_skill_learning_outcomes'][$subject->id] ?? null;
 
                     /*
                      * Jika keduanya kosong,
@@ -1340,9 +1453,6 @@ class ReportCardGradeController extends Controller
                             $learningOutcome === ''
                         )
                         && ($knowledgePredicate === null || $knowledgePredicate === '')
-                        && ($skillScore === null || $skillScore === '')
-                        && ($skillPredicate === null || $skillPredicate === '')
-                        && ($skillLearningOutcome === null || $skillLearningOutcome === '')
                     ) {
 
                         ReportCardGrade::where([
@@ -1369,9 +1479,9 @@ class ReportCardGradeController extends Controller
                             'score' => $score,
                             'learning_outcome' => $learningOutcome,
                             'knowledge_predicate' => $knowledgePredicate,
-                            'skill_score' => $skillScore,
-                            'skill_predicate' => $skillPredicate,
-                            'skill_learning_outcome' => $skillLearningOutcome,
+                            'skill_score' => null,
+                            'skill_predicate' => null,
+                            'skill_learning_outcome' => null,
                         ]
                     );
                 }
@@ -1397,9 +1507,6 @@ class ReportCardGradeController extends Controller
                             'genap_learning_outcomes'
                         ][$subject->id] ?? null;
                     $knowledgePredicate = $validated['genap_predicates'][$subject->id] ?? null;
-                    $skillScore = $validated['genap_skill_scores'][$subject->id] ?? null;
-                    $skillPredicate = $validated['genap_skill_predicates'][$subject->id] ?? null;
-                    $skillLearningOutcome = $validated['genap_skill_learning_outcomes'][$subject->id] ?? null;
 
                     /*
                      * Jika keduanya kosong,
@@ -1414,9 +1521,6 @@ class ReportCardGradeController extends Controller
                             $learningOutcome === ''
                         )
                         && ($knowledgePredicate === null || $knowledgePredicate === '')
-                        && ($skillScore === null || $skillScore === '')
-                        && ($skillPredicate === null || $skillPredicate === '')
-                        && ($skillLearningOutcome === null || $skillLearningOutcome === '')
                     ) {
 
                         ReportCardGrade::where([
@@ -1443,9 +1547,9 @@ class ReportCardGradeController extends Controller
                             'score' => $score,
                             'learning_outcome' => $learningOutcome,
                             'knowledge_predicate' => $knowledgePredicate,
-                            'skill_score' => $skillScore,
-                            'skill_predicate' => $skillPredicate,
-                            'skill_learning_outcome' => $skillLearningOutcome,
+                            'skill_score' => null,
+                            'skill_predicate' => null,
+                            'skill_learning_outcome' => null,
                         ]
                     );
                 }
@@ -1612,8 +1716,8 @@ class ReportCardGradeController extends Controller
         SchoolClass $class,
         Student $student
     ) {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClass);
+        $teacherClasses = $this->teacherCurrentClassesOrNull();
+        $this->ensureTeacherCanAccessStudent($class, $student, $teacherClasses);
 
         /*
          * Pastikan siswa berada di kelas.
@@ -1682,11 +1786,55 @@ class ReportCardGradeController extends Controller
                 . ' berhasil dihapus.'
             );
     }
+
+    private function semesterGradesAreComplete(
+        Collection $grades,
+        ?Semester $semester,
+        Collection $subjectIds
+    ): bool {
+        if (! $semester || $subjectIds->isEmpty()) {
+            return false;
+        }
+
+        $gradesBySubject = $grades
+            ->where('semester_id', $semester->id)
+            ->keyBy('subject_id');
+
+        foreach ($subjectIds as $subjectId) {
+            $grade = $gradesBySubject->get($subjectId);
+            if (! $grade || $grade->score === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function semesterHasValues(Collection $grades, ?Semester $semester): bool
+    {
+        if (! $semester) {
+            return false;
+        }
+
+        $fields = [
+            'score',
+            'learning_outcome',
+            'knowledge_predicate',
+        ];
+
+        return $grades->contains(
+            fn (ReportCardGrade $grade) => (int) $grade->semester_id === (int) $semester->id
+                && collect($fields)->contains(
+                    fn (string $field) => $grade->{$field} !== null && $grade->{$field} !== ''
+                )
+        );
+    }
+
     /**
-     * Mengambil kelas wali Guru pada tahun ajaran aktif.
+     * Mengambil kelas yang tercatat sebagai kelas wali Guru pada setiap tahun ajaran.
      * Role selain Guru tidak dibatasi oleh helper ini.
      */
-    private function teacherClassOrNull(): ?SchoolClass
+    private function teacherClassesOrNull(): ?Collection
     {
         $user = auth()->user();
 
@@ -1728,67 +1876,86 @@ class ReportCardGradeController extends Controller
             return null;
         }
 
-        $employee = $user->employee;
-        $activeYear = AcademicYear::getActive();
-
-        abort_unless(
-            $employee && $activeYear,
-            403,
-            'Data guru atau tahun ajaran aktif tidak ditemukan.'
-        );
-
-        $teacherClasses = $employee->homeroomClasses()
-            ->where('classes.academic_year_id', $activeYear->id)
-            ->where('classes.status', 'Aktif')
-            ->whereHas('academicYear', function ($query) {
-                $query->where('status', 'active');
+        return SchoolClass::query()
+            ->where(function ($query) use ($user) {
+                $query->where('homeroom_teacher_user_id', $user->id);
+                if ($user->employee_id) {
+                    $query->orWhere(function ($legacyQuery) use ($user) {
+                        $legacyQuery
+                            ->whereNull('homeroom_teacher_user_id')
+                            ->where('homeroom_teacher_id', $user->employee_id);
+                    });
+                }
             })
-            ->get();
+            ->with('academicYear')
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->get()
+            ->sortByDesc(fn (SchoolClass $class) => $class->academicYear?->start_date?->getTimestamp() ?? 0)
+            ->values();
+    }
+
+    private function teacherCurrentClassesOrNull(): ?Collection
+    {
+        $teacherClasses = $this->teacherClassesOrNull();
+        if ($teacherClasses === null) {
+            return null;
+        }
+
+        $activeYear = AcademicYear::getActive();
+        abort_unless($activeYear, 403, 'Tahun ajaran aktif tidak ditemukan.');
+
+        $currentClasses = $teacherClasses
+            ->filter(fn (SchoolClass $class) => (int) $class->academic_year_id === (int) $activeYear->id
+                && $class->status === 'Aktif'
+                && $class->academicYear?->status === 'active')
+            ->values();
 
         abort_unless(
-            $teacherClasses->count() === 1,
+            $currentClasses->count() === 1,
             403,
             'Guru harus ditetapkan sebagai wali tepat satu kelas pada tahun ajaran aktif.'
         );
 
-        return $teacherClasses->first();
+        return $currentClasses;
     }
 
     /**
-     * Memastikan kelas yang diminta sama dengan kelas wali Guru.
+     * Memastikan kelas yang diminta tercatat sebagai kelas wali Guru.
      * Untuk role selain Guru, helper ini tidak membatasi kelas.
      */
     private function ensureTeacherCanAccessClass(
         SchoolClass $class,
-        ?SchoolClass $teacherClass
+        ?Collection $teacherClasses
     ): void {
-        if (!$teacherClass) {
+        if ($teacherClasses === null) {
             return;
         }
 
         abort_unless(
-            (int) $class->id === (int) $teacherClass->id
-            && (int) $class->academic_year_id === (int) $teacherClass->academic_year_id
-            && $class->status === 'Aktif',
+            $teacherClasses->contains(
+                fn (SchoolClass $teacherClass) => (int) $teacherClass->id === (int) $class->id
+                    && (int) $teacherClass->academic_year_id === (int) $class->academic_year_id
+            ),
             403,
             'Kamu tidak memiliki akses ke kelas ini.'
         );
     }
 
     /**
-     * Memastikan siswa merupakan anggota aktif kelas wali Guru.
+     * Memastikan siswa terdaftar di salah satu kelas wali yang diizinkan.
      */
     private function ensureTeacherCanAccessStudentInClass(
         Student $student,
-        ?SchoolClass $teacherClass
+        ?Collection $teacherClasses
     ): void {
-        if (!$teacherClass) {
+        if ($teacherClasses === null) {
             return;
         }
 
-        $isStudentInTeacherClass = $teacherClass->students()
-            ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
+        $isStudentInTeacherClass = SchoolClass::query()
+            ->whereIn('id', $teacherClasses->pluck('id'))
+            ->whereHas('students', fn ($query) => $query->where('students.id', $student->id))
             ->exists();
 
         abort_unless(
@@ -1799,25 +1966,31 @@ class ReportCardGradeController extends Controller
     }
 
     /**
-     * Memastikan Guru hanya mengakses siswa aktif pada kelas yang diizinkan.
+     * Memastikan Guru hanya mengakses siswa pada kelas yang diizinkan.
      */
     private function ensureTeacherCanAccessStudent(
         SchoolClass $class,
         Student $student,
-        ?SchoolClass $teacherClass
+        ?Collection $teacherClasses
     ): void {
         // Pemeriksaan keanggotaan tambahan hanya untuk Guru agar alur lama
         // Admin/Super Admin (termasuk auto-assign yang sudah ada di update())
         // tetap tidak berubah.
-        if (!$teacherClass) {
+        if ($teacherClasses === null) {
             return;
         }
 
-        $this->ensureTeacherCanAccessClass($class, $teacherClass);
+        $this->ensureTeacherCanAccessClass($class, $teacherClasses);
 
-        $isStudentInClass = $class->students()
-            ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
+        $isCurrentClass = $class->status === 'Aktif'
+            && $class->academicYear?->status === 'active';
+        $studentsQuery = $class->students()
+            ->where('students.id', $student->id);
+        if ($isCurrentClass) {
+            $studentsQuery->wherePivot('status', 'Aktif');
+        }
+
+        $isStudentInClass = $studentsQuery
             ->exists();
 
         abort_unless(

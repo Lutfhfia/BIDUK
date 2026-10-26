@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Subject;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\User;
 
 
 
@@ -19,6 +20,7 @@ class SchoolClass extends Model
     'name',
     'grade_level',
     'homeroom_teacher_id',
+    'homeroom_teacher_user_id',
     'capacity',
     'status',
 ];
@@ -37,6 +39,14 @@ class SchoolClass extends Model
     public function homeroomTeacher(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'homeroom_teacher_id');
+    }
+
+    /**
+     * User akun Guru yang ditetapkan sebagai wali kelas.
+     */
+    public function homeroomTeacherUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'homeroom_teacher_user_id');
     }
 
     /**
@@ -66,7 +76,10 @@ class SchoolClass extends Model
         'class_subject',
         'class_id',
         'subject_id'
-    )->withTimestamps();
+    )
+        ->withTimestamps()
+        ->orderBy('subjects.code')
+        ->orderBy('subjects.id');
 }
 
     /**

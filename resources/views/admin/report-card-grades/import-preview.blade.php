@@ -7,7 +7,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h4 class="fw-bold mb-1">Preview Import Nilai Rapot</h4>
-                <p class="text-muted mb-0">Periksa metadata, nilai, warning, dan error sebelum konfirmasi.</p>
+                <p class="text-muted mb-0">Periksa metadata dan seluruh kolom nilai sebelum konfirmasi. Kolom kosong akan mengosongkan data tersimpan.</p>
             </div>
             <a href="{{ route('report-card-grades.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i>Kembali
@@ -68,6 +68,7 @@
                                 <th>NISN</th>
                                 <th>Nama pada file</th>
                                 <th>Nama BIDUK / Kelas</th>
+                                <th>Nilai yang akan diimpor</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -82,6 +83,30 @@
                                         @if ($row['class_name'])
                                             <div class="small text-muted">Kelas {{ $row['class_name'] }}</div>
                                         @endif
+                                    </td>
+                                    <td>
+                                        @php
+                                            $gradeFieldLabels = [
+                                                'score' => 'Nilai Akhir',
+                                                'knowledge_predicate' => 'Predikat',
+                                                'learning_outcome' => 'Capaian Pembelajaran',
+                                            ];
+                                        @endphp
+                                        @foreach ($row['grades'] as $subjectName => $gradeValues)
+                                            <div class="mb-2">
+                                                <strong>{{ $subjectName }}:</strong>
+                                                @foreach ($gradeFieldLabels as $field => $label)
+                                                    <div class="small">
+                                                        {{ $label }}:
+                                                        @if (isset($gradeValues[$field]) && $gradeValues[$field] !== '')
+                                                            {{ $field === 'score' ? number_format((float) $gradeValues[$field], 2) : $gradeValues[$field] }}
+                                                        @else
+                                                            <span class="text-warning-emphasis">Kosong — akan mengosongkan data tersimpan</span>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
                                     </td>
                                     <td>
                                         @foreach ($row['warnings'] as $warning)

@@ -37,7 +37,7 @@
             </h4>
 
             <p class="text-muted mb-0">
-                Informasi lengkap pegawai dan akun akses BIDUK.
+                Informasi pegawai dan akun BIDUK yang terhubung.
             </p>
 
         </div>
@@ -323,70 +323,46 @@
 
                 <div class="card-header">
                     <i class="bi bi-building me-2"></i>
-                    Penugasan Wali Kelas
+                    Riwayat Wali Kelas
                 </div>
 
 
                 <div class="card-body">
-
-                    @php
-                        $activeClass = $employee->homeroomClasses
-                            ->first(
-                                fn ($class) =>
-                                    $class->academicYear?->status === 'active'
-                            );
-                    @endphp
-
-
-                    @if($activeClass)
-
-                        <div class="row g-3">
-
-                            <div class="col-md-4">
-
-                                <small class="text-muted">
-                                    Status
-                                </small>
-
-                                <div class="fw-semibold text-success">
-                                    Wali Kelas
-                                </div>
-
-                            </div>
-
-
-                            <div class="col-md-4">
-
-                                <small class="text-muted">
-                                    Kelas
-                                </small>
-
-                                <div class="fw-semibold">
-                                    {{ $activeClass->name }}
-                                </div>
-
-                            </div>
-
-
-                            <div class="col-md-4">
-
-                                <small class="text-muted">
-                                    Tahun Ajaran
-                                </small>
-
-                                <div class="fw-semibold">
-                                    {{ $activeClass->academicYear?->name ?? '-' }}
-                                </div>
-
-                            </div>
-
+                    @if ($homeroomClasses->isNotEmpty())
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Tahun Ajaran</th>
+                                        <th>Kelas</th>
+                                        <th>Tingkat</th>
+                                        <th>Status Tahun Ajaran</th>
+                                        <th>Siswa Aktif</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($homeroomClasses as $homeroomClass)
+                                        <tr>
+                                            <td>{{ $homeroomClass->academicYear?->name ?? '-' }}</td>
+                                            <td>{{ $homeroomClass->name }}</td>
+                                            <td>Kelas {{ $homeroomClass->grade_level }}</td>
+                                            <td>
+                                                @if ($homeroomClass->academicYear?->status === 'active')
+                                                    <span class="badge bg-success">Aktif</span>
+                                                @else
+                                                    <span class="badge bg-secondary">Riwayat</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $homeroomClass->active_students_count }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-
                     @else
 
                         <span class="text-muted">
-                            Pegawai ini belum ditetapkan sebagai wali kelas
-                            pada tahun ajaran aktif.
+                            Belum ada riwayat penugasan wali kelas untuk pegawai ini.
                         </span>
 
                     @endif

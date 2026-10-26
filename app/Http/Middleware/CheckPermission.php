@@ -35,7 +35,10 @@ class CheckPermission
         /*
          * Cek permission berdasarkan role user.
          */
-        if (!$user->hasPermission($permission)) {
+        $hasPermission = $user->hasPermission($permission)
+            || ($permission === 'classes.view' && $user->hasPermission('classes.edit'));
+
+        if (!$hasPermission) {
             abort(
                 403,
                 'Anda tidak memiliki izin untuk mengakses fitur ini.'

@@ -229,9 +229,9 @@
 
                         <div class="class-info-value">
 
-                            @if($class->homeroomTeacher)
+                            @if($class->homeroomTeacherUser || $class->homeroomTeacher)
 
-                                {{ $class->homeroomTeacher->name }}
+                                {{ $class->homeroomTeacherUser?->name ?? $class->homeroomTeacher?->name }}
 
                             @else
 

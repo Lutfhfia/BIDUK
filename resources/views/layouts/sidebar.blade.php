@@ -86,7 +86,7 @@
 
 
             {{-- Data Kelas --}}
-            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.view'))
+            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.view') || auth()->user()?->hasPermission('classes.edit'))
             <li class="nav-item">
 
                 <a href="{{ route('classes.index') }}"

@@ -43,7 +43,7 @@
         </div>
 
         <div class="card-body">
-            <form method="GET" action="{{ route('rekap-rapot.index') }}">
+            <form id="rekap-rapot-filter-form" method="GET" action="{{ route('rekap-rapot.index') }}">
 
                 <div class="row g-3">
 
@@ -56,11 +56,13 @@
 
                         <select
                             name="academic_year_id"
+                            id="rekap-rapot-academic-year"
                             class="form-select"
                         >
                             @foreach($academicYears as $year)
                                 <option
                                     value="{{ $year->id }}"
+                                    data-status="{{ $year->status }}"
                                     @selected(
                                         (string) $selectedAcademicYearId ===
                                         (string) $year->id
@@ -120,6 +122,7 @@
 
                         <select
                             name="class_id"
+                            id="rekap-rapot-class"
                             class="form-select"
                         >
                             <option value="">
@@ -155,6 +158,7 @@
 
                         <select
                             name="status"
+                            id="rekap-rapot-student-status"
                             class="form-select"
                         >
                             <option
@@ -407,9 +411,16 @@
                                     'classes.academic_year_id',
                                     $selectedAcademicYearId
                                 )
-                                ->where(
-                                    'classes.status',
-                                    'Aktif'
+                                ->when(
+                                    $teacherClassIds !== null,
+                                    fn ($query) => $query->whereIn('classes.id', $teacherClassIds),
+                                    fn ($query) => $query->where('classes.status', 'Aktif')
+                                )
+                                ->when(
+                                    $selectedClassId !== null
+                                        && $selectedClassId !== ''
+                                        && $selectedClassId !== 'all',
+                                    fn ($query) => $query->where('classes.id', $selectedClassId)
                                 )
                                 ->first();
                         @endphp
@@ -503,4 +514,26 @@
     </div>
 
 </div>
+@if ($teacherClassIds !== null)
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('rekap-rapot-filter-form');
+                const yearSelect = document.getElementById('rekap-rapot-academic-year');
+                const classSelect = document.getElementById('rekap-rapot-class');
+                const statusSelect = document.getElementById('rekap-rapot-student-status');
+
+                if (!form || !yearSelect || !classSelect || !statusSelect) return;
+
+                yearSelect.addEventListener('change', function () {
+                    classSelect.value = 'all';
+                    statusSelect.value = yearSelect.selectedOptions[0]?.dataset.status === 'active'
+                        ? 'Aktif'
+                        : 'Semua';
+                    form.requestSubmit();
+                });
+            });
+        </script>
+    @endpush
+@endif
 @endsection

@@ -12,6 +12,9 @@
         $canEditGrades = $currentUser && (
             $currentUser->isSuperAdmin() || $currentUser->hasPermission('grades.edit')
         );
+        $defaultImportClassId = $importOptions['classes']
+            ->firstWhere('academic_year_id', $importOptions['default_academic_year_id'])
+            ?->id;
     @endphp
 
     <div class="container-fluid py-4">
@@ -71,6 +74,16 @@
             </div>
         @endif
 
+        @if ($importOptions['is_teacher'] && $classes->isEmpty())
+            <div class="alert alert-info" role="status">
+                @if (! $currentUser?->employee_id)
+                    Akun Guru ini belum terhubung dengan data pegawai. Minta Admin menghubungkannya dan menetapkan pegawai tersebut sebagai wali kelas agar kelas yang sesuai dapat ditampilkan.
+                @else
+                    Belum ada kelas yang tercatat sebagai kelas wali akun Guru ini. Minta Admin memeriksa penugasan wali kelas pada data kelas.
+                @endif
+            </div>
+        @endif
+
         @if ($importOptions['can_import'])
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
@@ -89,27 +102,17 @@
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-3">
                                     <label for="import-academic-year" class="form-label">Tahun Ajaran</label>
-                                    @if ($importOptions['is_teacher'])
-                                        <input
-                                            type="hidden"
-                                            name="academic_year_id"
-                                            id="import-academic-year"
-                                            value="{{ $importOptions['active_academic_year_id'] }}"
-                                        >
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            value="{{ $importOptions['academic_years']->first()?->name ?? 'Tahun ajaran aktif belum tersedia' }}"
-                                            readonly
-                                        >
-                                    @else
-                                        <select name="academic_year_id" id="import-academic-year" class="form-select" required>
-                                            <option value="">Pilih tahun ajaran</option>
-                                            @foreach ($importOptions['academic_years'] as $year)
-                                                <option value="{{ $year->id }}">{{ $year->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    @endif
+                                    <select name="academic_year_id" id="import-academic-year" class="form-select" required>
+                                        <option value="">Pilih tahun ajaran</option>
+                                        @foreach ($importOptions['academic_years'] as $year)
+                                            <option
+                                                value="{{ $year->id }}"
+                                                @selected((int) $year->id === (int) $importOptions['default_academic_year_id'])
+                                            >
+                                                {{ $year->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-md-3">
                                     <label for="import-class" class="form-label">Kelas</label>
@@ -119,7 +122,7 @@
                                             <option
                                                 value="{{ $class->id }}"
                                                 data-academic-year="{{ $class->academic_year_id }}"
-                                                @selected($importOptions['is_teacher'] && $loop->first)
+                                                @selected((int) $class->id === (int) $defaultImportClassId)
                                             >
                                                 Kelas {{ $class->name }}
                                             </option>
@@ -221,7 +224,7 @@
 
             <div class="card-body">
 
-                <form method="GET" action="{{ route('report-card-grades.index') }}">
+                <form id="report-card-grade-filter-form" method="GET" action="{{ route('report-card-grades.index') }}">
 
                     <div class="row g-3">
 
@@ -267,6 +270,8 @@
                                         {{ $ay->name }}
                                         @if ($ay->status === 'active')
                                             (Aktif)
+                                        @else
+                                            (Tidak Aktif)
                                         @endif
                                     </option>
                                 @endforeach
@@ -549,7 +554,7 @@
                                                     <span class="badge bg-secondary-subtle text-secondary">
                                                         Tidak tersedia
                                                     </span>
-                                                @elseif ($student->ganjil_grades_count > 0)
+                                                @elseif ($student->ganjil_is_complete)
                                                     <span class="badge bg-success-subtle text-success">
                                                         <i class="bi bi-check-circle me-1"></i>
                                                         Sudah Diisi
@@ -570,7 +575,7 @@
                                                     <span class="badge bg-secondary-subtle text-secondary">
                                                         Tidak tersedia
                                                     </span>
-                                                @elseif ($student->genap_grades_count > 0)
+                                                @elseif ($student->genap_is_complete)
                                                     <span class="badge bg-success-subtle text-success">
                                                         <i class="bi bi-check-circle me-1"></i>
                                                         Sudah Diisi
@@ -737,6 +742,9 @@
             function filterClasses() {
                 const selectedYear = yearSelect.value;
                 const currentSelectedClass = classSelect.value;
+                const selectedOption = allClassOptions.find(opt => opt.value === currentSelectedClass);
+                const keepSelectedClass = selectedOption
+                    && (!selectedYear || selectedOption.dataset.academicYear === selectedYear);
 
                 // Reset class options
                 classSelect.innerHTML = '<option value="">Semua Kelas</option>';
@@ -745,7 +753,7 @@
                     const optYear = opt.getAttribute('data-academic-year');
                     if (!selectedYear || optYear === selectedYear) {
                         const newOption = opt.cloneNode(true);
-                        if (newOption.value === currentSelectedClass) {
+                        if (keepSelectedClass && newOption.value === currentSelectedClass) {
                             newOption.selected = true;
                         }
                         classSelect.appendChild(newOption);
@@ -753,7 +761,13 @@
                 });
             }
 
-            yearSelect.addEventListener('change', filterClasses);
+            @if ($isTeacher)
+                yearSelect.addEventListener('change', function () {
+                    document.getElementById('report-card-grade-filter-form').requestSubmit();
+                });
+            @else
+                yearSelect.addEventListener('change', filterClasses);
+            @endif
         });
     </script>
     @endpush

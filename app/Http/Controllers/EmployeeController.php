@@ -6,18 +6,14 @@ use App\Exports\EmployeeExport;
 use App\Exports\EmployeeTemplateExport;
 use App\Imports\EmployeeImport;
 use App\Models\Employee;
-use App\Models\Role;
+use App\Models\SchoolClass;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 
@@ -63,7 +59,7 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Simpan pegawai baru + buat akun User otomatis.
+     * Simpan data pegawai.
      */
     public function store(Request $request)
     {
@@ -153,14 +149,6 @@ class EmployeeController extends Controller
             ],
         ]);
 
-        if (empty($validated['nip']) && empty($validated['nuptk'])) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'nip' => 'NIP atau NUPTK wajib diisi karena digunakan sebagai username akun BIDUK.',
-                ]);
-        }
-
         $photoPath = null;
 
         try {
@@ -203,8 +191,6 @@ class EmployeeController extends Controller
                     'status' => $validated['status'],
                 ]);
 
-                $this->createOrSyncUser($employee);
-
                 return $employee;
             });
 
@@ -218,15 +204,9 @@ class EmployeeController extends Controller
                 $employee->fresh()->getAttributes()
             );
 
-            $username = $employee->nip ?: $employee->nuptk;
-            $password = $this->initialPassword($username);
-
             return redirect()
                 ->route('pegawai.index')
-                ->with(
-                    'success',
-                    "Pegawai berhasil ditambahkan. Akun BIDUK otomatis dibuat. Username: {$username} | Password awal: {$password}"
-                );
+                ->with('success', 'Data pegawai berhasil ditambahkan. Akun login dapat dibuat melalui Manajemen User.');
 
         } catch (Throwable $e) {
 
@@ -239,7 +219,7 @@ class EmployeeController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'error' => 'Data pegawai gagal disimpan. Silakan periksa kembali data dan konfigurasi Role BIDUK.',
+                    'error' => 'Data pegawai gagal disimpan. Silakan periksa kembali data yang dikirim.',
                 ]);
         }
     }
@@ -249,13 +229,29 @@ class EmployeeController extends Controller
      */
     public function show(Employee $pegawai)
     {
-        $pegawai->load([
-            'user.role',
-            'homeroomClasses.academicYear',
-        ]);
+        $pegawai->load('user.role');
+        $userId = $pegawai->user?->id;
+
+        $homeroomClasses = SchoolClass::query()
+            ->where(function ($query) use ($pegawai, $userId) {
+                $query->where('homeroom_teacher_id', $pegawai->id);
+
+                if ($userId) {
+                    $query->orWhere('homeroom_teacher_user_id', $userId);
+                }
+            })
+            ->with('academicYear')
+            ->withCount([
+                'students as active_students_count' => fn ($query) => $query
+                    ->where('class_student.status', 'Aktif'),
+            ])
+            ->get()
+            ->sortByDesc(fn (SchoolClass $class) => $class->academicYear?->start_date?->getTimestamp() ?? 0)
+            ->values();
 
         return view('pegawai.show', [
             'employee' => $pegawai,
+            'homeroomClasses' => $homeroomClasses,
         ]);
     }
 
@@ -270,22 +266,11 @@ class EmployeeController extends Controller
     }
 
     /**
-     * Update pegawai + sinkronisasi User.
+     * Update data pegawai dan identitas akun yang terhubung.
      */
     public function update(Request $request, Employee $pegawai)
     {
         $employeeUser = $pegawai->user;
-        if (!$employeeUser) {
-            $username = $pegawai->nip ?: $pegawai->nuptk;
-            if ($username) {
-                $employeeUser = User::where('username', trim($username))
-                    ->where(function ($query) use ($pegawai) {
-                        $query->whereNull('employee_id')
-                            ->orWhere('employee_id', $pegawai->id);
-                    })
-                    ->first();
-            }
-        }
 
         $validated = $request->validate([
             'nip' => [
@@ -374,11 +359,27 @@ class EmployeeController extends Controller
             ],
         ]);
 
-        if (empty($validated['nip']) && empty($validated['nuptk'])) {
+        $username = trim((string) ($validated['nip'] ?? ''))
+            ?: trim((string) ($validated['nuptk'] ?? ''));
+
+        if ($employeeUser && $username === '') {
             return back()
                 ->withInput()
                 ->withErrors([
-                    'nip' => 'NIP atau NUPTK wajib diisi karena digunakan sebagai username akun BIDUK.',
+                    'nip' => 'Pegawai yang sudah memiliki akun harus tetap memiliki NIP atau NUPTK.',
+                ]);
+        }
+
+        if (
+            $employeeUser &&
+            User::where('username', $username)
+                ->where('id', '!=', $employeeUser->id)
+                ->exists()
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'nip' => 'NIP/NUPTK tersebut sudah digunakan sebagai username akun lain.',
                 ]);
         }
 
@@ -393,6 +394,8 @@ class EmployeeController extends Controller
                 $validated,
                 $request,
                 $pegawai,
+                $employeeUser,
+                $username,
                 &$newPhotoPath
             ) {
                 if ($request->hasFile('photo')) {
@@ -416,7 +419,13 @@ class EmployeeController extends Controller
 
                 $pegawai->update($validated);
 
-                $this->createOrSyncUser($pegawai->fresh());
+                if ($employeeUser) {
+                    $employeeUser->update([
+                        'name' => $pegawai->name,
+                        'username' => $username,
+                        'email' => $pegawai->email,
+                    ]);
+                }
             });
 
             if ($newPhotoPath && $oldPhoto) {
@@ -640,218 +649,4 @@ class EmployeeController extends Controller
         };
     }
 
-    /**
-     * Menentukan role BIDUK berdasarkan jabatan.
-     */
-   /**
- * Menentukan role BIDUK berdasarkan jabatan.
- */
-private function roleNameFromPosition(string $position): string
-{
-    return match ($position) {
-        'Kepala Sekolah' => 'Kepala Sekolah',
-        'Guru' => 'Guru',
-        default => 'Admin',
-    };
-}
-/**
- * Mempertahankan role Super Admin saat data pegawai disinkronkan.
- */
-private function roleIdForSync(User $user, Role $defaultRole): int
-{
-    $currentRoleName = Role::whereKey($user->role_id)->value('name');
-
-    return $currentRoleName === 'Super Admin'
-        ? (int) $user->role_id
-        : (int) $defaultRole->id;
-}
-    /**
-     * Username otomatis.
-     */
-    private function usernameForEmployee(Employee $employee): string
-    {
-        $username = $employee->nip ?: $employee->nuptk;
-
-        if (!$username) {
-            throw ValidationException::withMessages([
-                'nip' => 'Pegawai harus memiliki NIP atau NUPTK untuk dibuatkan akun.',
-            ]);
-        }
-
-        return trim($username);
-    }
-
-    /**
-     * Password awal sementara.
-     */
-    private function initialPassword(string $username): string
-    {
-        $digits = preg_replace('/\D+/', '', $username);
-
-        $lastFour = substr(
-            str_pad($digits, 4, '0', STR_PAD_LEFT),
-            -4
-        );
-
-        return 'BIDUK@' . $lastFour;
-    }
-
-/**
- * Membuat atau menyinkronkan akun User.
- */
-private function createOrSyncUser(Employee $employee): User
-{
-    $username = $this->usernameForEmployee($employee);
-
-    $roleName = $this->roleNameFromPosition(
-        $employee->position
-    );
-
-    $role = Role::where('name', $roleName)->first();
-
-    if (!$role) {
-        throw new \RuntimeException(
-            "Role '{$roleName}' belum tersedia di tabel roles."
-        );
-    }
-
-    /*
-     * Cari akun berdasarkan username/NIP/NUPTK.
-     */
-    $existingUser = User::where(
-        'username',
-        $username
-    )->first();
-
-    /*
-     * ======================================================
-     * KASUS 1:
-     * User sudah ada tetapi belum terhubung ke pegawai.
-     *
-     * Contoh:
-     * Indah sudah punya akun User,
-     * tetapi employee_id masih NULL.
-     * ======================================================
-     */
-    if ($existingUser && !$existingUser->employee_id) {
-
-        /*
-         * Pastikan email pegawai tidak sedang dipakai
-         * oleh USER LAIN.
-         */
-        if ($employee->email) {
-
-            $emailUsedByOtherUser = User::where(
-                'email',
-                $employee->email
-            )
-                ->where(
-                    'id',
-                    '!=',
-                    $existingUser->id
-                )
-                ->exists();
-
-            if ($emailUsedByOtherUser) {
-                throw new \RuntimeException(
-                    "Email '{$employee->email}' sudah digunakan oleh akun lain."
-                );
-            }
-        }
-
-        /*
-         * Hubungkan akun lama dengan pegawai baru.
-         *
-         * Password TIDAK diubah.
-         */
-        $existingUser->update([
-            'employee_id' => $employee->id,
-            'name' => $employee->name,
-            'email' => $employee->email,
-           'role_id' => $this->roleIdForSync($existingUser, $role),
-            'status' => $employee->status,
-        ]);
-
-        return $existingUser;
-    }
-
-    /*
-     * ======================================================
-     * KASUS 2:
-     * User sudah ada dan sudah terhubung ke pegawai lain.
-     *
-     * Ini benar-benar konflik.
-     * ======================================================
-     */
-    if (
-        $existingUser &&
-        (int) $existingUser->employee_id !== (int) $employee->id
-    ) {
-        throw new \RuntimeException(
-            "Username '{$username}' sudah terhubung dengan pegawai lain."
-        );
-    }
-
-    /*
-     * ======================================================
-     * KASUS 3:
-     * Pegawai sudah memiliki akun.
-     *
-     * Sinkronkan data tanpa mengubah password.
-     * ======================================================
-     */
-    $user = $employee->user;
-
-    if ($user) {
-
-        if ($employee->email) {
-
-            $emailUsedByOtherUser = User::where(
-                'email',
-                $employee->email
-            )
-                ->where(
-                    'id',
-                    '!=',
-                    $user->id
-                )
-                ->exists();
-
-            if ($emailUsedByOtherUser) {
-                throw new \RuntimeException(
-                    "Email '{$employee->email}' sudah digunakan oleh akun lain."
-                );
-            }
-        }
-
-        $user->update([
-            'employee_id' => $employee->id,
-            'name' => $employee->name,
-            'username' => $username,
-            'email' => $employee->email,
-           'role_id' => $this->roleIdForSync($user, $role),
-            'status' => $employee->status,
-        ]);
-
-        return $user;
-    }
-
-    /*
-     * ======================================================
-     * KASUS 4:
-     * Benar-benar belum ada akun.
-     *
-     * Buat akun baru seperti mekanisme BIDUK sekarang.
-     * ======================================================
-     */
-    return User::create([
-        'employee_id' => $employee->id,
-        'name' => $employee->name,
-        'username' => $username,
-        'email' => $employee->email,
-        'password' => $this->initialPassword($username),
-        'role_id' => $role->id,
-        'status' => $employee->status,
-    ]);
-}
 }

@@ -346,7 +346,7 @@
                                                 class="text-center"
                                                 style="width: 160px;"
                                             >
-                                                Pengetahuan & Keterampilan
+                                                Nilai Akhir
                                             </th>
 
                                             <th style="min-width: 500px;">
@@ -399,7 +399,6 @@
 
                                                 {{-- Nilai --}}
                                                 <td>
-                                                    <div class="small fw-semibold mb-1">Pengetahuan</div>
                                                     <input
                                                         type="number"
                                                         name="ganjil_scores[{{ $subject->id }}]"
@@ -412,28 +411,12 @@
                                                         max="100"
                                                         step="0.01"
                                                         placeholder="0 - 100"
+                                                        aria-label="Nilai akhir {{ $subject->name }}"
                                                     >
-                                                    <select name="ganjil_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat Pengetahuan">
+                                                    <select name="ganjil_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat {{ $subject->name }}">
                                                         <option value="">Predikat</option>
                                                         @foreach(['A', 'B', 'C', 'D'] as $predicate)
                                                             <option value="{{ $predicate }}" @selected(old('ganjil_predicates.' . $subject->id, $grade?->knowledge_predicate) === $predicate)>{{ $predicate }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <div class="small fw-semibold mt-3 mb-1">Keterampilan</div>
-                                                    <input
-                                                        type="number"
-                                                        name="ganjil_skill_scores[{{ $subject->id }}]"
-                                                        class="form-control text-center"
-                                                        value="{{ old('ganjil_skill_scores.' . $subject->id, $grade?->skill_score) }}"
-                                                        min="0"
-                                                        max="100"
-                                                        step="0.01"
-                                                        placeholder="0 - 100"
-                                                    >
-                                                    <select name="ganjil_skill_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat Keterampilan">
-                                                        <option value="">Predikat</option>
-                                                        @foreach(['A', 'B', 'C', 'D'] as $predicate)
-                                                            <option value="{{ $predicate }}" @selected(old('ganjil_skill_predicates.' . $subject->id, $grade?->skill_predicate) === $predicate)>{{ $predicate }}</option>
                                                         @endforeach
                                                     </select>
                                                 </td>
@@ -441,7 +424,6 @@
 
                                                 {{-- Capaian Pembelajaran --}}
                                                 <td>
-                                                    <label class="small fw-semibold">Pengetahuan</label>
                                                     <textarea
                                                         name="ganjil_learning_outcomes[{{ $subject->id }}]"
                                                         class="form-control"
@@ -451,13 +433,6 @@
                                                         'ganjil_learning_outcomes.' . $subject->id,
                                                         $grade?->learning_outcome
                                                     ) }}</textarea>
-                                                    <label class="small fw-semibold mt-2">Keterampilan</label>
-                                                    <textarea
-                                                        name="ganjil_skill_learning_outcomes[{{ $subject->id }}]"
-                                                        class="form-control"
-                                                        rows="2"
-                                                        placeholder="Capaian keterampilan..."
-                                                    >{{ old('ganjil_skill_learning_outcomes.' . $subject->id, $grade?->skill_learning_outcome) }}</textarea>
                                                 </td>
 
                                             </tr>
@@ -593,7 +568,7 @@
                                                 class="text-center"
                                                 style="width: 160px;"
                                             >
-                                                Pengetahuan & Keterampilan
+                                                Nilai Akhir
                                             </th>
 
                                             <th style="min-width: 500px;">
@@ -646,7 +621,6 @@
 
                                                 {{-- Nilai --}}
                                                 <td>
-                                                    <div class="small fw-semibold mb-1">Pengetahuan</div>
                                                     <input
                                                         type="number"
                                                         name="genap_scores[{{ $subject->id }}]"
@@ -659,28 +633,12 @@
                                                         max="100"
                                                         step="0.01"
                                                         placeholder="0 - 100"
+                                                        aria-label="Nilai akhir {{ $subject->name }}"
                                                     >
-                                                    <select name="genap_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat Pengetahuan">
+                                                    <select name="genap_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat {{ $subject->name }}">
                                                         <option value="">Predikat</option>
                                                         @foreach(['A', 'B', 'C', 'D'] as $predicate)
                                                             <option value="{{ $predicate }}" @selected(old('genap_predicates.' . $subject->id, $grade?->knowledge_predicate) === $predicate)>{{ $predicate }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                    <div class="small fw-semibold mt-3 mb-1">Keterampilan</div>
-                                                    <input
-                                                        type="number"
-                                                        name="genap_skill_scores[{{ $subject->id }}]"
-                                                        class="form-control text-center"
-                                                        value="{{ old('genap_skill_scores.' . $subject->id, $grade?->skill_score) }}"
-                                                        min="0"
-                                                        max="100"
-                                                        step="0.01"
-                                                        placeholder="0 - 100"
-                                                    >
-                                                    <select name="genap_skill_predicates[{{ $subject->id }}]" class="form-select form-select-sm mt-1" aria-label="Predikat Keterampilan">
-                                                        <option value="">Predikat</option>
-                                                        @foreach(['A', 'B', 'C', 'D'] as $predicate)
-                                                            <option value="{{ $predicate }}" @selected(old('genap_skill_predicates.' . $subject->id, $grade?->skill_predicate) === $predicate)>{{ $predicate }}</option>
                                                         @endforeach
                                                     </select>
                                                 </td>
@@ -688,7 +646,6 @@
 
                                                 {{-- Capaian Pembelajaran --}}
                                                 <td>
-                                                    <label class="small fw-semibold">Pengetahuan</label>
                                                     <textarea
                                                         name="genap_learning_outcomes[{{ $subject->id }}]"
                                                         class="form-control"
@@ -698,13 +655,6 @@
                                                         'genap_learning_outcomes.' . $subject->id,
                                                         $grade?->learning_outcome
                                                     ) }}</textarea>
-                                                    <label class="small fw-semibold mt-2">Keterampilan</label>
-                                                    <textarea
-                                                        name="genap_skill_learning_outcomes[{{ $subject->id }}]"
-                                                        class="form-control"
-                                                        rows="2"
-                                                        placeholder="Capaian keterampilan..."
-                                                    >{{ old('genap_skill_learning_outcomes.' . $subject->id, $grade?->skill_learning_outcome) }}</textarea>
                                                 </td>
 
                                             </tr>

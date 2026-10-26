@@ -91,6 +91,59 @@
 
     </div>
 
+    @if (auth()->user()->isGuru())
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 pt-4 px-4">
+                <h5 class="fw-bold mb-1">Riwayat Kelas Wali</h5>
+                <p class="text-muted mb-0">Pilih kelas untuk melihat tahun ajaran dan daftar siswanya.</p>
+            </div>
+            <div class="card-body p-4">
+                @forelse ($teacherClassHistory as $historyClass)
+                    <div class="border rounded-3 mb-3">
+                        <button
+                            class="btn btn-link text-decoration-none text-start w-100 p-3"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#teacherClassHistory{{ $historyClass->id }}"
+                            aria-expanded="false"
+                            aria-controls="teacherClassHistory{{ $historyClass->id }}"
+                        >
+                            <span class="fw-semibold">Kelas {{ $historyClass->name }}</span>
+                            <span class="text-muted ms-2">{{ $historyClass->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}</span>
+                            <i class="bi bi-chevron-down float-end"></i>
+                        </button>
+                        <div class="collapse" id="teacherClassHistory{{ $historyClass->id }}">
+                            <div class="px-3 pb-3">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Tahun Ajaran</small>
+                                        <span class="fw-semibold">{{ $historyClass->academicYear?->name ?? '-' }}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Kelas</small>
+                                        <span class="fw-semibold">{{ $historyClass->name }}</span>
+                                    </div>
+                                </div>
+                                <h6 class="fw-semibold">Daftar Siswa ({{ $historyClass->students->count() }})</h6>
+                                @if ($historyClass->students->isNotEmpty())
+                                    <ul class="mb-0">
+                                        @foreach ($historyClass->students as $historyStudent)
+                                            <li>{{ $historyStudent->name }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p class="text-muted mb-0">Belum ada siswa yang tercatat pada kelas ini.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-muted mb-0">Belum ada riwayat kelas wali yang tercatat untuk akun ini.</p>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
     {{-- Grafik Jumlah Siswa per Kelas --}}
     <div class="card border-0 shadow-sm mb-4">
 

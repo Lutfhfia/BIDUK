@@ -38,8 +38,49 @@
         <div class="col-12 col-md-8 col-lg-6">
             <div class="biduk-card">
                 <div class="card-body p-4">
-                    <form method="POST" action="{{ route('students.import') }}" enctype="multipart/form-data">
+                    <form id="student-import-form" method="POST" action="{{ route('students.import') }}" enctype="multipart/form-data">
                         @csrf
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="import-academic-year" class="form-label fw-semibold">Tahun Ajaran</label>
+                                <select name="academic_year_id" id="import-academic-year" class="form-select" required>
+                                    @foreach ($academicYears as $year)
+                                        <option
+                                            value="{{ $year->id }}"
+                                            data-status="{{ $year->status }}"
+                                            @selected((int) $selectedAcademicYearId === (int) $year->id)
+                                        >
+                                            {{ $year->name }} ({{ $year->status === 'active' ? 'Aktif' : 'Tidak Aktif' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="import-class" class="form-label fw-semibold">Kelas Tujuan</label>
+                                <select name="class_id" id="import-class" class="form-select" required>
+                                    <option value="">Pilih kelas</option>
+                                    @foreach ($classes as $class)
+                                        <option
+                                            value="{{ $class->id }}"
+                                            data-academic-year="{{ $class->academic_year_id }}"
+                                            @selected((int) $selectedClassId === (int) $class->id)
+                                        >
+                                            {{ $class->name }} — {{ $class->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if ($classes->isEmpty())
+                                    <div class="form-text text-danger">
+                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini.
+                                    </div>
+                                @else
+                                    <div id="import-class-empty" class="form-text text-danger d-none">
+                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini.
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-semibold text-dark mb-2">Pilih File Excel (.xlsx / .xls)</label>
@@ -47,7 +88,7 @@
                         </div>
 
                         <div class="d-flex gap-2 flex-wrap">
-                            <button type="submit" class="btn btn-biduk-primary px-4 py-2">
+                            <button id="import-submit" type="submit" class="btn btn-biduk-primary px-4 py-2" @disabled($classes->isEmpty())>
                                 <i class="bi bi-upload me-1"></i> Mulai Import
                             </button>
                             <a href="{{ route('students.import.template') }}" class="btn btn-outline-primary px-3 py-2">
@@ -61,3 +102,45 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const yearSelect = document.getElementById('import-academic-year');
+            const classSelect = document.getElementById('import-class');
+            const submitButton = document.getElementById('import-submit');
+            const emptyMessage = document.getElementById('import-class-empty');
+            if (!yearSelect || !classSelect) return;
+
+            const allClassOptions = Array.from(classSelect.options)
+                .filter(option => option.value !== '');
+
+            function filterClasses() {
+                const selectedYear = yearSelect.value;
+                const previousClassId = classSelect.value;
+                classSelect.innerHTML = '<option value="">Pilih kelas</option>';
+
+                let firstAvailableClass = null;
+                allClassOptions.forEach(option => {
+                    if (option.dataset.academicYear !== selectedYear) return;
+                    const filteredOption = option.cloneNode(true);
+                    if (!firstAvailableClass) firstAvailableClass = filteredOption.value;
+                    classSelect.appendChild(filteredOption);
+                });
+
+                const previousClassIsAvailable = Array.from(classSelect.options)
+                    .some(option => option.value === previousClassId);
+                classSelect.value = previousClassIsAvailable
+                    ? previousClassId
+                    : (firstAvailableClass ?? '');
+
+                const hasAvailableClass = Boolean(classSelect.value);
+                if (submitButton) submitButton.disabled = !hasAvailableClass;
+                if (emptyMessage) emptyMessage.classList.toggle('d-none', hasAvailableClass);
+            }
+
+            yearSelect.addEventListener('change', filterClasses);
+            filterClasses();
+        });
+    </script>
+@endpush

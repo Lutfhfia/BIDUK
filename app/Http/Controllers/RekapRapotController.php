@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 use App\Models\GraduationStatus;
 use App\Services\FinalGradeService;
+use App\Services\TeacherClassAccess;
 use Symfony\Component\HttpFoundation\Response;
 
 class RekapRapotController extends Controller
@@ -27,11 +28,31 @@ class RekapRapotController extends Controller
      */
     public function index(Request $request): View
     {
-        $academicYears = AcademicYear::orderByDesc('start_date')->get();
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $teacherAcademicYearIds = $teacherClassIds === null
+            ? null
+            : SchoolClass::whereIn('id', $teacherClassIds)
+                ->distinct()
+                ->pluck('academic_year_id');
+        $academicYears = AcademicYear::query()
+            ->when(
+                $teacherAcademicYearIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherAcademicYearIds)
+            )
+            ->orderByDesc('start_date')
+            ->get();
 
-        $selectedAcademicYearId = $request->input(
-            'academic_year_id',
-            AcademicYear::getActive()?->id
+        $selectedAcademicYearId = $request->input('academic_year_id')
+            ?? ($teacherAcademicYearIds?->contains(AcademicYear::getActive()?->id)
+                ? AcademicYear::getActive()?->id
+                : $academicYears->first()?->id);
+
+        abort_if(
+            $teacherAcademicYearIds !== null
+                && $selectedAcademicYearId
+                && !$teacherAcademicYearIds->contains((int) $selectedAcademicYearId),
+            403,
+            'Anda tidak memiliki akses ke tahun ajaran ini.'
         );
 
         $semesters = Semester::when(
@@ -48,16 +69,46 @@ class RekapRapotController extends Controller
 
         $classes = SchoolClass::query()
             ->when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherClassIds)
+            )
+            ->when(
                 $selectedAcademicYearId,
                 fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
             )
-            ->where('status', 'Aktif')
+            ->when(
+                $teacherClassIds === null,
+                fn ($query) => $query->where('status', 'Aktif')
+            )
             ->orderBy('grade_level')
             ->orderBy('name')
             ->get();
 
         $selectedClassId = $request->input('class_id');
-        $selectedStatus = $request->input('status', 'Aktif');
+        if (
+            $teacherClassIds !== null
+            && $selectedClassId !== null
+            && $selectedClassId !== ''
+            && $selectedClassId !== 'all'
+            && !$classes->contains('id', (int) $selectedClassId)
+        ) {
+            abort_unless(
+                $teacherClassIds->contains((int) $selectedClassId),
+                403,
+                'Anda tidak memiliki akses ke kelas ini.'
+            );
+
+            $selectedClassId = 'all';
+        }
+
+        $selectedStatus = $request->input(
+            'status',
+            $teacherClassIds !== null
+                && $selectedAcademicYearId
+                && AcademicYear::find($selectedAcademicYearId)?->status !== 'active'
+                    ? 'Semua'
+                    : 'Aktif'
+        );
         $search = trim((string) $request->input('search', ''));
         $students = collect();
 
@@ -86,9 +137,24 @@ class RekapRapotController extends Controller
                         })
                     );
             } elseif ($selectedClassId === 'all') {
-                $studentsQuery->whereHas('classAssignments.schoolClass', function ($query) use ($selectedAcademicYearId) {
-                    $query->where('academic_year_id', $selectedAcademicYearId);
-                });
+                if ($teacherClassIds !== null) {
+                    $studentsQuery->whereHas(
+                        'classAssignments',
+                        fn ($query) => $query
+                            ->whereIn('class_id', $teacherClassIds)
+                            ->whereHas(
+                                'schoolClass',
+                                fn ($classQuery) => $classQuery->where(
+                                    'academic_year_id',
+                                    $selectedAcademicYearId
+                                )
+                            )
+                    );
+                } else {
+                    $studentsQuery->whereHas('classAssignments.schoolClass', function ($query) use ($selectedAcademicYearId) {
+                        $query->where('academic_year_id', $selectedAcademicYearId);
+                    });
+                }
 
                 if ($search !== '') {
                     $studentsQuery->where(function ($query) use ($search) {
@@ -113,7 +179,8 @@ class RekapRapotController extends Controller
             'semesterMode',
             'selectedClassId',
             'selectedStatus',
-            'search'
+            'search',
+            'teacherClassIds'
         ));
     }
 
@@ -139,6 +206,15 @@ class RekapRapotController extends Controller
         $class = $this->resolveStudentClass($student, $academicYearId, $classId);
 
         abort_unless($class, 404, 'Kelas siswa tidak ditemukan untuk tahun ajaran yang dipilih.');
+        app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+
+        if ($request->user()?->isGuru()) {
+            abort_unless(
+                $student->classAssignments()->where('class_id', $class->id)->exists(),
+                403,
+                'Anda tidak memiliki akses ke siswa tersebut.'
+            );
+        }
 
         $report = $this->buildReport(
             $student,
@@ -146,11 +222,11 @@ class RekapRapotController extends Controller
             $academicYearId,
             $semesterMode
         );
-        
+
         $template = $report['isFinalClass']
             ? 'reports.rekap-rapot.kelas-6'
             : 'reports.rekap-rapot.print';
-        
+
         $view = view($template, $report);
 
         if ($request->boolean('pdf')) {
@@ -183,12 +259,31 @@ class RekapRapotController extends Controller
         $classIdInput = $request->input('class_id');
         $isAllClasses = $classIdInput === null || $classIdInput === '' || $classIdInput === 'all';
         $classId = $isAllClasses ? null : (int) $classIdInput;
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+
+        if ($teacherClassIds !== null && $classId !== null) {
+            abort_unless(
+                $teacherClassIds->contains($classId),
+                403,
+                'Anda tidak memiliki akses ke kelas ini.'
+            );
+        }
 
         $students = Student::query()
             ->whereHas('classes', function ($query) use ($academicYearId, $classId) {
                 $query->where('classes.academic_year_id', $academicYearId)
                     ->when($classId !== null, fn ($q) => $q->where('classes.id', $classId));
             })
+            ->when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereHas(
+                    'classAssignments',
+                    fn ($assignmentQuery) => $assignmentQuery->whereIn('class_id', $teacherClassIds)
+                        ->whereHas('schoolClass', fn ($classQuery) => $classQuery
+                            ->where('academic_year_id', $academicYearId)
+                            ->when($classId !== null, fn ($q) => $q->whereKey($classId)))
+                )
+            )
             ->orderBy('name')
             ->get();
 
@@ -295,8 +390,8 @@ class RekapRapotController extends Controller
         // Urutan harus sama dengan halaman input Nilai Rapot.
         $subjects = $class->subjects()
             ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.sort_order')
-            ->orderBy('subjects.name')
+            ->orderBy('subjects.code')
+            ->orderBy('subjects.id')
             ->get();
 
         $attendanceGanjil = $semesterGanjil
@@ -331,9 +426,9 @@ class RekapRapotController extends Controller
             ->limit(3)
             ->get();
 
-        $homeroomTeacher = $class->homeroom_teacher_id
-            ? Employee::find($class->homeroom_teacher_id)
-            : null;
+        $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
+            ?? $class->homeroomTeacher;
+        $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
 
         $headmaster = Employee::query()
             ->where('status', 'Aktif')
@@ -348,7 +443,7 @@ class RekapRapotController extends Controller
         $gradeLevel = (int) $class->grade_level;
         $isFinalClass = $gradeLevel === 6;
 
-        
+
         // Data tambahan khusus untuk Rekap Rapor Kelas 6.
         // Kelas 1-5 tetap menggunakan template rapor lama.
         $ijazahMapping = collect();

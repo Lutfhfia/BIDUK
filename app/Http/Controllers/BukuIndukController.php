@@ -6,6 +6,7 @@ use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Services\TeacherClassAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class BukuIndukController extends Controller
      */
     public function index(Request $request): View|RedirectResponse
     {
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
         $academicYears = AcademicYear::orderByDesc('start_date')->get();
 
         $selectedAcademicYear = $request->input(
@@ -38,6 +40,10 @@ class BukuIndukController extends Controller
             ->get();
 
         $classes = SchoolClass::query()
+            ->when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherClassIds)
+            )
             ->when(
                 $selectedAcademicYear,
                 fn ($query) => $query->where(
@@ -64,7 +70,8 @@ class BukuIndukController extends Controller
             )
             ->whereHas('classAssignments', function ($query) use (
                 $request,
-                $selectedAcademicYear
+                $selectedAcademicYear,
+                $teacherClassIds
             ) {
                 $query->when(
                     $request->filled('class_id') && $request->input('print_type') !== 'all',
@@ -73,7 +80,8 @@ class BukuIndukController extends Controller
                     }
                 )
                     ->whereHas('schoolClass', function ($query) use (
-                        $selectedAcademicYear
+                        $selectedAcademicYear,
+                        $teacherClassIds
                     ) {
                         $query->when(
                             $selectedAcademicYear,
@@ -84,14 +92,19 @@ class BukuIndukController extends Controller
                                 );
                             }
                         );
+                        if ($teacherClassIds !== null) {
+                            $query->whereIn('id', $teacherClassIds);
+                        }
                     });
             })
             ->with([
                 'classAssignments' => function ($query) use (
-                    $selectedAcademicYear
+                    $selectedAcademicYear,
+                    $teacherClassIds
                 ) {
                     $query->whereHas('schoolClass', function ($query) use (
-                        $selectedAcademicYear
+                        $selectedAcademicYear,
+                        $teacherClassIds
                     ) {
                         $query->when(
                             $selectedAcademicYear,
@@ -102,6 +115,9 @@ class BukuIndukController extends Controller
                                 );
                             }
                         );
+                        if ($teacherClassIds !== null) {
+                            $query->whereIn('id', $teacherClassIds);
+                        }
                     });
                 },
             ]);
@@ -121,7 +137,13 @@ class BukuIndukController extends Controller
             $selectedStudent = $students->firstWhere(
                 'id',
                 (int) $request->input('student_id')
-            ) ?? Student::with([
+            );
+
+            if ($teacherClassIds !== null && !$selectedStudent) {
+                abort(403, 'Anda tidak memiliki akses ke data siswa tersebut.');
+            }
+
+            $selectedStudent ??= Student::with([
                 'classAssignments.schoolClass.academicYear',
                 'classes.academicYear',
             ])->find($request->input('student_id'));
@@ -142,6 +164,7 @@ class BukuIndukController extends Controller
      */
     public function batch(Request $request): View
     {
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
         $selectedAcademicYear = $request->input(
             'academic_year_id',
             AcademicYear::getActive()?->id
@@ -162,7 +185,8 @@ class BukuIndukController extends Controller
             )
             ->whereHas('classAssignments', function ($query) use (
                 $request,
-                $selectedAcademicYear
+                $selectedAcademicYear,
+                $teacherClassIds
             ) {
                 $query->when(
                     $request->filled('class_id'),
@@ -171,7 +195,8 @@ class BukuIndukController extends Controller
                     }
                 )
                     ->whereHas('schoolClass', function ($query) use (
-                        $selectedAcademicYear
+                        $selectedAcademicYear,
+                        $teacherClassIds
                     ) {
                         $query->when(
                             $selectedAcademicYear,
@@ -182,6 +207,9 @@ class BukuIndukController extends Controller
                                 );
                             }
                         );
+                        if ($teacherClassIds !== null) {
+                            $query->whereIn('id', $teacherClassIds);
+                        }
                     });
             });
 
@@ -194,7 +222,10 @@ class BukuIndukController extends Controller
         $students = $studentsQuery->get();
 
         $class = $request->filled('class_id')
-            ? SchoolClass::where(
+            ? SchoolClass::when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherClassIds)
+            )->where(
                 'academic_year_id',
                 $selectedAcademicYear
             )->findOrFail($request->class_id)
@@ -254,6 +285,7 @@ class BukuIndukController extends Controller
         @ini_set('memory_limit', '512M');
         @set_time_limit(300);
 
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
         $studentIds = $request->input('student_ids', []);
 
         if (is_array($studentIds) && count($studentIds)) {
@@ -266,6 +298,15 @@ class BukuIndukController extends Controller
                 : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
 
             $studentsQuery = Student::query()->whereIn('id', $studentIds);
+            if ($teacherClassIds !== null) {
+                $studentsQuery->whereHas(
+                    'classAssignments',
+                    fn ($query) => $query->whereIn('class_id', $teacherClassIds)
+                        ->whereHas('schoolClass', fn ($classQuery) => $classQuery
+                            ->when($selectedAcademicYear, fn ($q) => $q->where('academic_year_id', $selectedAcademicYear))
+                            ->when($selectedClassId, fn ($q) => $q->whereKey($selectedClassId)))
+                );
+            }
             $this->applyStudentClassOrdering(
                 $studentsQuery,
                 $selectedAcademicYear ? (int) $selectedAcademicYear : null,
@@ -307,7 +348,8 @@ class BukuIndukController extends Controller
                 )
                 ->whereHas('classAssignments', function ($query) use (
                     $classId,
-                    $selectedAcademicYear
+                    $selectedAcademicYear,
+                    $teacherClassIds
                 ) {
                     $query->when(
                         $classId,
@@ -316,7 +358,8 @@ class BukuIndukController extends Controller
                         }
                     )
                         ->whereHas('schoolClass', function ($query) use (
-                            $selectedAcademicYear
+                            $selectedAcademicYear,
+                            $teacherClassIds
                         ) {
                             $query->when(
                                 $selectedAcademicYear,
@@ -327,6 +370,9 @@ class BukuIndukController extends Controller
                                     );
                                 }
                             );
+                            if ($teacherClassIds !== null) {
+                                $query->whereIn('id', $teacherClassIds);
+                            }
                         });
                 });
 
@@ -437,6 +483,16 @@ class BukuIndukController extends Controller
             : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
 
         $studentsQuery = Student::whereIn('id', $studentIds);
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        if ($teacherClassIds !== null) {
+            $studentsQuery->whereHas(
+                'classAssignments',
+                fn ($query) => $query->whereIn('class_id', $teacherClassIds)
+                    ->whereHas('schoolClass', fn ($classQuery) => $classQuery
+                        ->when($selectedAcademicYear, fn ($q) => $q->where('academic_year_id', $selectedAcademicYear))
+                        ->when($selectedClassId, fn ($q) => $q->whereKey($selectedClassId)))
+            );
+        }
         $this->applyStudentClassOrdering(
             $studentsQuery,
             $selectedAcademicYear ? (int) $selectedAcademicYear : null,
@@ -536,8 +592,10 @@ class BukuIndukController extends Controller
         $student->load([
             'classes.academicYear',
             'classes.homeroomTeacher',
+            'classes.homeroomTeacherUser.employee',
             'classAssignments.schoolClass.academicYear',
             'classAssignments.schoolClass.homeroomTeacher',
+            'classAssignments.schoolClass.homeroomTeacherUser.employee',
             'previousEducation',
             'physiques.academicYear',
             'physiques.semester',
@@ -560,9 +618,19 @@ class BukuIndukController extends Controller
         $class = null;
 
         if ($request->filled('class_id') && $request->input('print_type') !== 'all') {
+            $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+            if ($teacherClassIds !== null) {
+                abort_unless(
+                    $teacherClassIds->contains((int) $request->input('class_id')),
+                    403,
+                    'Anda tidak memiliki akses ke kelas tersebut.'
+                );
+            }
+
             $class = SchoolClass::with([
                 'academicYear',
                 'homeroomTeacher',
+                'homeroomTeacherUser.employee',
             ])->where(
                 'academic_year_id',
                 $academicYear?->id
@@ -585,10 +653,21 @@ class BukuIndukController extends Controller
                 ->with([
                     'academicYear',
                     'homeroomTeacher',
+                    'homeroomTeacherUser.employee',
                 ])
                 ->wherePivot('status', 'Aktif')
                 ->latest('class_student.created_at')
                 ->first();
+        }
+
+        if ($request->user()?->isGuru()) {
+            abort_unless($class, 403, 'Tidak ada kelas yang dapat diakses untuk laporan siswa ini.');
+            app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+            abort_unless(
+                $student->classAssignments()->where('class_id', $class->id)->exists(),
+                403,
+                'Anda tidak memiliki akses ke data siswa tersebut.'
+            );
         }
 
         $semester = null;

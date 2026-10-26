@@ -12,6 +12,7 @@ use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
 use App\Services\FinalGradeService;
+use App\Services\TeacherClassAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,8 @@ class FinalGradeController extends Controller
      */
     public function edit(Request $request, SchoolClass $class, Student $student)
     {
+        app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+
         /*
          * Validasi: kelas harus kelas 6.
          */
@@ -69,6 +72,7 @@ class FinalGradeController extends Controller
             $class->id,
             $class->academic_year_id
         );
+        $avgFinalScore = $this->service->calculateFinalAverage($storedGrades);
 
         /*
          * Hitung Nilai Sekolah dari rapor yang tersimpan.
@@ -120,7 +124,9 @@ class FinalGradeController extends Controller
         /*
          * Wali kelas.
          */
-        $homeroomTeacher = $class->homeroomTeacher;
+        $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
+            ?? $class->homeroomTeacher;
+        $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
 
         /*
          * Kepala sekolah.
@@ -139,6 +145,7 @@ class FinalGradeController extends Controller
             'student',
             'ijazahMapping',
             'storedGrades',
+            'avgFinalScore',
             'schoolScores',
             'missingData',
             'graduationStatus',
@@ -156,6 +163,8 @@ class FinalGradeController extends Controller
      */
     public function update(Request $request, SchoolClass $class, Student $student)
     {
+        app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+
         /*
          * Validasi kelas 6.
          */
@@ -214,7 +223,6 @@ class FinalGradeController extends Controller
                 $class->academic_year_id,
                 $validated
             );
-
             /*
              * Simpan status kelulusan.
              */
@@ -224,18 +232,11 @@ class FinalGradeController extends Controller
             $skhusNum         = trim($validated['skhus_number'] ?? '');
 
             if (
-                empty($graduationStatus)
-                && empty($graduationDate)
-                && $certificateNum === ''
-                && $skhusNum === ''
+                !empty($graduationStatus)
+                || !empty($graduationDate)
+                || $certificateNum !== ''
+                || $skhusNum !== ''
             ) {
-                // Jika semua kosong, hapus data kelulusan lama
-                GraduationStatus::where([
-                    'student_id'      => $student->id,
-                    'class_id'        => $class->id,
-                    'academic_year_id' => $class->academic_year_id,
-                ])->delete();
-            } else {
                 GraduationStatus::updateOrCreate(
                     [
                         'student_id'      => $student->id,
@@ -268,8 +269,10 @@ class FinalGradeController extends Controller
      * CETAK NILAI AKHIR/IJAZAH PDF
      * ==========================================================
      */
-    public function print(SchoolClass $class, Student $student)
+    public function print(Request $request, SchoolClass $class, Student $student)
     {
+        app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+
         /*
          * Validasi.
          */
@@ -295,7 +298,6 @@ class FinalGradeController extends Controller
             $class->id,
             $class->academic_year_id
         );
-
         $graduationStatus = GraduationStatus::where([
             'student_id'      => $student->id,
             'class_id'        => $class->id,
@@ -322,12 +324,14 @@ class FinalGradeController extends Controller
          * Rata-rata.
          */
         $avgSchoolScore = $this->service->calculateAverage($storedGrades, 'school_score');
-        $avgFinalScore  = $this->service->calculateAverage($storedGrades, 'final_score');
+        $avgFinalScore  = $this->service->calculateFinalAverage($storedGrades);
 
         /*
          * Data identitas.
          */
-        $homeroomTeacher = $class->homeroomTeacher;
+        $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
+            ?? $class->homeroomTeacher;
+        $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
         $school          = SchoolProfile::first();
         $academicYear    = $class->academicYear;
 

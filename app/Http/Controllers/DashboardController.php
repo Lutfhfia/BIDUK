@@ -8,6 +8,7 @@ use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Services\TeacherClassAccess;
 
 class DashboardController extends Controller
 {
@@ -24,6 +25,20 @@ class DashboardController extends Controller
         // beserta siswa dan mata pelajaran aktif.
         // Pengguna yang sedang login.
         $user = auth()->user();
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($user);
+        $teacherClassHistory = collect();
+
+        if ($user->isGuru()) {
+            $teacherClassHistory = SchoolClass::query()
+                ->whereIn('id', $teacherClassIds)
+                ->with([
+                    'academicYear',
+                    'students' => fn ($query) => $query->orderBy('name'),
+                ])
+                ->get()
+                ->sortByDesc(fn (SchoolClass $class) => $class->academicYear?->start_date?->getTimestamp() ?? 0)
+                ->values();
+        }
 
         // Query kelas aktif pada tahun ajaran aktif.
         $classesQuery = SchoolClass::active()
@@ -36,15 +51,7 @@ class DashboardController extends Controller
 
         // Guru hanya boleh melihat kelas yang menjadi wali kelasnya.
         if ($user->isGuru()) {
-            if (empty($user->employee_id)) {
-                // Akun guru belum terhubung ke data pegawai.
-                $classesQuery->whereRaw('1 = 0');
-            } else {
-                $classesQuery->where(
-                    'homeroom_teacher_id',
-                    $user->employee_id
-                );
-            }
+            $classesQuery->whereIn('id', $teacherClassIds);
         } elseif (
             !$user->isSuperAdmin()
             && !$user->isAdmin()
@@ -266,6 +273,7 @@ foreach ($class->subjects as $subject) {
             'totalEmployees',
             'totalClasses',
             'classes',
+            'teacherClassHistory',
             'classLabels',
             'studentCounts',
             'semesterProgress'

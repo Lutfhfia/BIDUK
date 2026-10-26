@@ -1,359 +1,446 @@
 @if (empty($isBulkReport))
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Rapor - {{ $student->name }}</title>
+    <!DOCTYPE html>
+    <html lang="id">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Rapor - {{ $student->name }}</title>
 @endif
 
-    <style>
+<style>
+    @if (empty($isBulkReport))
+        @page {
+            margin: 12mm 15mm;
+            size: A4 portrait;
+        }
+    @endif
 
-        @if (empty($isBulkReport))
-        @page { margin: 12mm 15mm; size: A4 portrait; }
-        @endif
+    * {
+        box-sizing: border-box;
+    }
 
-        * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #111;
+        font-size: 8px;
+    }
 
-        body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; font-size: 8px; }
+    .page {
+        width: 100%;
+        min-height: 0;
+        position: relative;
+        page-break-after: auto;
+    }
 
-        .page { width: 100%; min-height: 0; position: relative; page-break-after: auto; }
+    .page:last-child {
+        page-break-after: auto;
+    }
 
-        .page:last-child { page-break-after: auto; }
+    h1,
+    h2,
+    h3,
+    p {
+        margin: 0;
+    }
 
-        h1,h2,h3,p { margin: 0; }
+    .title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 9.5px;
+        line-height: 1.1;
+        margin-bottom: 3px;
+        text-transform: uppercase;
+    }
 
-        .title { text-align: center; font-weight: 700; font-size: 9.5px; line-height: 1.1; margin-bottom: 3px; text-transform: uppercase; }
+    .sub-title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
 
-        .sub-title { text-align: center; font-weight: 700; font-size: 10px; margin-bottom: 8px; }
+    .section-title {
+        font-weight: 700;
+        font-size: 8.5px;
+        line-height: 1.05;
+        margin: 3px 0 2px;
+    }
 
-        .section-title { font-weight: 700; font-size: 8.5px; line-height: 1.05; margin: 3px 0 2px; }
+    .identity {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 3px;
+        table-layout: fixed;
+    }
 
-        .identity { width: 100%; border-collapse: collapse; margin-bottom: 3px; table-layout: fixed; }
+    .identity td {
+        vertical-align: top;
+        padding: 1px 2px;
+        font-size: 7.8px;
+        line-height: 1.05;
+    }
 
-        .identity td { vertical-align: top; padding: 1px 2px; font-size: 7.8px; line-height: 1.05; }
+    .identity .label-left,
 
-        .identity .label-left,
+    .identity .label-right {
+        white-space: nowrap;
+    }
 
-        .identity .label-right { white-space: nowrap; }
+    .identity .label-left {
+        width: 19%;
+    }
 
-        .identity .label-left { width: 19%; }
+    .identity .colon-left {
+        width: 2%;
+        text-align: center;
+    }
 
-        .identity .colon-left { width: 2%; text-align: center; }
+    .identity .value-left {
+        width: 29%;
+    }
 
-        .identity .value-left { width: 29%; }
+    .identity .label-right {
+        width: 14%;
+    }
 
-        .identity .label-right { width: 14%; }
+    .identity .colon-right {
+        width: 2%;
+        text-align: center;
+    }
 
-        .identity .colon-right { width: 2%; text-align: center; }
+    .identity .value-right {
+        width: 34%;
+    }
 
-        .identity .value-right { width: 34%; }
+    .identity .value-line {
 
-        .identity .value-line {
+        min-height: 10px;
 
-            min-height: 10px;
+        border-bottom: 1px dotted #444;
 
-            border-bottom: 1px dotted #444;
+        line-height: 1.05;
 
-            line-height: 1.05;
+        padding-bottom: 0;
 
-            padding-bottom: 0;
+    }
 
+    table.report {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .report th,
+    .report td {
+
+        border: 0.6px solid #222;
+
+        padding: 1px 2px;
+
+        font-size: 7.8px;
+
+        line-height: 1.05;
+
+        vertical-align: middle;
+
+        overflow-wrap: break-word;
+
+        word-wrap: break-word;
+
+    }
+
+    .report th {
+        text-align: center;
+        font-weight: 700;
+        line-height: 1.0;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .subject {
+        text-align: left;
+    }
+
+    .muted {
+        color: #555;
+    }
+
+    .blank {
+        color: transparent;
+    }
+
+    .small {
+        font-size: 8px;
+    }
+
+    /* BAGIAN E - Ketidakhadiran dan kenaikan. Tabel utama mengikuti susunan formulir cetak; tabel kecil hanya mengatur pilihan kenaikan, kelas, dan tanggal. */
+
+    .section-e-block {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .attendance-promotion-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin-top: 0;
+        font-size: 6.8px;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .attendance-promotion-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .attendance-promotion-table th,
+
+    .attendance-promotion-table td {
+
+        border: 0.6px solid #222;
+
+        box-sizing: border-box;
+
+    }
+
+    .attendance-promotion-table th {
+
+        text-align: center;
+
+        font-weight: 700;
+
+    }
+
+    .e-left {
+
+        text-align: center;
+
+        vertical-align: middle;
+
+        font-size: 7px;
+
+        padding: 2px;
+
+    }
+
+    .e-semester {
+
+        text-align: center;
+
+        vertical-align: middle;
+
+        font-size: 6.8px;
+
+        padding: 1px 2px;
+
+        height: 15px;
+
+    }
+
+    .e-attendance-label,
+
+    .e-attendance-days {
+
+        height: 16px;
+
+        padding: 1px 2px;
+
+        vertical-align: middle;
+
+        white-space: nowrap;
+
+        font-size: 6.6px;
+
+    }
+
+    .e-attendance-label {
+
+        text-align: left;
+
+    }
+
+    .e-attendance-days {
+
+        text-align: center;
+
+        border-left: 0.6px solid #222 !important;
+
+    }
+
+    .e-signature {
+
+        text-align: center;
+
+        vertical-align: top;
+
+        font-size: 6.5px;
+
+        padding: 8px 2px 2px;
+
+    }
+
+    .signature-space {
+
+        height: 20px;
+
+    }
+
+    .signature-line,
+
+    .signature-nip {
+
+        white-space: nowrap;
+
+    }
+
+    .signature-nip {
+
+        margin-top: 1px;
+
+    }
+
+    .promotion-left {
+
+        text-align: center;
+
+        vertical-align: middle;
+
+        font-size: 7px;
+
+        padding: 2px;
+
+        height: 44px;
+
+    }
+
+    .promotion-decision {
+
+        padding: 3px;
+
+        vertical-align: top;
+
+        font-size: 6.4px;
+
+        line-height: 1.05;
+
+        height: 44px;
+
+    }
+
+    .promotion-decision strong {
+
+        font-size: 6.8px;
+
+    }
+
+    .promotion-result {
+
+        padding: 0;
+
+        vertical-align: middle;
+
+        height: 44px;
+
+    }
+
+    .promotion-inner {
+
+        width: 100%;
+
+        border-collapse: collapse;
+
+        table-layout: fixed;
+
+        font-size: 6.5px;
+
+        line-height: 1.03;
+
+    }
+
+    .promotion-inner td {
+
+        border: 0;
+
+        padding: 1px 2px;
+
+        height: 14px;
+
+        vertical-align: middle;
+
+    }
+
+    .promotion-inner .result-title {
+
+        border-bottom: 0.6px solid #222;
+
+        font-weight: 700;
+
+        text-align: left;
+
+    }
+
+    .promotion-inner .field {
+
+        border-bottom: 0.6px solid #222;
+
+    }
+
+    .promotion-inner .last {
+
+        border-bottom: 0;
+
+    }
+
+    .promotion-option {
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    .promotion-option.selected {
+        font-weight: 700;
+    }
+
+    .promotion-option.crossed {
+        text-decoration: line-through;
+    }
+
+    .print-only-hidden {
+        display: none;
+    }
+
+    @media screen {
+
+        html,
+        body {
+            min-height: 100%;
+            background: #e5e7eb;
         }
 
-        table.report { width: 100%; border-collapse: collapse; table-layout: fixed; }
-
-        .report th, .report td {
-
-            border: 0.6px solid #222;
-
-            padding: 1px 2px;
-
-            font-size: 7.8px;
-
-            line-height: 1.05;
-
-            vertical-align: middle;
-
-            overflow-wrap: break-word;
-
-            word-wrap: break-word;
-
+        body {
+            padding: 24px 0;
         }
 
-        .report th { text-align: center; font-weight: 700; line-height: 1.0; }
-
-        .center { text-align: center; }
-
-        .subject { text-align: left; }
-
-        .muted { color: #555; }
-
-        .blank { color: transparent; }
-
-        .small { font-size: 8px; }
-
-        /* BAGIAN E - Ketidakhadiran dan kenaikan. Tabel utama mengikuti susunan formulir cetak; tabel kecil hanya mengatur pilihan kenaikan, kelas, dan tanggal. */
-
-        .section-e-block {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+        body>.page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 12mm 15mm;
+            background: #fff;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            page-break-after: auto;
         }
-
-        .attendance-promotion-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            margin-top: 0;
-            font-size: 6.8px;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        .attendance-promotion-table tr {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        .attendance-promotion-table th,
-
-        .attendance-promotion-table td {
-
-            border: 0.6px solid #222;
-
-            box-sizing: border-box;
-
-        }
-
-        .attendance-promotion-table th {
-
-            text-align: center;
-
-            font-weight: 700;
-
-        }
-
-        .e-left {
-
-            text-align: center;
-
-            vertical-align: middle;
-
-            font-size: 7px;
-
-            padding: 2px;
-
-        }
-
-        .e-semester {
-
-            text-align: center;
-
-            vertical-align: middle;
-
-            font-size: 6.8px;
-
-            padding: 1px 2px;
-
-            height: 15px;
-
-        }
-
-        .e-attendance-label,
-
-        .e-attendance-days {
-
-            height: 16px;
-
-            padding: 1px 2px;
-
-            vertical-align: middle;
-
-            white-space: nowrap;
-
-            font-size: 6.6px;
-
-        }
-
-        .e-attendance-label {
-
-            text-align: left;
-
-        }
-
-        .e-attendance-days {
-
-            text-align: center;
-
-            border-left: 0.6px solid #222 !important;
-
-        }
-
-        .e-signature {
-
-            text-align: center;
-
-            vertical-align: top;
-
-            font-size: 6.5px;
-
-            padding: 8px 2px 2px;
-
-        }
-
-        .signature-space {
-
-            height: 20px;
-
-        }
-
-        .signature-line,
-
-        .signature-nip {
-
-            white-space: nowrap;
-
-        }
-
-        .signature-nip {
-
-            margin-top: 1px;
-
-        }
-
-        .promotion-left {
-
-            text-align: center;
-
-            vertical-align: middle;
-
-            font-size: 7px;
-
-            padding: 2px;
-
-            height: 44px;
-
-        }
-
-        .promotion-decision {
-
-            padding: 3px;
-
-            vertical-align: top;
-
-            font-size: 6.4px;
-
-            line-height: 1.05;
-
-            height: 44px;
-
-        }
-
-        .promotion-decision strong {
-
-            font-size: 6.8px;
-
-        }
-
-        .promotion-result {
-
-            padding: 0;
-
-            vertical-align: middle;
-
-            height: 44px;
-
-        }
-
-        .promotion-inner {
-
-            width: 100%;
-
-            border-collapse: collapse;
-
-            table-layout: fixed;
-
-            font-size: 6.5px;
-
-            line-height: 1.03;
-
-        }
-
-        .promotion-inner td {
-
-            border: 0;
-
-            padding: 1px 2px;
-
-            height: 14px;
-
-            vertical-align: middle;
-
-        }
-
-        .promotion-inner .result-title {
-
-            border-bottom: 0.6px solid #222;
-
-            font-weight: 700;
-
-            text-align: left;
-
-        }
-
-        .promotion-inner .field {
-
-            border-bottom: 0.6px solid #222;
-
-        }
-
-        .promotion-inner .last {
-
-            border-bottom: 0;
-
-        }
-
-        .promotion-option {
-            display: inline-block;
-            margin-right: 5px;
-        }
-
-        .promotion-option.selected {
-            font-weight: 700;
-        }
-
-        .promotion-option.crossed {
-            text-decoration: line-through;
-        }
-
-        .print-only-hidden { display: none; }
-
-        @media screen {
-            html,
-            body {
-                min-height: 100%;
-                background: #e5e7eb;
-            }
-
-            body {
-                padding: 24px 0;
-            }
-
-            body > .page {
-                width: 210mm;
-                min-height: 297mm;
-                margin: 0 auto;
-                padding: 12mm 15mm;
-                background: #fff;
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-                page-break-after: auto;
-            }
-        }
-
-    </style>
+    }
+</style>
 
 @if (empty($isBulkReport))
-</head>
-<body>
+    </head>
+
+    <body>
 @endif
 
 @php
@@ -372,16 +459,14 @@
 
     // Pilihan semester berasal dari halaman Rekap Rapot.
 
-    $semesterMode = request('semester', 'ganjil_genap');
+    $semesterMode = $semesterMode ?? request('semester', 'ganjil_genap');
 
     $semesterLabel = match ($semesterMode) {
-
         'ganjil' => 'Ganjil',
 
         'genap' => 'Genap',
 
         default => 'Ganjil & Genap',
-
     };
 
     $gradeMapGanjil = $grades->get($semesterGanjil?->id, collect())->keyBy('subject_id');
@@ -410,13 +495,17 @@
 
             <td class="colon-left">:</td>
 
-            <td class="value-left"><div class="value-line">{{ $student->name }}</div></td>
+            <td class="value-left">
+                <div class="value-line">{{ $student->name }}</div>
+            </td>
 
             <td class="label-right">Kelas</td>
 
             <td class="colon-right">:</td>
 
-            <td class="value-right"><div class="value-line">{{ $class->name }}</div></td>
+            <td class="value-right">
+                <div class="value-line">{{ $class->name }}</div>
+            </td>
 
         </tr>
 
@@ -426,13 +515,17 @@
 
             <td class="colon-left">:</td>
 
-            <td class="value-left"><div class="value-line">{{ $student->nisn ?? '-' }} / {{ $student->nis ?? '-' }}</div></td>
+            <td class="value-left">
+                <div class="value-line">{{ $student->nisn ?? '-' }} / {{ $student->nis ?? '-' }}</div>
+            </td>
 
             <td class="label-right">Fase</td>
 
             <td class="colon-right">:</td>
 
-            <td class="value-right"><div class="value-line">{{ $fase }}</div></td>
+            <td class="value-right">
+                <div class="value-line">{{ $fase }}</div>
+            </td>
 
         </tr>
 
@@ -442,13 +535,17 @@
 
             <td class="colon-left">:</td>
 
-            <td class="value-left"><div class="value-line">{{ $schoolName }}</div></td>
+            <td class="value-left">
+                <div class="value-line">{{ $schoolName }}</div>
+            </td>
 
             <td class="label-right">Semester</td>
 
             <td class="colon-right">:</td>
 
-            <td class="value-right"><div class="value-line">{{ ucfirst($semesterLabel) }}</div></td>
+            <td class="value-right">
+                <div class="value-line">{{ ucfirst($semesterLabel) }}</div>
+            </td>
 
         </tr>
 
@@ -458,133 +555,157 @@
 
             <td class="colon-left">:</td>
 
-            <td class="value-left"><div class="value-line">{{ $schoolAddress ?: '-' }}</div></td>
+            <td class="value-left">
+                <div class="value-line">{{ $schoolAddress ?: '-' }}</div>
+            </td>
 
             <td class="label-right">Tahun Pelajaran</td>
 
             <td class="colon-right">:</td>
 
-            <td class="value-right"><div class="value-line">{{ $academicYear->name ?? '-' }}</div></td>
+            <td class="value-right">
+                <div class="value-line">{{ $academicYear->name ?? '-' }}</div>
+            </td>
 
         </tr>
 
     </table>
 
-        <div class="section-title">B. INTRAKURIKULER</div>
+    <div class="section-title">B. INTRAKURIKULER</div>
 
-        <table class="report">
+    <table class="report">
 
-            <colgroup>
+        <colgroup>
 
-                <col style="width:4%"><col style="width:22%"><col style="width:10%"><col style="width:27%"><col style="width:10%"><col style="width:27%">
+            <col style="width:3%">
+            <col style="width:23%">
+            @if ($semesterMode !== 'genap')
+                <col style="width:10%">
+                <col style="width:{{ $semesterMode === 'ganjil' ? '64%' : '27%' }}">
+            @endif
+            @if ($semesterMode !== 'ganjil')
+                <col style="width:10%">
+                <col style="width:{{ $semesterMode === 'genap' ? '64%' : '27%' }}">
+            @endif
 
-            </colgroup>
+        </colgroup>
 
-            <thead>
+        <thead>
 
-                <tr>
+            <tr>
 
-                    <th rowspan="2">NO.</th>
+                <th rowspan="2">NO.</th>
 
-                    <th rowspan="2">MATA PELAJARAN</th>
+                <th rowspan="2">MATA PELAJARAN</th>
 
+                @if ($semesterMode !== 'genap')
                     <th colspan="2">SEMESTER GANJIL</th>
+                @endif
 
+                @if ($semesterMode !== 'ganjil')
                     <th colspan="2">SEMESTER GENAP</th>
+                @endif
 
-                </tr>
+            </tr>
 
-                <tr>
+            <tr>
 
+                @if ($semesterMode !== 'genap')
                     <th>NILAI AKHIR</th>
                     <th>CAPAIAN PEMBELAJARAN</th>
+                @endif
+                @if ($semesterMode !== 'ganjil')
                     <th>NILAI AKHIR</th>
                     <th>CAPAIAN PEMBELAJARAN</th>
+                @endif
 
-                </tr>
+            </tr>
 
-            </thead>
+        </thead>
 
-            <tbody>
+        <tbody>
 
-                @foreach($subjects as $index => $subject)
-
-                    @php
-
-                        $g = $gradeMapGanjil->get($subject->id);
-
-                        $e = $gradeMapGenap->get($subject->id);
-
-                    @endphp
-
-                    <tr>
-
-                        <td class="center">{{ $index + 1 }}</td>
-
-                        <td class="subject">{{ $subject->name }}</td>
-
-                        <td class="center">{{ $g?->score ?? '' }}</td>
-
-                        <td>
-                            @if($g?->learning_outcome)
-                                <div>{{ $g->learning_outcome }}</div>
-                            @endif
-                            @if($g?->skill_learning_outcome)
-                                <div>{{ $g->skill_learning_outcome }}</div>
-                            @endif
-                        </td>
-
-                        <td class="center">{{ $e?->score ?? '' }}</td>
-
-                        <td>
-                            @if($e?->learning_outcome)
-                                <div>{{ $e->learning_outcome }}</div>
-                            @endif
-                            @if($e?->skill_learning_outcome)
-                                <div>{{ $e->skill_learning_outcome }}</div>
-                            @endif
-                        </td>
-
-                    </tr>
-
-                @endforeach
-
+            @foreach ($subjects as $index => $subject)
                 @php
-                    $ganjilScores = $gradeMapGanjil->pluck('score')->filter(fn ($score) => $score !== null)->map(fn ($score) => (float) $score);
-                    $genapScores = $gradeMapGenap->pluck('score')->filter(fn ($score) => $score !== null)->map(fn ($score) => (float) $score);
+
+                    $g = $gradeMapGanjil->get($subject->id);
+
+                    $e = $gradeMapGenap->get($subject->id);
+
                 @endphp
 
                 <tr>
 
-                    <th colspan="2" class="center">Jumlah Nilai</th>
+                    <td class="center">{{ $index + 1 }}</td>
 
+                    <td class="subject">{{ $subject->name }}</td>
+
+                    @if ($semesterMode !== 'genap')
+                        <td class="center">{{ $g?->score ?? '' }}</td>
+                        <td>
+                            @if ($g?->learning_outcome)
+                                <div>{{ $g->learning_outcome }}</div>
+                            @endif
+                        </td>
+                    @endif
+                    @if ($semesterMode !== 'ganjil')
+                        <td class="center">{{ $e?->score ?? '' }}</td>
+                        <td>
+                            @if ($e?->learning_outcome)
+                                <div>{{ $e->learning_outcome }}</div>
+                            @endif
+                        </td>
+                    @endif
+
+                </tr>
+            @endforeach
+
+            @php
+                $ganjilScores = $gradeMapGanjil
+                    ->pluck('score')
+                    ->filter(fn($score) => $score !== null)
+                    ->map(fn($score) => (float) $score);
+                $genapScores = $gradeMapGenap
+                    ->pluck('score')
+                    ->filter(fn($score) => $score !== null)
+                    ->map(fn($score) => (float) $score);
+            @endphp
+
+            <tr>
+
+                <th colspan="2" class="center">Jumlah Nilai</th>
+
+                @if ($semesterMode !== 'genap')
                     <td class="center">{{ $ganjilScores->isNotEmpty() ? $ganjilScores->sum() : '' }}</td>
-
                     <td></td>
-
+                @endif
+                @if ($semesterMode !== 'ganjil')
                     <td class="center">{{ $genapScores->isNotEmpty() ? $genapScores->sum() : '' }}</td>
-
                     <td></td>
+                @endif
 
-                </tr>
+            </tr>
 
-                <tr>
+            <tr>
 
-                    <th colspan="2" class="center">RATA - RATA</th>
+                <th colspan="2" class="center">RATA - RATA</th>
 
-                    <td class="center">{{ $ganjilScores->isNotEmpty() ? number_format($ganjilScores->avg(), 2, ',', '.') : '' }}</td>
-
+                @if ($semesterMode !== 'genap')
+                    <td class="center">
+                        {{ $ganjilScores->isNotEmpty() ? number_format($ganjilScores->avg(), 2, ',', '.') : '' }}</td>
                     <td></td>
-
-                    <td class="center">{{ $genapScores->isNotEmpty() ? number_format($genapScores->avg(), 2, ',', '.') : '' }}</td>
-
+                @endif
+                @if ($semesterMode !== 'ganjil')
+                    <td class="center">
+                        {{ $genapScores->isNotEmpty() ? number_format($genapScores->avg(), 2, ',', '.') : '' }}</td>
                     <td></td>
+                @endif
 
-                </tr>
+            </tr>
 
-            </tbody>
+        </tbody>
 
-        </table>
+    </table>
 
     <div class="section-title">C. EKSTRAKURIKULER</div>
 
@@ -620,8 +741,7 @@
 
         <tbody>
 
-            @foreach(range(1,3) as $i)
-
+            @foreach (range(1, 3) as $i)
                 <tr>
 
                     <td class="center">{{ $i }}</td>
@@ -633,7 +753,6 @@
                     <td></td>
 
                 </tr>
-
             @endforeach
 
         </tbody>
@@ -674,8 +793,7 @@
 
         <tbody>
 
-            @foreach($achievements as $index => $achievement)
-
+            @foreach ($achievements as $index => $achievement)
                 <tr>
 
                     <td class="center">{{ $index + 1 }}</td>
@@ -687,11 +805,9 @@
                     <td>{{ $achievement->description ?? '' }}</td>
 
                 </tr>
-
             @endforeach
 
-            @for($i = $achievements->count() + 1; $i <= 3; $i++)
-
+            @for ($i = $achievements->count() + 1; $i <= 3; $i++)
                 <tr>
 
                     <td class="center">{{ $i }}</td>
@@ -703,7 +819,6 @@
                     <td></td>
 
                 </tr>
-
             @endfor
 
         </tbody>
@@ -712,214 +827,217 @@
 
     <div class="section-e-block">
 
-    <div class="section-title">E. KETIDAKHADIRAN DAN KENAIKAN</div>
+        <div class="section-title">E. KETIDAKHADIRAN DAN KENAIKAN</div>
 
-    <table class="attendance-promotion-table">
+        <table class="attendance-promotion-table">
 
-        <colgroup>
+            <colgroup>
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-            <col style="width:14.2857%">
+                <col style="width:14.2857%">
 
-        </colgroup>
+            </colgroup>
 
-        {{-- HEADER --}}
+            {{-- HEADER --}}
 
-        <tr>
+            <tr>
 
-            <th class="e-left" rowspan="4">
+                <th class="e-left" rowspan="4">
 
-                KETIDAKHADIRAN
+                    KETIDAKHADIRAN
 
-            </th>
+                </th>
 
-            <th class="e-semester" colspan="2">
+                <th class="e-semester" colspan="2">
 
-                Semester Ganjil
+                    Semester Ganjil
 
-            </th>
+                </th>
 
-            <th class="e-semester" colspan="2">
+                <th class="e-semester" colspan="2">
 
-                Semester Genap
+                    Semester Genap
 
-            </th>
+                </th>
 
-            <td class="e-signature" rowspan="5">
+                <td class="e-signature" rowspan="5">
 
-    Wali Kelas
+                    Wali Kelas
 
-    <div class="signature-space"></div>
+                    <div class="signature-space"></div>
 
-    <div class="signature-line">
+                    <div class="signature-line">
 
-        {{ $homeroomTeacher?->name ?: '................................' }}
+                        {{ $homeroomTeacher?->name ?: '................................' }}
 
-    </div>
+                    </div>
 
-    <div class="signature-nip">
+                    <div class="signature-nip">
 
-        NIP. {{ $homeroomTeacher?->nip ?: '...........................' }}
+                        NIP. {{ $homeroomTeacher?->nip ?: '...........................' }}
 
-    </div>
+                    </div>
 
-</td>
+                </td>
 
-<td class="e-signature" rowspan="5">
+                <td class="e-signature" rowspan="5">
 
-    Mengetahui<br>
+                    Mengetahui<br>
 
-    Kepala Sekolah
+                    Kepala Sekolah
 
-    <div class="signature-space"></div>
+                    <div class="signature-space"></div>
 
-    <div class="signature-line">
+                    <div class="signature-line">
 
-        {{ $headmaster?->name ?: '................................' }}
+                        {{ $headmaster?->name ?: '................................' }}
 
-    </div>
+                    </div>
 
-    <div class="signature-nip">
+                    <div class="signature-nip">
 
-        NIP. {{ $headmaster?->nip ?: '...........................' }}
+                        NIP. {{ $headmaster?->nip ?: '...........................' }}
 
-    </div>
+                    </div>
 
-</td>
+                </td>
 
-        </tr>
+            </tr>
 
-        {{-- SAKIT --}}
+            {{-- SAKIT --}}
 
-        <tr>
+            <tr>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                1. Sakit
+                    1. Sakit
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGanjil?->sakit ?? 0 }} Hari
+                    {{ $attendanceGanjil?->sakit ?? 0 }} Hari
 
-            </td>
+                </td>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                1. Sakit
+                    1. Sakit
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGenap?->sakit ?? 0 }} Hari
+                    {{ $attendanceGenap?->sakit ?? 0 }} Hari
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
-        {{-- IZIN --}}
+            {{-- IZIN --}}
 
-        <tr>
+            <tr>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                2. Izin
+                    2. Izin
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGanjil?->izin ?? 0 }} Hari
+                    {{ $attendanceGanjil?->izin ?? 0 }} Hari
 
-            </td>
+                </td>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                2. Izin
+                    2. Izin
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGenap?->izin ?? 0 }} Hari
+                    {{ $attendanceGenap?->izin ?? 0 }} Hari
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
-        {{-- TANPA KETERANGAN --}}
+            {{-- TANPA KETERANGAN --}}
 
-        <tr>
+            <tr>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                3. Tanpa Keterangan
+                    3. Tanpa Keterangan
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGanjil?->tanpa_keterangan ?? 0 }} Hari
+                    {{ $attendanceGanjil?->tanpa_keterangan ?? 0 }} Hari
 
-            </td>
+                </td>
 
-            <td class="e-attendance-label">
+                <td class="e-attendance-label">
 
-                3. Tanpa Keterangan
+                    3. Tanpa Keterangan
 
-            </td>
+                </td>
 
-            <td class="e-attendance-days">
+                <td class="e-attendance-days">
 
-                {{ $attendanceGenap?->tanpa_keterangan ?? 0 }} Hari
+                    {{ $attendanceGenap?->tanpa_keterangan ?? 0 }} Hari
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
-        {{-- KENAIKAN --}}
+            {{-- KENAIKAN --}}
 
-        <tr>
+            <tr>
 
-            <th class="promotion-left">
+                <th class="promotion-left">
 
-                KENAIKAN
+                    KENAIKAN
 
-            </th>
+                </th>
 
-            <td class="promotion-decision" colspan="2">
+                <td class="promotion-decision" colspan="2">
 
-                <strong>Keputusan</strong><br>
+                    <strong>Keputusan</strong><br>
 
-                Berdasarkan Capaian Pembelajaran pada<br>
+                    Berdasarkan Capaian Pembelajaran pada<br>
 
-                Semester I dan II, Peserta Didik<br>
+                    Semester I dan II, Peserta Didik<br>
 
-                ditetapkan
+                    ditetapkan
 
-            </td>
+                </td>
 
-            <td class="promotion-result" colspan="2">
+                <td class="promotion-result" colspan="2">
 
-                <table class="promotion-inner">
+                    <table class="promotion-inner">
                         <tr>
                             <td class="result-title">
-                                <span class="promotion-option {{ $promotionStatus === 'Naik' ? 'selected' : ($promotionStatus === 'Tidak Naik' ? 'crossed' : '') }}">Naik</span>
+                                <span
+                                    class="promotion-option {{ $promotionStatus === 'Naik' ? 'selected' : ($promotionStatus === 'Tidak Naik' ? 'crossed' : '') }}">Naik</span>
                                 /
-                                <span class="promotion-option {{ $promotionStatus === 'Tidak Naik' ? 'selected' : ($promotionStatus === 'Naik' ? 'crossed' : '') }}">Tidak Naik</span>
+                                <span
+                                    class="promotion-option {{ $promotionStatus === 'Tidak Naik' ? 'selected' : ($promotionStatus === 'Naik' ? 'crossed' : '') }}">Tidak
+                                    Naik</span>
                             </td>
                         </tr>
                         <tr>
@@ -934,18 +1052,18 @@
                         </tr>
                     </table>
 
-            </td>
+                </td>
 
-        </tr>
+            </tr>
 
-    </table>
+        </table>
 
     </div> {{-- /.section-e-block --}}
 
 </div>
 
 @if (empty($isBulkReport))
-</body>
+    </body>
 
-</html>
+    </html>
 @endif

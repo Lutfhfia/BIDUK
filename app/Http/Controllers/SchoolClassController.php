@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
 use App\Models\ClassStudent;
-use App\Models\Employee;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Subject;
+use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\TeacherClassAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class SchoolClassController extends Controller
 {
@@ -23,6 +25,7 @@ class SchoolClassController extends Controller
         $query = SchoolClass::with([
             'academicYear',
             'homeroomTeacher',
+            'homeroomTeacherUser.employee',
         ])->withCount([
             'students as active_students_count' => function ($query) {
                 $query->where(
@@ -32,6 +35,10 @@ class SchoolClassController extends Controller
             },
             'subjects',
         ]);
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        if ($teacherClassIds !== null) {
+            $query->whereIn('classes.id', $teacherClassIds);
+        }
 
         if ($request->filled('search')) {
             $query->where(
@@ -90,14 +97,18 @@ class SchoolClassController extends Controller
             'start_date'
         )->get();
 
-        $teachers = Employee::active()
-            ->teachers()
+        $teachers = User::query()
+            ->where('status', 'Aktif')
+            ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
+            ->when($request->user()->isGuru(), fn ($query) => $query->whereKey($request->user()->id))
+            ->with('employee')
             ->orderBy('name')
             ->get();
 
         // Ambil hanya mata pelajaran aktif.
         $subjects = Subject::active()
-            ->orderBy('name')
+            ->orderBy('code')
+            ->orderBy('id')
             ->get();
 
         $selectedAcademicYearId = $request->integer('academic_year_id') ?: null;
@@ -146,10 +157,7 @@ class SchoolClassController extends Controller
                 'between:1,6',
             ],
 
-            'homeroom_teacher_id' => [
-                'nullable',
-                'exists:employees,id',
-            ],
+            'homeroom_teacher_user_id' => ['nullable', 'string'],
 
             'capacity' => [
                 'required',
@@ -185,18 +193,13 @@ class SchoolClassController extends Controller
             ],
         ]);
 
-        if (
-            !empty($validated['homeroom_teacher_id'])
-            && !Employee::active()
-                ->teachers()
-                ->whereKey($validated['homeroom_teacher_id'])
-                ->exists()
-        ) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'homeroom_teacher_id' => 'Wali kelas harus merupakan pegawai aktif dengan jenis pegawai Guru.',
-                ]);
+        $teacherUser = $this->resolveActiveTeacherUser($validated['homeroom_teacher_user_id'] ?? null);
+        if ($request->user()->isGuru()) {
+            abort_unless(
+                $teacherUser && (int) $teacherUser->id === (int) $request->user()->id,
+                403,
+                'Guru hanya dapat membuat kelas dengan dirinya sendiri sebagai wali kelas.'
+            );
         }
 
         $historyStudentId = $validated['history_student_id'] ?? null;
@@ -206,8 +209,11 @@ class SchoolClassController extends Controller
          * Karena subject_ids bukan kolom di tabel classes.
          */
         $subjectIds = $validated['subject_ids'] ?? [];
+        $isTeacher = $request->user()->isGuru();
 
-        unset($validated['subject_ids'], $validated['history_student_id']);
+        unset($validated['subject_ids'], $validated['history_student_id'], $validated['homeroom_teacher_user_id']);
+        $validated['homeroom_teacher_user_id'] = $teacherUser?->id;
+        $validated['homeroom_teacher_id'] = $teacherUser?->employee_id;
 
         /*
          * Nama kelas tidak boleh sama
@@ -236,22 +242,23 @@ class SchoolClassController extends Controller
          * Satu guru hanya boleh menjadi wali kelas
          * untuk satu kelas pada tahun ajaran yang sama.
          */
-        if (!empty($validated['homeroom_teacher_id'])) {
+        if ($teacherUser) {
             $teacherAlreadyAssigned = SchoolClass::where(
                 'academic_year_id',
                 $validated['academic_year_id']
-            )
-                ->where(
-                    'homeroom_teacher_id',
-                    $validated['homeroom_teacher_id']
-                )
+            )->where(function ($query) use ($teacherUser) {
+                $query->where('homeroom_teacher_user_id', $teacherUser->id);
+                if ($teacherUser->employee_id) {
+                    $query->orWhere('homeroom_teacher_id', $teacherUser->employee_id);
+                }
+            })
                 ->exists();
 
             if ($teacherAlreadyAssigned) {
                 return back()
                     ->withInput()
                     ->withErrors([
-                        'homeroom_teacher_id' =>
+                        'homeroom_teacher_user_id' =>
                             'Guru tersebut sudah menjadi wali kelas pada tahun ajaran ini.',
                     ]);
             }
@@ -305,11 +312,13 @@ class SchoolClassController extends Controller
     /**
      * Menampilkan detail kelas.
      */
-    public function show(SchoolClass $class)
+    public function show(Request $request, SchoolClass $class)
     {
+        $this->assertTeacherCanAccessClass($request, $class);
         $class->load([
             'academicYear',
             'homeroomTeacher',
+            'homeroomTeacherUser.employee',
             'subjects',
         ]);
 
@@ -335,24 +344,32 @@ class SchoolClassController extends Controller
     /**
      * Form edit kelas.
      */
-    public function edit(SchoolClass $class)
+    public function edit(Request $request, SchoolClass $class)
     {
+        $this->assertTeacherCanAccessClass($request, $class);
         $academicYears = AcademicYear::orderByDesc(
             'start_date'
         )->get();
 
-        $teachers = Employee::active()
-            ->teachers()
+        $teachers = User::query()
+            ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
+            ->when($request->user()->isGuru(), fn ($query) => $query->whereKey($request->user()->id))
+            ->where(function ($query) use ($class) {
+                $query->where('status', 'Aktif')
+                    ->orWhereKey($class->homeroom_teacher_user_id);
+            })
+            ->with('employee')
             ->orderBy('name')
             ->get();
 
         // Ambil hanya mata pelajaran aktif.
         $subjects = Subject::active()
-            ->orderBy('name')
+            ->orderBy('code')
+            ->orderBy('id')
             ->get();
 
         // Ambil mata pelajaran yang sudah dimiliki kelas.
-        $class->load('subjects');
+        $class->load(['subjects', 'homeroomTeacher']);
 
         // ID mata pelajaran yang sudah dipilih.
         $selectedSubjectIds = $class->subjects
@@ -378,6 +395,7 @@ class SchoolClassController extends Controller
         Request $request,
         SchoolClass $class
     ) {
+        $this->assertTeacherCanAccessClass($request, $class);
         $validated = $request->validate([
             'academic_year_id' => [
                 'required',
@@ -396,10 +414,7 @@ class SchoolClassController extends Controller
                 'between:1,6',
             ],
 
-            'homeroom_teacher_id' => [
-                'nullable',
-                'exists:employees,id',
-            ],
+            'homeroom_teacher_user_id' => ['nullable', 'string'],
 
             'capacity' => [
                 'required',
@@ -435,27 +450,30 @@ class SchoolClassController extends Controller
             ],
         ]);
 
-        if (
-            !empty($validated['homeroom_teacher_id'])
-            && (int) $validated['homeroom_teacher_id'] !== (int) $class->homeroom_teacher_id
-            && !Employee::active()
-                ->teachers()
-                ->whereKey($validated['homeroom_teacher_id'])
-                ->exists()
-        ) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'homeroom_teacher_id' => 'Wali kelas harus merupakan pegawai aktif dengan jenis pegawai Guru.',
-                ]);
+        $teacherSelection = $validated['homeroom_teacher_user_id'] ?? null;
+        if ($request->user()->isGuru()) {
+            $isLegacyAssignment = !$class->homeroom_teacher_user_id
+                && $request->user()->employee_id
+                && (int) $class->homeroom_teacher_id === (int) $request->user()->employee_id;
+            abort_unless(
+                (string) $teacherSelection === (string) $request->user()->id
+                    || ($teacherSelection === 'legacy' && $isLegacyAssignment),
+                403,
+                'Guru tidak dapat memindahkan kelas ke wali kelas lain.'
+            );
+            $validated['academic_year_id'] = $class->academic_year_id;
         }
+        $keepLegacyEmployeeAssignment = $teacherSelection === 'legacy';
+        $teacherUser = $keepLegacyEmployeeAssignment
+            ? null
+            : $this->resolveActiveTeacherUser($teacherSelection, $class);
 
         /*
          * Simpan subject_ids secara terpisah.
          */
         $subjectIds = $validated['subject_ids'] ?? [];
 
-        unset($validated['subject_ids']);
+        unset($validated['subject_ids'], $validated['homeroom_teacher_user_id']);
 
         /*
          * Simpan kondisi kelas sebelum perubahan.
@@ -512,16 +530,16 @@ class SchoolClassController extends Controller
         /*
          * Cek wali kelas.
          */
-        if (!empty($validated['homeroom_teacher_id'])) {
+        if ($teacherUser) {
             $teacherAlreadyAssigned = SchoolClass::where(
                 'academic_year_id',
                 $validated['academic_year_id']
-            )
-                ->where(
-                    'homeroom_teacher_id',
-                    $validated['homeroom_teacher_id']
-                )
-                ->where(
+            )->where(function ($query) use ($teacherUser) {
+                $query->where('homeroom_teacher_user_id', $teacherUser->id);
+                if ($teacherUser->employee_id) {
+                    $query->orWhere('homeroom_teacher_id', $teacherUser->employee_id);
+                }
+            })->where(
                     'id',
                     '!=',
                     $class->id
@@ -532,7 +550,7 @@ class SchoolClassController extends Controller
                 return back()
                     ->withInput()
                     ->withErrors([
-                        'homeroom_teacher_id' =>
+                        'homeroom_teacher_user_id' =>
                             'Guru tersebut sudah menjadi wali kelas pada tahun ajaran ini.',
                     ]);
             }
@@ -545,8 +563,19 @@ class SchoolClassController extends Controller
         DB::transaction(function () use (
             $validated,
             $subjectIds,
-            $class
+            $class,
+            $teacherUser,
+            $keepLegacyEmployeeAssignment,
+            $isTeacher
         ) {
+            if ($isTeacher) {
+                $validated['homeroom_teacher_user_id'] = $class->homeroom_teacher_user_id;
+                $validated['homeroom_teacher_id'] = $class->homeroom_teacher_id;
+            } elseif (! $keepLegacyEmployeeAssignment) {
+                $validated['homeroom_teacher_user_id'] = $teacherUser?->id;
+                $validated['homeroom_teacher_id'] = $teacherUser?->employee_id;
+            }
+
             $class->update(
                 $validated
             );
@@ -623,11 +652,53 @@ class SchoolClassController extends Controller
             );
     }
 
+    private function resolveActiveTeacherUser(
+        mixed $teacherUserId,
+        ?SchoolClass $class = null
+    ): ?User {
+        if ($teacherUserId === null || $teacherUserId === '') {
+            return null;
+        }
+
+        if (
+            (! is_string($teacherUserId) && ! is_int($teacherUserId))
+            || ! ctype_digit((string) $teacherUserId)
+        ) {
+            throw ValidationException::withMessages([
+                'homeroom_teacher_user_id' => 'Wali kelas harus dipilih dari akun Guru yang tersedia.',
+            ]);
+        }
+
+        $teacher = User::with('role')->find((int) $teacherUserId);
+        $isExistingAssignment = $class
+            && (int) $class->homeroom_teacher_user_id === (int) $teacherUserId;
+
+        if (
+            ! $teacher
+            || ! $teacher->isGuru()
+            || ($teacher->status !== 'Aktif' && ! $isExistingAssignment)
+        ) {
+            throw ValidationException::withMessages([
+                'homeroom_teacher_user_id' => 'Wali kelas harus merupakan akun Guru yang aktif.',
+            ]);
+        }
+
+        return $teacher;
+    }
+
+    private function assertTeacherCanAccessClass(Request $request, SchoolClass $class): void
+    {
+        if ($request->user()->isGuru()) {
+            app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
+        }
+    }
+
     /**
      * Menghapus kelas.
      */
-    public function destroy(SchoolClass $class)
+    public function destroy(Request $request, SchoolClass $class)
     {
+        $this->assertTeacherCanAccessClass($request, $class);
         $activeStudentCount = $class->students()
             ->wherePivot('status', 'Aktif')
             ->count();
@@ -666,8 +737,9 @@ class SchoolClassController extends Controller
     /**
      * Menampilkan daftar siswa dalam suatu kelas.
      */
-    public function students(SchoolClass $class)
+    public function students(Request $request, SchoolClass $class)
     {
+        $this->assertTeacherCanAccessClass($request, $class);
         $class->load([
             'academicYear',
             'homeroomTeacher',
@@ -693,6 +765,7 @@ class SchoolClassController extends Controller
      */
     public function addStudents(Request $request, SchoolClass $class)
     {
+        $this->assertTeacherCanAccessClass($request, $class);
         /*
          * Ambil ID siswa yang sudah memiliki kelas aktif
          * pada tahun ajaran yang sama.
@@ -757,6 +830,7 @@ class SchoolClassController extends Controller
         Request $request,
         SchoolClass $class
     ) {
+        $this->assertTeacherCanAccessClass($request, $class);
         $validated = $request->validate([
             'student_ids' => [
                 'required',
@@ -929,9 +1003,11 @@ class SchoolClassController extends Controller
      * Mengeluarkan siswa dari kelas.
      */
     public function removeStudent(
+        Request $request,
         SchoolClass $class,
         Student $student
     ) {
+        $this->assertTeacherCanAccessClass($request, $class);
         $assignment = ClassStudent::where(
             'class_id',
             $class->id

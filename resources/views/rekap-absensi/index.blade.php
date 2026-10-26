@@ -166,6 +166,52 @@
     </div>
 
 
+    {{-- Rangkuman Ketidakhadiran --}}
+    <div class="biduk-card mb-4 fade-in-up">
+        <div class="card-header">
+            <i class="bi bi-clipboard-data me-2" style="color: var(--biduk-primary);"></i>
+            Rangkuman Ketidakhadiran
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted mb-2">
+                            <i class="bi bi-thermometer-half me-1"></i>
+                            Sakit
+                        </div>
+                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->sakit }}</div>
+                        <div class="text-muted small">Hari</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted mb-2">
+                            <i class="bi bi-envelope-check me-1"></i>
+                            Izin
+                        </div>
+                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->izin }}</div>
+                        <div class="text-muted small">Hari</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="border rounded-3 p-3 h-100">
+                        <div class="text-muted mb-2">
+                            <i class="bi bi-question-circle me-1"></i>
+                            Tanpa Keterangan
+                        </div>
+                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->tanpa_keterangan }}</div>
+                        <div class="text-muted small">Hari</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     {{-- Card Tabel --}}
     <div class="biduk-card fade-in-up">
 

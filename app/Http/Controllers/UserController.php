@@ -51,7 +51,13 @@ class UserController extends Controller
     $roles = Role::orderBy('name')->get();
 
     $employees = Employee::whereDoesntHave('user')
-        ->where('status', 'Aktif')
+        ->where(function ($query) {
+            $query->where(function ($query) {
+                $query->whereNotNull('nip')->where('nip', '<>', '');
+            })->orWhere(function ($query) {
+                $query->whereNotNull('nuptk')->where('nuptk', '<>', '');
+            });
+        })
         ->orderBy('name')
         ->get();
 
@@ -61,26 +67,6 @@ class UserController extends Controller
     $this->authorizeSuperAdmin();
 
     $validated = $request->validate([
-        'name' => [
-            'required',
-            'string',
-            'max:255',
-        ],
-
-        'username' => [
-            'required',
-            'string',
-            'max:255',
-            'unique:users,username',
-        ],
-
-        'email' => [
-            'required',
-            'email',
-            'max:255',
-            'unique:users,email',
-        ],
-
         'role_id' => [
             'required',
             'integer',
@@ -88,7 +74,7 @@ class UserController extends Controller
         ],
 
         'employee_id' => [
-            'nullable',
+            'required',
             'integer',
             'exists:employees,id',
             'unique:users,employee_id',
@@ -99,29 +85,51 @@ class UserController extends Controller
             'in:Aktif,Nonaktif',
         ],
     ], [
-        'name.required' => 'Nama wajib diisi.',
-        'username.required' => 'Username wajib diisi.',
-        'username.unique' => 'Username sudah digunakan.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-        'email.unique' => 'Email sudah digunakan.',
         'role_id.required' => 'Role wajib dipilih.',
         'role_id.exists' => 'Role yang dipilih tidak valid.',
+        'employee_id.required' => 'Pegawai wajib dipilih.',
         'employee_id.exists' => 'Pegawai yang dipilih tidak valid.',
         'employee_id.unique' => 'Pegawai tersebut sudah memiliki akun.',
         'status.required' => 'Status wajib dipilih.',
     ]);
 
+    $employee = Employee::findOrFail($validated['employee_id']);
+    $username = $this->usernameForEmployee($employee);
+
+    if ($username === null) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'Pegawai harus memiliki NIP atau NUPTK sebelum dibuatkan akun.',
+            ]);
+    }
+
+    if (User::where('username', $username)->exists()) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'NIP/NUPTK pegawai tersebut sudah digunakan sebagai username.',
+            ]);
+    }
+
+    if ($employee->email && User::where('email', $employee->email)->exists()) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'Email pegawai tersebut sudah digunakan oleh akun lain.',
+            ]);
+    }
+
     // Buat password awal secara otomatis.
     $generatedPassword = Str::random(12);
 
     User::create([
-        'name' => $validated['name'],
-        'username' => $validated['username'],
-        'email' => $validated['email'],
+        'name' => $employee->name,
+        'username' => $username,
+        'email' => $employee->email,
         'password' => $generatedPassword,
         'role_id' => $validated['role_id'],
-        'employee_id' => $validated['employee_id'] ?? null,
+        'employee_id' => $employee->id,
         'status' => $validated['status'],
     ]);
 
@@ -161,7 +169,13 @@ class UserController extends Controller
             $query->whereDoesntHave('user')
                   ->orWhere('id', $user->employee_id);
         })
-            ->where('status', 'Aktif')
+            ->where(function ($query) {
+                $query->where(function ($query) {
+                    $query->whereNotNull('nip')->where('nip', '<>', '');
+                })->orWhere(function ($query) {
+                    $query->whereNotNull('nuptk')->where('nuptk', '<>', '');
+                });
+            })
             ->orderBy('name')
             ->get();
     
@@ -182,26 +196,6 @@ class UserController extends Controller
     $currentUser = auth()->user();
 
     $validated = $request->validate([
-        'name' => [
-            'required',
-            'string',
-            'max:255',
-        ],
-
-        'username' => [
-            'required',
-            'string',
-            'max:255',
-            'unique:users,username,' . $user->id,
-        ],
-
-        'email' => [
-            'required',
-            'email',
-            'max:255',
-            'unique:users,email,' . $user->id,
-        ],
-
         'role_id' => [
             'required',
             'integer',
@@ -209,7 +203,7 @@ class UserController extends Controller
         ],
 
         'employee_id' => [
-            'nullable',
+            'required',
             'integer',
             'exists:employees,id',
             'unique:users,employee_id,' . $user->id,
@@ -220,18 +214,43 @@ class UserController extends Controller
             'in:Aktif,Nonaktif',
         ],
     ], [
-        'name.required' => 'Nama wajib diisi.',
-        'username.required' => 'Username wajib diisi.',
-        'username.unique' => 'Username sudah digunakan.',
-        'email.required' => 'Email wajib diisi.',
-        'email.email' => 'Format email tidak valid.',
-        'email.unique' => 'Email sudah digunakan.',
         'role_id.required' => 'Role wajib dipilih.',
         'role_id.exists' => 'Role yang dipilih tidak valid.',
+        'employee_id.required' => 'Pegawai wajib dipilih.',
         'employee_id.exists' => 'Pegawai yang dipilih tidak valid.',
         'employee_id.unique' => 'Pegawai tersebut sudah memiliki akun lain.',
         'status.required' => 'Status wajib dipilih.',
     ]);
+
+    $employee = Employee::findOrFail($validated['employee_id']);
+    $username = $this->usernameForEmployee($employee);
+
+    if ($username === null) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'Pegawai harus memiliki NIP atau NUPTK sebelum ditautkan ke akun.',
+            ]);
+    }
+
+    if (User::where('username', $username)->where('id', '!=', $user->id)->exists()) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'NIP/NUPTK pegawai tersebut sudah digunakan sebagai username.',
+            ]);
+    }
+
+    if (
+        $employee->email &&
+        User::where('email', $employee->email)->where('id', '!=', $user->id)->exists()
+    ) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'employee_id' => 'Email pegawai tersebut sudah digunakan oleh akun lain.',
+            ]);
+    }
 
     // Akun yang sedang login tidak boleh dinonaktifkan sendiri.
     if ($user->id === $currentUser->id && $validated['status'] !== 'Aktif') {
@@ -252,11 +271,11 @@ class UserController extends Controller
     }
 
     $user->update([
-        'name' => $validated['name'],
-        'username' => $validated['username'],
-        'email' => $validated['email'],
+        'name' => $employee->name,
+        'username' => $username,
+        'email' => $employee->email,
         'role_id' => $validated['role_id'],
-        'employee_id' => $validated['employee_id'] ?? null,
+        'employee_id' => $employee->id,
         'status' => $validated['status'],
     ]);
 
@@ -342,5 +361,13 @@ public function resetPassword(User $user)
     if (!$currentUser || !$currentUser->isSuperAdmin()) {
         abort(403, 'Anda tidak memiliki akses ke Manajemen User.');
     }
+}
+
+private function usernameForEmployee(Employee $employee): ?string
+{
+    $username = trim((string) $employee->nip)
+        ?: trim((string) $employee->nuptk);
+
+    return $username !== '' ? $username : null;
 }
 }

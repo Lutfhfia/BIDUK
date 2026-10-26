@@ -445,18 +445,17 @@
             Akun Akses BIDUK
         </h6>
 
-        <div class="alert alert-success">
+        <div class="alert alert-info">
 
-            <i class="bi bi-check-circle me-2"></i>
+            <i class="bi bi-info-circle me-2"></i>
 
-            Akun login akan dibuat atau disinkronkan
-            <strong>secara otomatis</strong> berdasarkan data pegawai.
+            Data pegawai tidak otomatis membuat akun login.
+            Buat akun untuk pegawai yang sudah ada melalui <strong>Manajemen User</strong>.
 
             <br>
 
             <small>
-                Username menggunakan NIP. Jika NIP kosong,
-                username menggunakan NUPTK.
+                Username akun akan menggunakan NIP, atau NUPTK jika NIP kosong.
             </small>
 
         </div>

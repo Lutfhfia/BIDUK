@@ -8,6 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\TeacherClassAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -32,23 +33,10 @@ class RekapAbsensiController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Cek kelas yang boleh diakses user
-        $allowedClassIds = null;
+        $allowedClassIds = app(TeacherClassAccess::class)->classIds($user)?->all();
 
-        if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            // Guru/Wali Kelas harus terhubung dengan data pegawai
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            // Guru hanya melihat kelas yang menjadi wali kelasnya
-            $allowedClassIds = $employee->homeroomClasses()
-                ->pluck('id')
-                ->toArray();
-
-        } elseif (
+        if (
+            !$user->isGuru() &&
             !$user->isSuperAdmin()
             && !$user->isAdmin()
             && !$user->isKepalaSekolah()
@@ -68,7 +56,7 @@ class RekapAbsensiController extends Controller
             ->get();
 
         // Query rekap absensi
-        $rekapAbsensi = RekapAbsensi::with([
+        $rekapAbsensiQuery = RekapAbsensi::with([
             'student',
             'schoolClass.academicYear',
             'semester.academicYear',
@@ -97,14 +85,24 @@ class RekapAbsensiController extends Controller
 
             ->whereHas('student', function ($query) {
                 $query->where('status', 'Aktif');
-            })
+            });
 
+        $rekapAbsensiSummary = (clone $rekapAbsensiQuery)
+            ->selectRaw(
+                'COALESCE(SUM(sakit), 0) as sakit, '
+                .'COALESCE(SUM(izin), 0) as izin, '
+                .'COALESCE(SUM(tanpa_keterangan), 0) as tanpa_keterangan'
+            )
+            ->first();
+
+        $rekapAbsensi = $rekapAbsensiQuery
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return view('rekap-absensi.index', compact(
             'rekapAbsensi',
+            'rekapAbsensiSummary',
             'academicYears',
             'semesters',
             'classes'
@@ -120,20 +118,10 @@ class RekapAbsensiController extends Controller
 
         $academicYears = AcademicYear::orderByDesc('start_date')->get();
 
-        $allowedClassIds = null;
+        $allowedClassIds = app(TeacherClassAccess::class)->classIds($user)?->all();
 
-        if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $allowedClassIds = $employee->homeroomClasses()
-                ->pluck('id')
-                ->toArray();
-
-        } elseif (
+        if (
+            !$user->isGuru() &&
             !$user->isSuperAdmin()
             && !$user->isAdmin()
             && !$user->isKepalaSekolah()
@@ -168,22 +156,8 @@ class RekapAbsensiController extends Controller
     {
         $user = Auth::user();
 
-        // Guru/Wali Kelas hanya boleh mengakses kelas yang diwalikannya
         if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $allowedClassIds = $employee->homeroomClasses()
-                ->pluck('id')
-                ->toArray();
-
-            if (!in_array($class->id, $allowedClassIds)) {
-                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
-            }
-
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $class);
         } elseif (
             !$user->isSuperAdmin()
             && !$user->isAdmin()
@@ -261,6 +235,7 @@ class RekapAbsensiController extends Controller
 
         // Ambil kelas yang dipilih.
         $schoolClass = SchoolClass::findOrFail($validated['class_id']);
+        app(TeacherClassAccess::class)->assertCanAccessClass($user, $schoolClass);
 
         $semesterMatchesClassYear = Semester::query()
             ->whereKey($validated['semester_id'])
@@ -276,22 +251,6 @@ class RekapAbsensiController extends Controller
         }
 
         // Guru/Wali Kelas hanya boleh mengelola kelas yang menjadi tanggung jawabnya.
-        if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $isHomeroomTeacher = $employee->homeroomClasses()
-                ->whereKey($schoolClass->id)
-                ->exists();
-
-            if (!$isHomeroomTeacher) {
-                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
-            }
-        }
-
         // Pastikan siswa benar-benar terdaftar di kelas yang dipilih.
         $studentBelongsToClass = $schoolClass->students()
             ->where('students.id', $validated['student_id'])
@@ -360,20 +319,7 @@ class RekapAbsensiController extends Controller
 
         // Guru/Wali Kelas hanya boleh melihat rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $hasAccess = $employee->homeroomClasses()
-                ->whereKey($rekapAbsensi->class_id)
-                ->exists();
-
-            if (!$hasAccess) {
-                abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
-            }
-
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $rekapAbsensi->schoolClass);
         } elseif (
             !$user->isSuperAdmin()
             && !$user->isAdmin()
@@ -405,19 +351,7 @@ class RekapAbsensiController extends Controller
 
         // Guru/Wali Kelas hanya boleh mengedit rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $hasAccess = $employee->homeroomClasses()
-                ->whereKey($rekapAbsensi->class_id)
-                ->exists();
-
-            if (!$hasAccess) {
-                abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
-            }
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $rekapAbsensi->schoolClass);
         }
 
         $rekapAbsensi->load([
@@ -443,19 +377,7 @@ class RekapAbsensiController extends Controller
 
         // Guru/Wali Kelas hanya boleh mengubah rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $hasAccess = $employee->homeroomClasses()
-                ->whereKey($rekapAbsensi->class_id)
-                ->exists();
-
-            if (!$hasAccess) {
-                abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
-            }
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $rekapAbsensi->schoolClass);
         }
 
         $validated = $request->validate([
@@ -553,19 +475,7 @@ class RekapAbsensiController extends Controller
 
         // Guru/Wali Kelas hanya boleh menghapus rekap dari kelas yang diwalikannya.
         if ($user->isGuru()) {
-            $employee = $user->employee;
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            $hasAccess = $employee->homeroomClasses()
-                ->whereKey($rekapAbsensi->class_id)
-                ->exists();
-
-            if (!$hasAccess) {
-                abort(403, 'Anda tidak memiliki akses ke rekap absensi ini.');
-            }
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $rekapAbsensi->schoolClass);
         }
 
         // Muat relasi sebelum record dihapus.

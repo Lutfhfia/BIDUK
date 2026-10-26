@@ -80,12 +80,11 @@ class SubjectController extends Controller
         }
 
         /*
-         * Urutkan berdasarkan sort_order,
-         * kemudian nama untuk data tambahan.
+         * Urutkan berdasarkan kode dengan ID sebagai pemecah seri.
          */
         $subjects = $query
-            ->orderBy('sort_order')
-            ->orderBy('name')
+            ->orderBy('code')
+            ->orderBy('id')
             ->paginate(10)
             ->withQueryString();
 

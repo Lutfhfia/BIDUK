@@ -444,80 +444,46 @@
                                 {{-- Aksi --}}
                                 <td class="text-center">
 
-                                    <div class="dropdown action-dropdown">
-
-                                        <button
-                                            class="btn btn-sm btn-light"
-                                            type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-nowrap">
+                                        <a
+                                            class="btn btn-sm btn-light text-primary"
+                                            href="{{ route('pegawai.show', $employee) }}"
+                                            title="Lihat Detail"
+                                            aria-label="Lihat detail {{ $employee->name }}"
                                         >
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
+                                            <i class="bi bi-eye"></i>
+                                        </a>
 
+                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
+                                            <a
+                                                class="btn btn-sm btn-light text-warning"
+                                                href="{{ route('pegawai.edit', $employee) }}"
+                                                title="Edit"
+                                                aria-label="Edit {{ $employee->name }}"
+                                            >
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        @endif
 
-                                        <ul class="dropdown-menu dropdown-menu-end">
+                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.delete'))
+                                            <form
+                                                action="{{ route('pegawai.destroy', $employee) }}"
+                                                method="POST"
+                                                onsubmit="return confirm('Yakin ingin menghapus pegawai ini? Akun login BIDUK yang terhubung juga akan dihapus.')"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
 
-                                            <li>
-
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="{{ route('pegawai.show', $employee) }}"
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-sm btn-light text-danger"
+                                                    title="Hapus"
+                                                    aria-label="Hapus {{ $employee->name }}"
                                                 >
-                                                    <i class="bi bi-eye text-primary me-2"></i>
-                                                    Lihat Detail
-                                                </a>
-
-                                            </li>
-
-
-                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
-                                            <li>
-
-                                                <a
-                                                    class="dropdown-item"
-                                                    href="{{ route('pegawai.edit', $employee) }}"
-                                                >
-                                                    <i class="bi bi-pencil text-warning me-2"></i>
-                                                    Edit
-                                                </a>
-
-                                            </li>
-                                            @endif
-
-
-                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.delete'))
-                                            <li>
-                                                <hr class="dropdown-divider">
-                                            </li>
-
-
-                                            <li>
-
-                                                <form
-                                                    action="{{ route('pegawai.destroy', $employee) }}"
-                                                    method="POST"
-                                                    onsubmit="return confirm('Yakin ingin menghapus pegawai ini? Akun login BIDUK yang terhubung juga akan dihapus.')"
-                                                >
-
-                                                    @csrf
-                                                    @method('DELETE')
-
-                                                    <button
-                                                        type="submit"
-                                                        class="dropdown-item text-danger"
-                                                    >
-                                                        <i class="bi bi-trash me-2"></i>
-                                                        Hapus
-                                                    </button>
-
-                                                </form>
-
-                                            </li>
-                                            @endif
-
-                                        </ul>
-
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
 
                                 </td>

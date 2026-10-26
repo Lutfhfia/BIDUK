@@ -18,8 +18,6 @@ class FinalGradeService
      *
      * Urutan dan nama harus sesuai dengan daftar yang disepakati guru.
      * Kunci 'code' digunakan untuk mencocokkan ke tabel subjects.
-     * Kunci 'is_group' menandai kelompok (Muatan Lokal).
-     * Kunci 'children' berisi submata pelajaran.
      */
     public const IJAZAH_SUBJECTS = [
         [
@@ -54,7 +52,7 @@ class FinalGradeService
             'order' => 7,
         ],
         [
-            'name'     => 'Pendidikan Jasmani Olahraga dan Kesehatan',
+            'name'     => 'Pendidikan Jasmani, Olahraga dan Kesehatan',
             'match'    => [
                 'Pendidikan Jasmani, Olahraga dan Kesehatan (PJOK)',
                 'Pendidikan Jasmani, Olahraga dan Kesehatan',
@@ -63,37 +61,13 @@ class FinalGradeService
             ],
             'order'    => 8,
         ],
-        [
-            'name'     => 'Muatan Lokal',
-            'is_group' => true,
-            'order'    => 9,
-            'children' => [
-                [
-                    'name'  => 'Baca Tulis Alquran',
-                    'match' => ['Baca Tulis Alquran', 'BTQ', 'Baca Tulis Al-Quran', 'Muatan Lokal A', 'MULOK-A'],
-                    'order' => 10,
-                ],
-                [
-                    'name'  => 'Bahasa Daerah Palembang',
-                    'match' => ['Bahasa Daerah Palembang', 'Bahasa Daerah', 'Mulok Bahasa Daerah', 'Muatan Lokal B', 'MULOK-B', 'Muatan Lokal C', 'MULOK-C'],
-                    'order' => 11,
-                ],
-            ],
-        ],
     ];
 
     /**
      * Mencocokkan daftar mata pelajaran ijazah bawaan dengan
      * tabel subjects yang ada di database.
      *
-     * @return Collection  Koleksi item: [
-     *   'ijazah_name'  => string,
-     *   'subject_id'   => int|null,
-     *   'subject'      => Subject|null,
-     *   'order'        => int,
-     *   'is_group'     => bool,
-     *   'group_name'   => string|null,
-     * ]
+     * @return Collection Koleksi 8 mata pelajaran utama beserta padanan master.
      */
     public function getIjazahSubjectMapping(): Collection
     {
@@ -101,30 +75,15 @@ class FinalGradeService
         $result = collect();
 
         foreach (self::IJAZAH_SUBJECTS as $item) {
-            if (!empty($item['is_group'])) {
-                // Kelompok seperti Muatan Lokal — hanya headernya
-                foreach ($item['children'] ?? [] as $child) {
-                    $matched = $this->findMatchingSubject($allSubjects, $child);
-                    $result->push([
-                        'ijazah_name' => $child['name'],
-                        'subject_id'  => $matched?->id,
-                        'subject'     => $matched,
-                        'order'       => $child['order'],
-                        'is_group'    => false,
-                        'group_name'  => $item['name'],
-                    ]);
-                }
-            } else {
-                $matched = $this->findMatchingSubject($allSubjects, $item);
-                $result->push([
-                    'ijazah_name' => $item['name'],
-                    'subject_id'  => $matched?->id,
-                    'subject'     => $matched,
-                    'order'       => $item['order'],
-                    'is_group'    => false,
-                    'group_name'  => null,
-                ]);
-            }
+            $matched = $this->findMatchingSubject($allSubjects, $item);
+            $result->push([
+                'ijazah_name' => $item['name'],
+                'subject_id'  => $matched?->id,
+                'subject'     => $matched,
+                'order'       => $item['order'],
+                'is_group' => false,
+                'group_name' => null,
+            ]);
         }
 
         return $result->sortBy('order')->values();
@@ -382,11 +341,29 @@ class FinalGradeService
         int $classId,
         int $academicYearId
     ): Collection {
+        $subjectIds = $this->getIjazahSubjectMapping()
+            ->pluck('subject_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($subjectIds->isEmpty()) {
+            return collect();
+        }
+
         return FinalGrade::where([
-            'student_id'      => $studentId,
-            'class_id'        => $classId,
+            'student_id' => $studentId,
+            'class_id' => $classId,
             'academic_year_id' => $academicYearId,
-        ])->get()->keyBy('subject_id');
+        ])
+            ->whereIn('subject_id', $subjectIds)
+            ->get()
+            ->keyBy('subject_id');
+    }
+
+    public function calculateFinalAverage(Collection $grades): ?float
+    {
+        return $this->calculateAverage($grades, 'final_score');
     }
 
     /**
@@ -395,7 +372,7 @@ class FinalGradeService
      */
     public function calculateAverage(Collection $grades, string $field): ?float
     {
-        $validGrades = $grades->filter(fn($g) => $g->$field !== null);
+        $validGrades = $grades->filter(fn ($grade) => $grade->$field !== null && $grade->$field !== '');
 
         if ($validGrades->isEmpty()) {
             return null;

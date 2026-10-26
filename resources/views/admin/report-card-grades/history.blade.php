@@ -3,6 +3,10 @@
 @section('title', 'Riwayat Nilai Rapot — ' . $student->name)
 
 @section('content')
+    @php
+        $canManageClassHistory = !auth()->user()?->isGuru()
+            && (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'));
+    @endphp
 
     <div class="container-fluid py-4">
 
@@ -270,7 +274,7 @@
 
                                             @if (!$class)
                                                 <span class="badge bg-secondary-subtle text-secondary">Tidak terhubung</span>
-                                            @elseif ($ganjilCount > 0)
+                                            @elseif ($data['ganjil_is_complete'] ?? false)
                                                 <span class="badge bg-success-subtle text-success">
                                                     <i class="bi bi-check me-1"></i> Sudah Diisi
                                                 </span>
@@ -295,7 +299,7 @@
 
                                             @if (!$class)
                                                 <span class="badge bg-secondary-subtle text-secondary">Tidak terhubung</span>
-                                            @elseif ($genapCount > 0)
+                                            @elseif ($data['genap_is_complete'] ?? false)
                                                 <span class="badge bg-success-subtle text-success">
                                                     <i class="bi bi-check me-1"></i> Sudah Diisi
                                                 </span>
@@ -374,7 +378,7 @@
                                     @endif
 
                                     @if (!$historyEntry || $historyEntry->status !== 'Aktif')
-                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                        @if ($canManageClassHistory)
                                             @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-primary w-100"
@@ -390,7 +394,7 @@
                                             @endif
                                         @else
                                             <div class="small text-muted text-center">
-                                                Anda tidak memiliki izin untuk mengubah riwayat kelas.
+                                                Riwayat kelas dikelola oleh Admin sekolah.
                                             </div>
                                         @endif
                                     @else
@@ -401,6 +405,7 @@
 
                                 </div>
 
+                                @if ($canManageClassHistory)
                                 <div class="modal fade" id="history-modal-{{ $level }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -524,6 +529,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
 
                             @else
 
@@ -541,7 +547,7 @@
 
                                 </div>
 
-                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                @if ($canManageClassHistory)
                                     @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-primary w-100"
@@ -557,10 +563,11 @@
                                     @endif
                                 @else
                                     <div class="small text-muted text-center">
-                                        Anda tidak memiliki izin untuk mengubah riwayat kelas.
+                                        Riwayat kelas dikelola oleh Admin sekolah.
                                     </div>
                                 @endif
 
+                                @if ($canManageClassHistory)
                                 <div class="modal fade" id="history-modal-{{ $level }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -673,6 +680,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
 
                             @endif
 

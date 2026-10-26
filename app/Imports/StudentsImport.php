@@ -2,7 +2,6 @@
 
 namespace App\Imports;
 
-use App\Models\AcademicYear;
 use App\Models\ClassStudent;
 use App\Models\SchoolClass;
 use App\Models\Semester;
@@ -10,14 +9,15 @@ use App\Models\Student;
 use App\Models\StudentHealth;
 use App\Models\StudentPhysique;
 use App\Models\StudentPreviousEducation;
+use App\Services\TeacherClassAccess;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Support\Facades\Auth;
-use RuntimeException;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -38,6 +38,12 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
     private int $updatedCount = 0;
     private int $skippedCount = 0;
     private array $errors = [];
+    private SchoolClass $targetClass;
+
+    public function __construct(
+        private readonly int $academicYearId,
+        private readonly int $classId
+    ) {}
 
     public function startRow(): int
     {
@@ -52,38 +58,15 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
     public function collection(Collection $rows): void
     {
         $user = Auth::user();
-        $teacherClass = null;
+        $this->targetClass = SchoolClass::query()
+            ->where('academic_year_id', $this->academicYearId)
+            ->findOrFail($this->classId);
 
-        /*
-         * Guru hanya dapat mengimpor ke kelas yang diampunya
-         * pada tahun ajaran aktif.
-         */
-        if ($user && $user->isGuru()) {
-            $employee = $user->employee;
-            $activeYear = AcademicYear::getActive();
-
-            if (!$employee) {
-                abort(403, 'Akun guru belum terhubung dengan data pegawai.');
-            }
-
-            if (!$activeYear) {
-                abort(403, 'Tahun ajaran aktif belum ditentukan.');
-            }
-
-            $teacherClasses = $employee->homeroomClasses()
-                ->where('classes.academic_year_id', $activeYear->id)
-                ->where('classes.status', 'Aktif')
-                ->get();
-
-            if ($teacherClasses->count() !== 1) {
-                abort(
-                    403,
-                    'Akun Guru harus memiliki tepat satu kelas wali pada tahun ajaran aktif.'
-                );
-            }
-
-            $teacherClass = $teacherClasses->first();
+        if ($user?->isGuru()) {
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $this->targetClass);
         }
+
+        $targetClass = $this->targetClass;
 
         foreach ($rows as $rowIndex => $row) {
             $data = array_values($row->toArray());
@@ -98,28 +81,27 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
                 DB::transaction(function () use (
                     $data,
                     $user,
-                    $teacherClass
+                    $targetClass
                 ) {
                     $student = $this->findExistingStudent($data);
 
                     /*
                      * Jika siswa sudah terdaftar, Guru hanya boleh
-                     * memperbarui data siswa yang aktif di kelasnya.
+                     * memperbarui siswa yang sudah terdaftar pada kelas pilihannya.
                      */
                     if ($user && $user->isGuru() && $student) {
                         $belongsToTeacherClass = $student->classes()
-                            ->where('classes.id', $teacherClass->id)
+                            ->where('classes.id', $targetClass->id)
                             ->where(
                                 'classes.academic_year_id',
-                                $teacherClass->academic_year_id
+                                $targetClass->academic_year_id
                             )
-                            ->wherePivot('status', 'Aktif')
                             ->exists();
 
                         if (!$belongsToTeacherClass) {
                             throw new RuntimeException(
                                 'Data siswa "' . $student->name .
-                                '" bukan siswa aktif di kelas yang Anda ampu. Baris dilewati.'
+                                '" sudah terdaftar di kelas lain atau tidak terdaftar pada kelas pilihan. Baris dilewati.'
                             );
                         }
                     }
@@ -141,19 +123,10 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
                     }
 
                     $this->savePreviousEducation($student, $data);
-                    $this->saveHealth($student, $data);
-                    $this->savePhysique($student, $data);
+                    $this->saveHealth($student, $data, $targetClass->academic_year_id);
+                    $this->savePhysique($student, $data, $targetClass->academic_year_id);
 
-                    /*
-                     * Guru diarahkan ke kelas wali miliknya.
-                     * Role lain tetap menggunakan data kelas dari Excel
-                     * sesuai proses import yang sudah ada.
-                     */
-                    $this->syncClass(
-                        $student,
-                        $data,
-                        $user && $user->isGuru() ? $teacherClass : null
-                    );
+                    $this->syncClass($student, $targetClass);
                 });
             } catch (Throwable $e) {
                 $this->skippedCount++;
@@ -282,15 +255,9 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
         }
     }
 
-    private function saveHealth(Student $student, array $r): void
+    private function saveHealth(Student $student, array $r, int $academicYearId): void
     {
-        $academicYear = AcademicYear::getActive();
-
-        if (!$academicYear) {
-            return;
-        }
-
-        $semester = Semester::where('academic_year_id', $academicYear->id)
+        $semester = Semester::where('academic_year_id', $academicYearId)
             ->orderBy('id')
             ->first();
 
@@ -313,7 +280,7 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
             StudentHealth::updateOrCreate(
                 [
                     'student_id' => $student->id,
-                    'academic_year_id' => $academicYear->id,
+                    'academic_year_id' => $academicYearId,
                     'semester_id' => $semester->id,
                 ],
                 $payload
@@ -321,7 +288,7 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
         }
     }
 
-    private function savePhysique(Student $student, array $r): void
+    private function savePhysique(Student $student, array $r, int $academicYearId): void
     {
         $height = $this->numeric($this->value($r, 17));
         $weight = $this->numeric($this->value($r, 16));
@@ -330,13 +297,7 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
             return;
         }
 
-        $academicYear = AcademicYear::getActive();
-
-        if (!$academicYear) {
-            return;
-        }
-
-        $semester = Semester::where('academic_year_id', $academicYear->id)
+        $semester = Semester::where('academic_year_id', $academicYearId)
             ->orderBy('id')
             ->first();
 
@@ -347,7 +308,7 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
         StudentPhysique::updateOrCreate(
             [
                 'student_id' => $student->id,
-                'academic_year_id' => $academicYear->id,
+                'academic_year_id' => $academicYearId,
                 'semester_id' => $semester->id,
             ],
             [
@@ -359,82 +320,16 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
 
     private function syncClass(
         Student $student,
-        array $r,
-        ?SchoolClass $forcedClass = null
+        SchoolClass $forcedClass
     ): void {
-        $activeYear = AcademicYear::getActive();
+        $class = $forcedClass;
 
-        if (!$activeYear) {
-            return;
-        }
-
-        /*
-         * Jika dipanggil oleh Guru, kelas ditentukan oleh sistem,
-         * bukan oleh nilai nama kelas di Excel.
-         */
-        if ($forcedClass !== null) {
-            if ((int) $forcedClass->academic_year_id !== (int) $activeYear->id) {
-                throw new RuntimeException(
-                    'Kelas tujuan bukan bagian dari tahun ajaran aktif.'
-                );
-            }
-
-            $class = $forcedClass;
-        } else {
-            // Proses import Admin/Super Admin tetap mengikuti Excel.
-            $className = $this->nullableString(
-                $this->value($r, 64)
-            );
-
-            if (!$className) {
-                return;
-            }
-
-            $class = SchoolClass::where(
-                'academic_year_id',
-                $activeYear->id
-            )
-                ->where(function ($query) use ($className) {
-                    $query->where('name', $className)
-                        ->orWhere(
-                            'name',
-                            'like',
-                            '%' . $className . '%'
-                        );
-                })
-                ->first();
-
-            if (!$class) {
-                return;
-            }
-        }
-
-        // Jika Guru melakukan import, jangan sentuh penempatan kelas lain.
-        // Siswa baru diarahkan ke kelas wali; siswa yang sudah ada hanya
-        // dapat diproses jika validasi di collection() menyatakan bahwa
-        // siswa tersebut memang aktif di kelas wali.
-        if ($forcedClass !== null) {
-            ClassStudent::updateOrCreate(
-                [
-                    'class_id' => $class->id,
-                    'student_id' => $student->id,
-                ],
-                [
-                    'status' => 'Aktif',
-                    'entry_date' => now()->toDateString(),
-                    'exit_date' => null,
-                ]
-            );
-
-            return;
-        }
-
-        // Untuk Admin/Super Admin, proses penempatan dari Excel tetap berlaku.
         ClassStudent::where('student_id', $student->id)
-            ->whereHas('schoolClass', function ($query) use ($activeYear) {
-                $query->where('academic_year_id', $activeYear->id);
+            ->whereHas('schoolClass', function ($query) use ($class) {
+                $query->where('academic_year_id', $class->academic_year_id);
             })
             ->where('status', 'Aktif')
+            ->where('class_id', '!=', $class->id)
             ->update([
                 'status' => 'Naik Kelas',
                 'exit_date' => now()->toDateString(),

@@ -9,24 +9,24 @@
     </title>
 
     <style>
-     @page {
-    size: A4 portrait;
-    margin: 10mm 12mm;
-}
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+        }
 
-.page {
-    width: 100%;
-    min-height: 0;
-    margin: 0;
-    padding: 0;
-    background: #fff;
-    position: relative;
-    page-break-after: always;
-}
+        .page {
+            width: 100%;
+            min-height: 0;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            position: relative;
+            page-break-after: always;
+        }
 
-.page:last-child {
-    page-break-after: auto;
-}
+        .page:last-child {
+            page-break-after: auto;
+        }
 
         .page:last-child {
             page-break-after: auto;
@@ -97,20 +97,21 @@
         }
 
         .grades-table th,
-.grades-table td {
-    border: 1px solid #000;
-    padding: 0.8mm 0.5mm;
-    font-size: 6pt;
-    vertical-align: middle;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-}
-.grades-table th {
-    text-align: center;
-    font-weight: bold;
-    background-color: #f0f0f0;
-    font-size: 6.2pt;
-}
+        .grades-table td {
+            border: 1px solid #000;
+            padding: 0.8mm 0.5mm;
+            font-size: 6pt;
+            vertical-align: middle;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+
+        .grades-table th {
+            text-align: center;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            font-size: 6.2pt;
+        }
 
         .grades-table td.text-center {
             text-align: center;
@@ -200,11 +201,8 @@
         {{-- ================================================
            HEADER SEKOLAH
         ================================================ --}}
-        <img
-            class="school-letterhead"
-            src="data:image/png;base64,{{ $letterheadImage }}"
-            alt="Kop SD Negeri 204 Palembang"
-        >
+        <img class="school-letterhead" src="data:image/png;base64,{{ $letterheadImage }}"
+            alt="Kop SD Negeri 204 Palembang">
 
 
         {{-- ================================================
@@ -246,41 +244,26 @@
         <table class="grades-table">
             <thead>
                 <tr>
-                <th style="width: 4%;">No</th>
-<th style="width: 24%;">Mata Pelajaran</th>
-<th style="width: 8%;">Nilai<br>Sekolah</th>
-<th style="width: 22%;">Capaian Pembelajaran<br>(Nilai Sekolah)</th>
-<th style="width: 8%;">Nilai<br>Akhir</th>
-<th style="width: 28%;">Capaian Pembelajaran<br>(Nilai Akhir)</th>
+                    <th style="width: 4%;">No</th>
+                    <th style="width: 24%;">Mata Pelajaran</th>
+                    <th style="width: 8%;">Nilai<br>Sekolah</th>
+                    <th style="width: 22%;">Capaian Pembelajaran<br>(Nilai Sekolah)</th>
+                    <th style="width: 8%;">Nilai<br>Akhir</th>
+                    <th style="width: 28%;">Capaian Pembelajaran<br>(Nilai Akhir)</th>
                 </tr>
             </thead>
 
             <tbody>
                 @php
                     $no = 0;
-                    $currentGroup = null;
                 @endphp
 
-                @foreach($ijazahMapping as $item)
+                @foreach ($ijazahMapping as $item)
                     @php
-                        $showGroupHeader = $item['group_name'] && $item['group_name'] !== $currentGroup;
-                        if ($showGroupHeader) {
-                            $currentGroup = $item['group_name'];
-                        }
-
                         $no++;
                         $sid = $item['subject_id'];
-                        $stored = $sid ? ($storedGrades[$sid] ?? null) : null;
+                        $stored = $sid ? $storedGrades[$sid] ?? null : null;
                     @endphp
-
-                    {{-- Header kelompok --}}
-                    @if($showGroupHeader)
-                        <tr>
-                            <td colspan="6" class="group-header">
-                                {{ $currentGroup }}
-                            </td>
-                        </tr>
-                    @endif
 
                     <tr>
                         <td class="text-center">{{ $no }}</td>
@@ -350,7 +333,7 @@
                                 <td style="width: 120px;">Status Akhir</td>
                                 <td style="width: 10px;">:</td>
                                 <td>
-                                    @if($graduationStatus && $graduationStatus->status)
+                                    @if ($graduationStatus && $graduationStatus->status)
                                         <div class="status-box">
                                             {{ $graduationStatus->status }}
                                         </div>
@@ -359,26 +342,26 @@
                                     @endif
                                 </td>
                             </tr>
-                            @if($graduationStatus && $graduationStatus->graduation_date)
-                            <tr>
-                                <td>Tanggal Penetapan</td>
-                                <td>:</td>
-                                <td>{{ $graduationStatus->graduation_date->translatedFormat('d F Y') }}</td>
-                            </tr>
+                            @if ($graduationStatus && $graduationStatus->graduation_date)
+                                <tr>
+                                    <td>Tanggal Penetapan</td>
+                                    <td>:</td>
+                                    <td>{{ $graduationStatus->graduation_date->translatedFormat('d F Y') }}</td>
+                                </tr>
                             @endif
-                            @if($graduationStatus && $graduationStatus->certificate_number)
-                            <tr>
-                                <td>Nomor Ijazah</td>
-                                <td>:</td>
-                                <td>{{ $graduationStatus->certificate_number }}</td>
-                            </tr>
+                            @if ($graduationStatus && $graduationStatus->certificate_number)
+                                <tr>
+                                    <td>Nomor Ijazah</td>
+                                    <td>:</td>
+                                    <td>{{ $graduationStatus->certificate_number }}</td>
+                                </tr>
                             @endif
-                            @if($graduationStatus && $graduationStatus->skhus_number)
-                            <tr>
-                                <td>Nomor SKHUS</td>
-                                <td>:</td>
-                                <td>{{ $graduationStatus->skhus_number }}</td>
-                            </tr>
+                            @if ($graduationStatus && $graduationStatus->skhus_number)
+                                <tr>
+                                    <td>Nomor SKHUS</td>
+                                    <td>:</td>
+                                    <td>{{ $graduationStatus->skhus_number }}</td>
+                                </tr>
                             @endif
                         </table>
                     </td>
@@ -400,7 +383,7 @@
                             <p>
                                 <strong><u>{{ $homeroomTeacher->name ?? '........................' }}</u></strong>
                                 <br>
-                                @if($homeroomTeacher && $homeroomTeacher->nip)
+                                @if ($homeroomTeacher && $homeroomTeacher->nip)
                                     NIP. {{ $homeroomTeacher->nip }}
                                 @else
                                     NIP. ............................
@@ -415,7 +398,7 @@
                             <p>
                                 <strong><u>{{ $headmaster ?? '........................' }}</u></strong>
                                 <br>
-                                @if($headmasterNip)
+                                @if ($headmasterNip)
                                     NIP. {{ $headmasterNip }}
                                 @else
                                     NIP. ............................

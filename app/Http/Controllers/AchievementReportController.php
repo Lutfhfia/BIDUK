@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Achievement;
 use App\Models\AcademicYear;
 use App\Models\SchoolClass;
+use App\Services\TeacherClassAccess;
 use Illuminate\Http\Request;
 
 class AchievementReportController extends Controller
@@ -26,15 +27,38 @@ class AchievementReportController extends Controller
          * ======================================================
          */
 
-        $academicYears = AcademicYear::orderByDesc('id')
+        $classAccess = app(TeacherClassAccess::class);
+        $user = $request->user();
+        $teacherClassIds = $classAccess->classIds($user);
+        $teacherAcademicYearIds = $teacherClassIds === null
+            ? null
+            : SchoolClass::whereIn('id', $teacherClassIds)
+                ->distinct()
+                ->pluck('academic_year_id');
+
+        $academicYears = AcademicYear::query()
+            ->when(
+                $teacherAcademicYearIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherAcademicYearIds)
+            )
+            ->orderByDesc('id')
             ->get();
 
         /*
          * Tahun ajaran aktif sebagai default.
          */
-        $selectedAcademicYearId =
-            $request->academic_year_id
-            ?? AcademicYear::getActive()?->id;
+        $selectedAcademicYearId = $request->academic_year_id
+            ?? ($teacherAcademicYearIds?->contains(AcademicYear::getActive()?->id)
+                ? AcademicYear::getActive()?->id
+                : $academicYears->first()?->id);
+
+        abort_if(
+            $teacherAcademicYearIds !== null
+                && $selectedAcademicYearId
+                && !$teacherAcademicYearIds->contains((int) $selectedAcademicYearId),
+            403,
+            'Anda tidak memiliki akses ke tahun ajaran ini.'
+        );
 
         /*
          * ======================================================
@@ -46,10 +70,16 @@ class AchievementReportController extends Controller
 
         if ($selectedAcademicYearId) {
 
-            $classes = SchoolClass::where(
+            $classesQuery = SchoolClass::where(
                 'academic_year_id',
                 $selectedAcademicYearId
-            )
+            );
+
+            if ($teacherClassIds !== null) {
+                $classesQuery->whereIn('id', $teacherClassIds);
+            }
+
+            $classes = $classesQuery
                 ->where('status', 'Aktif')
                 ->orderBy('grade_level')
                 ->orderBy('name')
@@ -72,7 +102,7 @@ class AchievementReportController extends Controller
             $selectedAcademicYearId
         ) {
 
-            $classExists = SchoolClass::where(
+            $classQuery = SchoolClass::where(
                 'id',
                 $selectedClassId
             )
@@ -80,11 +110,16 @@ class AchievementReportController extends Controller
                     'academic_year_id',
                     $selectedAcademicYearId
                 )
-                ->where('status', 'Aktif')
-                ->exists();
+                ->where('status', 'Aktif');
+
+            if ($teacherClassIds !== null) {
+                $classQuery->whereIn('id', $teacherClassIds);
+            }
+
+            $classExists = $classQuery->exists();
 
             if (!$classExists) {
-                $selectedClassId = null;
+                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
             }
         }
 
@@ -105,6 +140,10 @@ class AchievementReportController extends Controller
                 $selectedAcademicYearId,
                 fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
             );
+
+        if ($teacherClassIds !== null) {
+            $query->whereIn('class_id', $teacherClassIds);
+        }
 
         /*
          * Filter kelas jika dipilih.

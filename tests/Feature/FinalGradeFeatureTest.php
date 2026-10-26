@@ -93,19 +93,21 @@ class FinalGradeFeatureTest extends TestCase
     public function test_ijazah_subject_mapping_structure(): void
     {
         $subjects = FinalGradeService::IJAZAH_SUBJECTS;
-        $this->assertNotEmpty($subjects);
+        $names = collect($subjects)->pluck('name')->all();
 
-        $names = collect($subjects)->map(function ($item) {
-            if (!empty($item['is_group'])) {
-                return collect($item['children'])->pluck('name');
-            }
-            return $item['name'];
-        })->flatten()->toArray();
-
-        $this->assertContains('Pendidikan Agama dan Budi Pekerti', $names);
-        $this->assertContains('Bahasa Indonesia', $names);
-        $this->assertContains('Matematika', $names);
-        $this->assertContains('Baca Tulis Alquran', $names);
-        $this->assertContains('Bahasa Daerah Palembang', $names);
+        $this->assertSame([
+            'Pendidikan Agama dan Budi Pekerti',
+            'Pendidikan Kewarganegaraan',
+            'Bahasa Indonesia',
+            'Matematika',
+            'Ilmu Pengetahuan Alam dan Sosial (IPAS)',
+            'Seni Budaya dan Prakarya',
+            'Bahasa Inggris',
+            'Pendidikan Jasmani, Olahraga dan Kesehatan',
+        ], $names);
+        $this->assertCount(8, $names);
+        $this->assertNotContains('Baca Tulis Alquran', $names);
+        $this->assertNotContains('Bahasa Daerah Palembang', $names);
+        $this->assertNotContains('Muatan Lokal', $names);
     }
 }

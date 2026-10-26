@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Exports\StudentsExport;
 use App\Imports\StudentsImport;
+use App\Models\AcademicYear;
+use App\Models\SchoolClass;
+use App\Services\TeacherClassAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StudentsTemplateExport;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 class StudentImportExportController extends Controller
@@ -18,9 +22,58 @@ class StudentImportExportController extends Controller
      * Menampilkan form import siswa.
      * Akses route harus dibatasi dengan permission:students.import.
      */
-    public function form(): View
+    public function form(Request $request): View
     {
-        return view('students.import');
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $academicYears = AcademicYear::query()
+            ->when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereIn(
+                    'id',
+                    SchoolClass::whereIn('id', $teacherClassIds)
+                        ->select('academic_year_id')
+                        ->distinct()
+                )
+            )
+            ->orderByDesc('start_date')
+            ->orderByDesc('id')
+            ->get();
+
+        $activeAcademicYear = AcademicYear::getActive();
+        $selectedAcademicYearId = $request->input('academic_year_id');
+        if (!$selectedAcademicYearId || !$academicYears->contains('id', (int) $selectedAcademicYearId)) {
+            $selectedAcademicYearId = $academicYears->contains('id', $activeAcademicYear?->id)
+                ? $activeAcademicYear?->id
+                : $academicYears->first()?->id;
+        }
+
+        $classes = SchoolClass::query()
+            ->when(
+                $teacherClassIds !== null,
+                fn ($query) => $query->whereIn('id', $teacherClassIds)
+            )
+            ->with('academicYear')
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->get();
+
+        $selectedClassId = $request->input('class_id');
+        if (!$classes->contains(fn ($class) =>
+            (int) $class->id === (int) $selectedClassId
+            && (int) $class->academic_year_id === (int) $selectedAcademicYearId
+        )) {
+            $selectedClassId = $classes
+                ->first(fn ($class) => (int) $class->academic_year_id === (int) $selectedAcademicYearId)
+                ?->id;
+        }
+
+        return view('students.import', compact(
+            'academicYears',
+            'classes',
+            'selectedAcademicYearId',
+            'selectedClassId',
+            'teacherClassIds'
+        ));
     }
 
     /**
@@ -29,6 +82,15 @@ class StudentImportExportController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
+            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
+            'class_id' => [
+                'required',
+                'integer',
+                Rule::exists('classes', 'id')->where(
+                    'academic_year_id',
+                    $request->input('academic_year_id')
+                ),
+            ],
             'file' => [
                 'required',
                 'file',
@@ -38,7 +100,25 @@ class StudentImportExportController extends Controller
         ]);
 
         try {
-            $import = new StudentsImport();
+            $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+            $class = SchoolClass::query()
+                ->where('academic_year_id', $request->integer('academic_year_id'))
+                ->when(
+                    $teacherClassIds !== null,
+                    fn ($query) => $query->whereIn('id', $teacherClassIds)
+                )
+                ->find($request->integer('class_id'));
+
+            abort_unless(
+                $class,
+                403,
+                'Kelas yang dipilih bukan kelas yang dapat Anda kelola pada tahun ajaran tersebut.'
+            );
+
+            $import = new StudentsImport(
+                $request->integer('academic_year_id'),
+                $class->id
+            );
 
             Excel::import($import, $request->file('file'));
 

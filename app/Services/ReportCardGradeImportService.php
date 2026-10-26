@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -27,12 +29,9 @@ class ReportCardGradeImportService
     private const FIRST_SUBJECT_COLUMN = 4;
 
     private const SUBJECT_FIELDS = [
-        ['Pengetahuan', 'Nilai', 'score'],
-        ['Pengetahuan', 'Predikat', 'knowledge_predicate'],
-        ['Keterampilan', 'Nilai', 'skill_score'],
-        ['Keterampilan', 'Predikat', 'skill_predicate'],
-        ['Capaian Pembelajaran', 'Pengetahuan', 'learning_outcome'],
-        ['Capaian Pembelajaran', 'Keterampilan', 'skill_learning_outcome'],
+        ['Data Nilai', 'Nilai Akhir', 'score'],
+        ['Data Nilai', 'Predikat', 'knowledge_predicate'],
+        ['Data Nilai', 'Capaian Pembelajaran', 'learning_outcome'],
     ];
 
     public function createTemplate(array $context): Spreadsheet
@@ -76,32 +75,51 @@ class ReportCardGradeImportService
         foreach ($subjects as $index => $subject) {
             $startIndex = self::FIRST_SUBJECT_COLUMN + ($index * count(self::SUBJECT_FIELDS));
             $startColumn = Coordinate::stringFromColumnIndex($startIndex);
-            $knowledgeEnd = Coordinate::stringFromColumnIndex($startIndex + 1);
-            $skillStart = Coordinate::stringFromColumnIndex($startIndex + 2);
-            $skillEnd = Coordinate::stringFromColumnIndex($startIndex + 3);
-            $outcomeStart = Coordinate::stringFromColumnIndex($startIndex + 4);
-            $outcomeEnd = Coordinate::stringFromColumnIndex($startIndex + 5);
+            $endColumn = Coordinate::stringFromColumnIndex($startIndex + count(self::SUBJECT_FIELDS) - 1);
 
-            $sheet->mergeCells($startColumn.'7:'.$outcomeEnd.'7');
+            $sheet->mergeCells($startColumn.'7:'.$endColumn.'7');
             $sheet->setCellValue($startColumn.'7', $subject->name);
-            $sheet->mergeCells($startColumn.'8:'.$knowledgeEnd.'8');
-            $sheet->mergeCells($skillStart.'8:'.$skillEnd.'8');
-            $sheet->mergeCells($outcomeStart.'8:'.$outcomeEnd.'8');
-            $sheet->setCellValue($startColumn.'8', 'Pengetahuan');
-            $sheet->setCellValue($skillStart.'8', 'Keterampilan');
-            $sheet->setCellValue($outcomeStart.'8', 'Capaian Pembelajaran');
+            $sheet->mergeCells($startColumn.'8:'.$endColumn.'8');
+            $sheet->setCellValue($startColumn.'8', 'Data Nilai');
 
             foreach (self::SUBJECT_FIELDS as $offset => [, $field]) {
                 $column = Coordinate::stringFromColumnIndex($startIndex + $offset);
                 $sheet->setCellValue($column.'9', $field);
                 $sheet->getColumnDimension($column)->setWidth(
-                    $offset >= 4 ? 32 : ($offset % 2 === 0 ? 13 : 12)
+                    $offset === 2 ? 32 : ($offset === 0 ? 13 : 12)
                 );
             }
         }
 
         $sheet->mergeCells('A10:'.$lastColumn.'10');
         $sheet->setCellValue('A10', 'Isi data siswa mulai baris 11. NISN digunakan untuk mencocokkan siswa dengan data BIDUK.');
+        $students = $class->students()
+            ->orderBy('students.name')
+            ->orderBy('students.id')
+            ->get(['students.id', 'students.nisn', 'students.name']);
+        foreach ($students as $index => $student) {
+            $row = 11 + $index;
+            $sheet->setCellValue('A'.$row, $index + 1);
+            $sheet->setCellValueExplicit('B'.$row, (string) $student->nisn, DataType::TYPE_STRING);
+            $sheet->setCellValue('C'.$row, $student->name);
+
+            for ($subjectIndex = 0; $subjectIndex < $subjects->count(); $subjectIndex++) {
+                $startIndex = self::FIRST_SUBJECT_COLUMN + ($subjectIndex * count(self::SUBJECT_FIELDS));
+                $predicateColumn = Coordinate::stringFromColumnIndex($startIndex + 1);
+                $validation = $sheet->getCell($predicateColumn.$row)->getDataValidation();
+                $validation->setType(DataValidation::TYPE_LIST);
+                $validation->setErrorStyle(DataValidation::STYLE_STOP);
+                $validation->setAllowBlank(true);
+                $validation->setShowInputMessage(true);
+                $validation->setShowErrorMessage(true);
+                $validation->setShowDropDown(false);
+                $validation->setFormula1('"A,B,C,D"');
+                $validation->setPromptTitle('Pilih Predikat');
+                $validation->setPrompt('Pilih A, B, C, atau D dari daftar.');
+                $validation->setErrorTitle('Predikat tidak valid');
+                $validation->setError('Predikat harus A, B, C, atau D.');
+            }
+        }
         $sheet->getColumnDimension('A')->setWidth(8);
         $sheet->getColumnDimension('B')->setWidth(18);
         $sheet->getColumnDimension('C')->setWidth(30);
@@ -166,6 +184,9 @@ class ReportCardGradeImportService
 
             return $result;
         }
+        $enrolledStudentIds = $class->students()
+            ->pluck('students.id')
+            ->flip();
         $columns = $this->validateStructure(
             $sheet,
             $subjects,
@@ -221,9 +242,23 @@ class ReportCardGradeImportService
                 if ($identity['name'] !== '' && mb_strtolower($identity['name']) !== mb_strtolower(trim($student->name))) {
                     $rowWarnings[] = 'Nama pada template berbeda dari data BIDUK. Siswa tetap dicocokkan berdasarkan NISN.';
                 }
+                if (! $enrolledStudentIds->has($student->id)) {
+                    $rowErrors[] = 'Siswa tidak terdaftar pada kelas dan tahun ajaran yang dipilih.';
+                }
             }
 
-            $recordAttributes = [];
+            $recordAttributes = $subjects
+                ->mapWithKeys(fn ($subject) => [
+                    $subject->id => array_merge(
+                        array_fill_keys(array_column(self::SUBJECT_FIELDS, 2), null),
+                        [
+                            'skill_score' => null,
+                            'skill_predicate' => null,
+                            'skill_learning_outcome' => null,
+                        ]
+                    ),
+                ])
+                ->all();
             foreach ($columns as $column) {
                 $value = $this->cellValue($sheet, $column['column'], $rowNumber);
                 if (! $this->hasValue($value)) {
@@ -248,6 +283,11 @@ class ReportCardGradeImportService
                 'name' => $identity['name'],
                 'matched_name' => $student?->name,
                 'class_name' => $class->name,
+                'grades' => $subjects
+                    ->mapWithKeys(fn ($subject) => [
+                        $subject->name => $recordAttributes[$subject->id] ?? [],
+                    ])
+                    ->all(),
                 'warnings' => array_values(array_unique($rowWarnings)),
                 'errors' => array_values(array_unique($rowErrors)),
             ];
@@ -266,10 +306,16 @@ class ReportCardGradeImportService
                     'subject_id' => $subjectId,
                     'semester_id' => $semester->id,
                 ];
+                $hasValues = collect($attributes)->contains(
+                    fn ($value) => $value !== null && $value !== ''
+                );
+                $existingRecord = ReportCardGrade::where($identityKeys)->exists();
+                if (! $hasValues && ! $existingRecord) {
+                    continue;
+                }
+
                 $result['records'][] = $identityKeys + ['attributes' => $attributes];
-                $result['summary'][ReportCardGrade::where($identityKeys)->exists()
-                    ? 'updated_records'
-                    : 'new_records']++;
+                $result['summary'][$existingRecord ? 'updated_records' : 'new_records']++;
             }
 
             $result['rows'][] = $rowPreview;
@@ -380,13 +426,7 @@ class ReportCardGradeImportService
             foreach (self::SUBJECT_FIELDS as $offset => [$aspect, $field, $attribute]) {
                 $columnIndex = $startColumnIndex + $offset;
                 $columnName = Coordinate::stringFromColumnIndex($columnIndex);
-                $aspectOffset = match ($offset) {
-                    0, 1 => 0,
-                    2, 3 => 2,
-                    default => 4,
-                };
-                $aspectColumn = Coordinate::stringFromColumnIndex($startColumnIndex + $aspectOffset);
-                $aspectHeader = trim($this->cellText($sheet, $aspectColumn, 8));
+                $aspectHeader = trim($this->cellText($sheet, $subjectColumn, 8));
                 $fieldHeader = trim($this->cellText($sheet, $columnName, 9));
 
                 if ($aspectHeader !== $aspect || $fieldHeader !== $field) {
@@ -428,8 +468,8 @@ class ReportCardGradeImportService
     {
         return $class->subjects()
             ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.sort_order')
-            ->orderBy('subjects.name')
+            ->orderBy('subjects.code')
+            ->orderBy('subjects.id')
             ->get();
     }
 
@@ -441,7 +481,7 @@ class ReportCardGradeImportService
             return false;
         }
 
-        if ($column['field'] === 'Nilai') {
+        if (in_array($column['field'], ['Nilai', 'Nilai Akhir'], true)) {
             if (! is_numeric($value) || (float) $value < 0 || (float) $value > 100) {
                 $errors[] = $this->valueError($column, 'harus berupa angka 0–100.');
 
@@ -493,7 +533,6 @@ class ReportCardGradeImportService
 
         return SchoolClass::query()
             ->where('academic_year_id', $academicYear->id)
-            ->where('status', 'Aktif')
             ->findOrFail($classId);
     }
 
