@@ -170,6 +170,15 @@ Route::middleware('auth')->group(function () {
         )
             ->middleware('permission:students.import')
             ->name('students.import.template');
+// Export PDF harus diletakkan setelah route export Excel dan SEBELUM students/{student}.
+Route::get(
+    'students/export/pdf',
+    [StudentImportExportController::class, 'exportPdf']
+)
+    ->middleware('permission:students.export')
+    ->name('students.export.pdf');
+
+
     // Import & Export harus SEBELUM students/{student} agar tidak tertangkap wildcard
     Route::get(
         'students/import',

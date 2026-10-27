@@ -754,6 +754,7 @@
         });
     </script>
     @stack('scripts')
+    @include('components.page-loader')
 </body>
 
 </html>

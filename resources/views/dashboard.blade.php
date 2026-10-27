@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Dashboard')
@@ -8,476 +7,372 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid dashboard-page">
 
-    {{-- Header Dashboard --}}
-    <div class="mb-4">
-        <h4 class="fw-bold mb-1">
-            <i class="bi bi-speedometer2 text-success me-2"></i>Dashboard
-        </h4>
-        <p class="text-muted mb-0">
-            Selamat datang, {{ auth()->user()->name }}
-        </p>
+    {{-- Header dashboard --}}
+    <div class="dashboard-heading d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+        <div>
+            <div class="dashboard-eyebrow"><span></span> BIDUK · SDN 204 PALEMBANG</div>
+            <h1 class="dashboard-title mb-1">Dashboard</h1>
+            <p class="text-muted mb-0">Selamat datang, {{ auth()->user()->name }}.</p>
+        </div>
+        <div class="dashboard-period">
+            <i class="bi bi-calendar3 me-2"></i>
+            Tahun ajaran aktif: <strong>{{ $activeAcademicYear?->name ?? 'Belum ada' }}</strong>
+        </div>
     </div>
 
-    {{-- Card Statistik --}}
-    <div class="row g-4 mb-4">
-
-        {{-- Total Siswa --}}
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-3 p-3 bg-success bg-opacity-10 me-3 stat-icon">
-                        <i class="bi bi-people-fill text-success fs-3"></i>
-                    </div>
-
-                    <div>
-                        <p class="text-muted mb-1">Total Siswa Aktif</p>
-                        <h3 class="fw-bold mb-0">{{ $totalStudents }}</h3>
-                    </div>
+    {{-- Kartu statistik utama --}}
+    <div class="row g-3 g-xl-4 mb-4">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="dashboard-stat-card stat-green-one h-100">
+                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-content">
+                    <p>Total Siswa Aktif</p>
+                    <h2>{{ number_format($totalStudents) }}</h2>
+                    <span>Siswa terdata pada sistem</span>
                 </div>
+                <i class="bi bi-people stat-watermark" aria-hidden="true"></i>
             </div>
         </div>
 
-        {{-- Total Pegawai --}}
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-3 p-3 bg-primary bg-opacity-10 me-3 stat-icon">
-                        <i class="bi bi-person-badge-fill text-primary fs-3"></i>
-                    </div>
-
-                    <div>
-                        <p class="text-muted mb-1">Total Pegawai Aktif</p>
-                        <h3 class="fw-bold mb-0">{{ $totalEmployees }}</h3>
-                    </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="dashboard-stat-card stat-green-two h-100">
+                <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
+                <div class="stat-content">
+                    <p>Total Pegawai Aktif</p>
+                    <h2>{{ number_format($totalEmployees) }}</h2>
+                    <span>Pegawai terdata pada sistem</span>
                 </div>
+                <i class="bi bi-person-badge stat-watermark" aria-hidden="true"></i>
             </div>
         </div>
 
-        {{-- Total Kelas --}}
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-3 p-3 bg-warning bg-opacity-10 me-3 stat-icon">
-                        <i class="bi bi-building-fill text-warning fs-3"></i>
-                    </div>
-
-                    <div>
-                        <p class="text-muted mb-1">Total Roumble</p>
-                        <h3 class="fw-bold mb-0">{{ $totalClasses }}</h3>
-                    </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="dashboard-stat-card stat-green-three h-100">
+                <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
+                <div class="stat-content">
+                    <p>Total Rombel</p>
+                    <h2>{{ number_format($totalClasses) }}</h2>
+                    <span>Rombongan belajar terdata</span>
                 </div>
+                <i class="bi bi-buildings stat-watermark" aria-hidden="true"></i>
             </div>
         </div>
 
-        {{-- Tahun Ajaran --}}
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-3 p-3 bg-info bg-opacity-10 me-3 stat-icon">
-                        <i class="bi bi-calendar-event-fill text-info fs-3"></i>
-                    </div>
-
-                    <div>
-                        <p class="text-muted mb-1">Tahun Ajaran Aktif</p>
-                        <h5 class="fw-bold mb-0">
-                            {{ $activeAcademicYear?->name ?? 'Belum Ada' }}
-                        </h5>
-                    </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="dashboard-stat-card stat-green-four h-100">
+                <div class="stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
+                <div class="stat-content">
+                    <p>Tahun Ajaran Aktif</p>
+                    <h2 class="stat-year">{{ $activeAcademicYear?->name ?? 'Belum ada' }}</h2>
+                    <span>Periode akademik berjalan</span>
                 </div>
+                <i class="bi bi-calendar2-check stat-watermark" aria-hidden="true"></i>
             </div>
         </div>
-
     </div>
-
     @if (auth()->user()->isGuru())
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0 pt-4 px-4">
-                <h5 class="fw-bold mb-1">Riwayat Kelas Wali</h5>
-                <p class="text-muted mb-0">Pilih kelas untuk melihat tahun ajaran dan daftar siswanya.</p>
-            </div>
-            <div class="card-body p-4">
-                @forelse ($teacherClassHistory as $historyClass)
-                    <div class="border rounded-3 mb-3">
-                        <button
-                            class="btn btn-link text-decoration-none text-start w-100 p-3"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#teacherClassHistory{{ $historyClass->id }}"
-                            aria-expanded="false"
-                            aria-controls="teacherClassHistory{{ $historyClass->id }}"
-                        >
-                            <span class="fw-semibold">Kelas {{ $historyClass->name }}</span>
-                            <span class="text-muted ms-2">{{ $historyClass->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}</span>
-                            <i class="bi bi-chevron-down float-end"></i>
-                        </button>
-                        <div class="collapse" id="teacherClassHistory{{ $historyClass->id }}">
-                            <div class="px-3 pb-3">
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <small class="text-muted d-block">Tahun Ajaran</small>
-                                        <span class="fw-semibold">{{ $historyClass->academicYear?->name ?? '-' }}</span>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <small class="text-muted d-block">Kelas</small>
-                                        <span class="fw-semibold">{{ $historyClass->name }}</span>
-                                    </div>
-                                </div>
-                                <h6 class="fw-semibold">Daftar Siswa ({{ $historyClass->students->count() }})</h6>
-                                @if ($historyClass->students->isNotEmpty())
-                                    <ul class="mb-0">
-                                        @foreach ($historyClass->students as $historyStudent)
-                                            <li>{{ $historyStudent->name }}</li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    <p class="text-muted mb-0">Belum ada siswa yang tercatat pada kelas ini.</p>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-muted mb-0">Belum ada riwayat kelas wali yang tercatat untuk akun ini.</p>
-                @endforelse
-            </div>
-        </div>
-    @endif
-
-    {{-- Grafik Jumlah Siswa per Kelas --}}
     <div class="card border-0 shadow-sm mb-4">
-
         <div class="card-header bg-white border-0 pt-4 px-4">
-            <h5 class="fw-bold mb-1">Jumlah Siswa per Kelas</h5>
+            <h5 class="fw-bold mb-1">Riwayat Kelas Wali</h5>
             <p class="text-muted mb-0">
-                Jumlah siswa aktif berdasarkan kelas pada tahun ajaran aktif
-            </p>
-        </div>
-
-        <div class="card-body px-4 pb-4">
-
-            @if ($classes->count() > 0)
-
-                <div class="chart-wrapper">
-                    <canvas id="studentClassChart"></canvas>
-                </div>
-
-            @else
-
-                <div class="text-center py-5">
-                    <i class="bi bi-bar-chart fs-1 text-muted"></i>
-
-                    <h6 class="fw-bold mt-3">Belum Ada Data Kelas</h6>
-
-                    <p class="text-muted mb-0">
-                        Data kelas belum tersedia pada tahun ajaran aktif.
-                    </p>
-                </div>
-
-            @endif
-
-        </div>
-    </div>
-
-    {{-- =====================================================
-         PROGRES PENGISIAN NILAI RAPOT
-    ====================================================== --}}
-    <div class="card border-0 shadow-sm">
-
-        <div class="card-header bg-white border-0 pt-4 px-4">
-            <h5 class="fw-bold mb-1">
-                <i class="bi bi-clipboard-data text-success me-2"></i>
-                Progres Pengisian Nilai Rapot
-            </h5>
-
-            <p class="text-muted mb-0">
-                Pantau kelengkapan nilai setiap kelas pada tahun ajaran
-                {{ $activeAcademicYear?->name ?? 'Belum Ada' }}.
+                Pilih kelas untuk melihat tahun ajaran dan daftar siswanya.
             </p>
         </div>
 
         <div class="card-body p-4">
+            @forelse ($teacherClassHistory as $historyClass)
+                <div class="border rounded-3 mb-3">
+                    <button
+                        class="btn btn-link text-decoration-none text-start w-100 p-3"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#teacherClassHistory{{ $historyClass->id }}"
+                        aria-expanded="false"
+                        aria-controls="teacherClassHistory{{ $historyClass->id }}"
+                    >
+                        <span class="fw-semibold">
+                            Kelas {{ $historyClass->name }}
+                        </span>
+                        <span class="text-muted ms-2">
+                            {{ $historyClass->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}
+                        </span>
+                        <i class="bi bi-chevron-down float-end"></i>
+                    </button>
 
-            @if (isset($semesterProgress) && $semesterProgress->isNotEmpty())
+                    <div class="collapse"
+                         id="teacherClassHistory{{ $historyClass->id }}">
+                        <div class="px-3 pb-3">
+                            <h6 class="fw-semibold">
+                                Daftar Siswa ({{ $historyClass->students->count() }})
+                            </h6>
 
-                <div class="row g-4">
+                            @if ($historyClass->students->isNotEmpty())
+                                <ul class="mb-0">
+                                    @foreach ($historyClass->students as $historyStudent)
+                                        <li>{{ $historyStudent->name }}</li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <p class="text-muted mb-0">
+                                    Belum ada siswa yang tercatat pada kelas ini.
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <p class="text-muted mb-0">
+                    Belum ada riwayat kelas wali yang tercatat untuk akun ini.
+                </p>
+            @endforelse
+        </div>
+    </div>
+@endif
 
-                    @foreach ($semesterProgress as $progress)
+    {{-- Grafik dan progres nilai rapor --}}
+    <div class="row g-3 g-xl-4 align-items-stretch">
 
-                        <div class="col-lg-6">
+        {{-- Grafik siswa per kelas --}}
+        <div class="col-12 col-xl-7">
+            <section class="dashboard-panel h-100">
+                <div class="panel-heading">
+                    <div class="panel-heading-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+                    <div>
+                        <h2>Jumlah Siswa per Kelas</h2>
+                        <p>Sebaran siswa aktif berdasarkan kelas pada tahun ajaran aktif.</p>
+                    </div>
+                </div>
 
-                            <div class="semester-progress-card border rounded-3 p-3 h-100">
+                <div class="chart-wrapper">
+                    @if ($classes->count() > 0)
+                        <canvas id="studentClassChart" aria-label="Grafik jumlah siswa per kelas"></canvas>
+                    @else
+                        <div class="empty-state">
+                            <i class="bi bi-bar-chart"></i>
+                            <h3>Belum ada data kelas</h3>
+                            <p>Data kelas belum tersedia pada tahun ajaran aktif.</p>
+                        </div>
+                    @endif
+                </div>
+            </section>
+        </div>
 
-                                {{-- Header Semester --}}
-                                <div class="d-flex justify-content-between align-items-start gap-2 mb-4">
+        {{-- Ringkasan progres nilai rapor --}}
+        <div class="col-12 col-xl-5">
+            <section class="dashboard-panel h-100">
+                <div class="panel-heading">
+                    <div class="panel-heading-icon"><i class="bi bi-clipboard2-check-fill"></i></div>
+                    <div>
+                        <h2>Progres Pengisian Nilai Rapor</h2>
+                        <p>Kelengkapan nilai pada tahun ajaran {{ $activeAcademicYear?->name ?? 'aktif' }}.</p>
+                    </div>
+                </div>
+
+                @if (isset($semesterProgress) && $semesterProgress->isNotEmpty())
+                    <div class="semester-overview-list">
+                        @foreach ($semesterProgress as $progress)
+                            @php
+                                $semesterKey = \Illuminate\Support\Str::slug($progress['name']);
+                                $missingCount = count($progress['missing_items'] ?? []);
+                            @endphp
+
+                            <article class="semester-overview-card {{ $progress['available'] ? 'is-available' : 'is-unavailable' }}">
+                                <div class="semester-overview-top">
                                     <div>
-                                        <h6 class="fw-bold mb-1">
-                                            Semester {{ $progress['name'] }}
-                                        </h6>
-
-                                        <small class="text-muted">
-                                            Progres kelengkapan nilai siswa
-                                        </small>
+                                        <h3>Semester {{ $progress['name'] }}</h3>
+                                        <p>{{ $progress['available'] ? 'Progres kelengkapan nilai siswa' : 'Semester belum tersedia' }}</p>
                                     </div>
-
                                     @if ($progress['available'])
-                                        <span class="badge rounded-pill bg-success bg-opacity-10 text-success">
-                                            Tersedia
-                                        </span>
+                                        @if ($progress['percentage'] >= 100)
+                                            <span class="status-pill status-complete"><i class="bi bi-check-circle-fill"></i> Lengkap</span>
+                                        @else
+                                            <span class="status-pill status-incomplete"><i class="bi bi-exclamation-circle-fill"></i> Perlu dilengkapi</span>
+                                        @endif
                                     @else
-                                        <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary">
-                                            Belum tersedia
-                                        </span>
+                                        <span class="status-pill status-unavailable">Belum tersedia</span>
                                     @endif
                                 </div>
 
                                 @if ($progress['available'])
-
-                                    {{-- Persentase Keseluruhan --}}
-                                    <div class="d-flex justify-content-between align-items-end mb-2">
-                                        <div>
-                                            <h2 class="fw-bold text-success mb-1">
-                                                {{ $progress['percentage'] }}%
-                                            </h2>
-
-                                            <small class="text-muted">
-                                                {{ number_format($progress['filled_grades']) }}
-                                                dari
-                                                {{ number_format($progress['expected_grades']) }}
-                                                nilai terisi
-                                            </small>
-                                        </div>
-
-                                        <i class="bi bi-journal-check text-success fs-2"></i>
+                                    <div class="semester-percentage-row">
+                                        <strong>{{ $progress['percentage'] }}%</strong>
+                                        <span>{{ number_format($progress['filled_grades']) }} dari {{ number_format($progress['expected_grades']) }} nilai terisi</span>
                                     </div>
 
-                                    {{-- Progress Bar Keseluruhan --}}
-                                    <div
-                                        class="progress mb-4"
-                                        role="progressbar"
-                                        aria-label="Progres semester {{ $progress['name'] }}"
-                                        aria-valuenow="{{ $progress['percentage'] }}"
-                                        aria-valuemin="0"
-                                        aria-valuemax="100"
-                                        style="height: 10px;"
-                                    >
-                                        <div
-                                            class="progress-bar bg-success"
-                                            style="width: {{ $progress['percentage'] }}%;"
-                                        ></div>
+                                    <div class="progress semester-progress-bar" role="progressbar"
+                                         aria-label="Progres semester {{ $progress['name'] }}"
+                                         aria-valuenow="{{ $progress['percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ $progress['percentage'] }}%"></div>
                                     </div>
 
-                                    {{-- Jumlah Kelas --}}
-                                    <div class="row g-3 mb-4">
-
-                                        <div class="col-6">
-                                            <div class="rounded-3 bg-success bg-opacity-10 p-3 h-100">
-                                                <small class="text-muted d-block mb-2">
-                                                    Kelas Lengkap
-                                                </small>
-
-                                                <h4 class="fw-bold text-success mb-0">
-                                                    {{ $progress['completed_classes'] }}
-                                                </h4>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-6">
-                                            <div class="rounded-3 bg-warning bg-opacity-10 p-3 h-100">
-                                                <small class="text-muted d-block mb-2">
-                                                    Belum Lengkap
-                                                </small>
-
-                                                <h4 class="fw-bold text-warning-emphasis mb-0">
-                                                    {{ $progress['incomplete_classes'] }}
-                                                </h4>
-                                            </div>
-                                        </div>
-
+                                    <div class="semester-overview-bottom">
+                                        <span><i class="bi bi-list-check me-1"></i>{{ number_format($missingCount) }} item nilai belum diisi</span>
+                                        @if ($progress['expected_grades'] > 0 && $missingCount > 0)
+                                            <button class="btn btn-detail" type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#missingGrades{{ $semesterKey }}"
+                                                aria-expanded="false"
+                                                aria-controls="missingGrades{{ $semesterKey }}">
+                                                Lihat rincian <i class="bi bi-arrow-right ms-1"></i>
+                                            </button>
+                                        @elseif ($progress['expected_grades'] > 0)
+                                            <span class="complete-note"><i class="bi bi-check-circle-fill me-1"></i>Semua nilai terisi</span>
+                                        @endif
                                     </div>
-
-                                    {{-- Rincian per Kelas --}}
-                                    <h6 class="fw-bold mb-3">Rincian Progres per Kelas</h6>
-
-                                    @forelse ($progress['classes'] as $classProgress)
-
-                                        <div class="class-progress-item mb-3">
-
-                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                                <span class="fw-semibold">
-                                                    {{ $classProgress['name'] }}
-                                                </span>
-
-                                                @if ($classProgress['expected_grades'] <= 0)
-                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                                        Belum ada data
-                                                    </span>
-                                                @else
-                                                    <span class="small fw-semibold {{ $classProgress['is_complete'] ? 'text-success' : 'text-warning-emphasis' }}">
-                                                        {{ $classProgress['percentage'] }}%
-                                                    </span>
-                                                @endif
-                                            </div>
-
-                                            @if ($classProgress['expected_grades'] > 0)
-
-                                                <div
-                                                    class="progress mb-1"
-                                                    role="progressbar"
-                                                    aria-label="Progres kelas {{ $classProgress['name'] }}"
-                                                    aria-valuenow="{{ $classProgress['percentage'] }}"
-                                                    aria-valuemin="0"
-                                                    aria-valuemax="100"
-                                                    style="height: 7px;"
-                                                >
-                                                    <div
-                                                        class="progress-bar {{ $classProgress['is_complete'] ? 'bg-success' : 'bg-warning' }}"
-                                                        style="width: {{ $classProgress['percentage'] }}%;"
-                                                    ></div>
-                                                </div>
-
-                                                <small class="text-muted">
-                                                    {{ number_format($classProgress['filled_grades']) }}
-                                                    /
-                                                    {{ number_format($classProgress['expected_grades']) }}
-                                                    nilai terisi
-                                                </small>
-
-                                            @else
-
-                                                <small class="text-muted">
-                                                    Progres belum dapat dihitung karena siswa atau mata pelajaran aktif belum tersedia.
-                                                </small>
-
-                                            @endif
-
-                                        </div>
-
-                                    @empty
-
-                                        <p class="text-muted small mb-0">
-                                            Belum ada kelas pada tahun ajaran ini.
-                                        </p>
-
-                                    @endforelse
-{{-- Rincian nilai yang belum diisi --}}
-<div class="mt-3">
-
-@if ($progress['expected_grades'] > 0)
-
-    @if (!empty($progress['missing_items']))
-
-        <button
-            class="btn btn-outline-success btn-sm"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#missingGrades{{ strtolower($progress['name']) }}"
-            aria-expanded="false"
-            aria-controls="missingGrades{{ strtolower($progress['name']) }}"
-        >
-            <i class="bi bi-list-check me-1"></i>
-            Lihat Nilai yang Belum Diisi
-            ({{ count($progress['missing_items']) }})
-        </button>
-
-        <div
-            class="collapse mt-3"
-            id="missingGrades{{ strtolower($progress['name']) }}"
-        >
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Kelas</th>
-                            <th>Nama Siswa</th>
-                            <th>Mata Pelajaran</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($progress['missing_items'] as $item)
-                            <tr>
-                                <td>{{ $item['class_name'] }}</td>
-                                <td>
-                                    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit'))
-                                        <a
-                                            href="{{ route('report-card-grades.edit', [
-                                                'class' => $item['class_id'],
-                                                'student' => $item['student_id'],
-                                            ]) }}"
-                                            class="text-decoration-none"
-                                        >
-                                            {{ $item['student_name'] }}
-                                        </a>
-                                    @else
-                                        {{ $item['student_name'] }}
-                                    @endif
-                                </td>
-                                <td>{{ $item['subject_name'] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-    @else
-
-        <div class="alert alert-success py-2 mb-0 small">
-            Semua nilai yang diharapkan sudah terisi.
-        </div>
-
-    @endif
-
-@else
-
-    <p class="text-muted small mb-0">
-        Belum ada data siswa dan mata pelajaran aktif
-        yang dapat diperiksa.
-    </p>
-
-@endif
-
-</div>
-
-
                                 @else
-
-                                    <div class="text-center py-4">
-                                        <i class="bi bi-calendar-x fs-2 text-muted"></i>
-
-                                        <p class="text-muted mt-2 mb-0">
-                                            Semester {{ $progress['name'] }} belum tersedia
-                                            pada tahun ajaran ini.
-                                        </p>
+                                    <div class="semester-unavailable-message">
+                                        <i class="bi bi-calendar-x"></i>
+                                        <span>Semester {{ $progress['name'] }} belum tersedia pada tahun ajaran ini.</span>
                                     </div>
-
                                 @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="empty-state empty-state-compact">
+                        <i class="bi bi-clipboard2-x"></i>
+                        <h3>Progres nilai belum tersedia</h3>
+                        <p>Pastikan tahun ajaran aktif serta data semester sudah tersedia.</p>
+                    </div>
+                @endif
+            </section>
+        </div>
+    </div>
 
+    {{-- Detail nilai yang belum diisi; dibuka dari tombol Lihat rincian --}}
+    @if (isset($semesterProgress) && $semesterProgress->isNotEmpty())
+        @foreach ($semesterProgress as $progress)
+            @php
+                $semesterKey = \Illuminate\Support\Str::slug($progress['name']);
+                $missingItems = collect($progress['missing_items'] ?? []);
+            @endphp
+
+            @if ($progress['available'] && $progress['expected_grades'] > 0 && $missingItems->isNotEmpty())
+                <section class="collapse detail-collapse" id="missingGrades{{ $semesterKey }}">
+                    <div class="dashboard-panel detail-panel">
+                        <div class="detail-heading">
+                            <div class="detail-title-group">
+                                <div class="panel-heading-icon"><i class="bi bi-list-check"></i></div>
+                                <div>
+                                    <div class="detail-breadcrumb"><span>Dashboard</span><i class="bi bi-chevron-right"></i><span>Progres Pengisian Nilai Rapor</span><i class="bi bi-chevron-right"></i><strong>Semester {{ $progress['name'] }}</strong></div>
+                                    <h2>Detail Nilai yang Belum Diisi</h2>
+                                    <p>Daftar siswa dan mata pelajaran yang belum memiliki nilai pada Semester {{ $progress['name'] }}.</p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close-detail" data-bs-toggle="collapse"
+                                data-bs-target="#missingGrades{{ $semesterKey }}" aria-label="Tutup rincian">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="detail-summary-row">
+                            <div class="detail-summary-icon"><i class="bi bi-journal-check"></i></div>
+                            <div class="detail-summary-main">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <strong>Semester {{ $progress['name'] }}</strong>
+                                    <span class="status-pill status-incomplete"><i class="bi bi-exclamation-circle-fill"></i> Perlu dilengkapi</span>
+                                </div>
+                                <div class="detail-summary-progress">
+                                    <div class="progress semester-progress-bar" role="progressbar"
+                                         aria-label="Progres semester {{ $progress['name'] }}"
+                                         aria-valuenow="{{ $progress['percentage'] }}" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar" style="width: {{ $progress['percentage'] }}%"></div>
+                                    </div>
+                                    <strong>{{ $progress['percentage'] }}%</strong>
+                                    <small>{{ number_format($progress['filled_grades']) }} dari {{ number_format($progress['expected_grades']) }} nilai terisi</small>
+                                </div>
                             </div>
                         </div>
 
-                    @endforeach
+                        {{-- Filter daftar detail --}}
+                        <div class="row g-3 detail-filters">
+                            <div class="col-12 col-md-4">
+                                <label for="filterClass{{ $semesterKey }}">Pilih kelas</label>
+                                <select class="form-select detail-filter-class" id="filterClass{{ $semesterKey }}">
+                                    <option value="">Semua kelas</option>
+                                    @foreach ($missingItems->pluck('class_name')->filter()->unique()->sort() as $className)
+                                        <option value="{{ mb_strtolower($className) }}">{{ $className }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="filterSubject{{ $semesterKey }}">Pilih mata pelajaran</label>
+                                <select class="form-select detail-filter-subject" id="filterSubject{{ $semesterKey }}">
+                                    <option value="">Semua mata pelajaran</option>
+                                    @foreach ($missingItems->pluck('subject_name')->filter()->unique()->sort() as $subjectName)
+                                        <option value="{{ mb_strtolower($subjectName) }}">{{ $subjectName }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="filterStudent{{ $semesterKey }}">Cari nama siswa</label>
+                                <div class="detail-search-wrap">
+                                    <i class="bi bi-search"></i>
+                                    <input type="search" class="form-control detail-filter-student"
+                                        id="filterStudent{{ $semesterKey }}" placeholder="Ketik nama siswa...">
+                                </div>
+                            </div>
+                        </div>
 
-                </div>
+                        <div class="detail-table-heading">
+                            <div>
+                                <h3>Daftar nilai yang perlu dilengkapi</h3>
+                                <p>Nama siswa dapat diklik untuk membuka halaman pengelolaan nilainya.</p>
+                            </div>
+                            <span class="detail-count"><span class="visible-row-count">{{ $missingItems->count() }}</span> item</span>
+                        </div>
 
-            @else
+                        <div class="table-responsive detail-table-wrap">
+                            <table class="table detail-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 65px;">No.</th>
+                                        <th style="width: 115px;">Kelas</th>
+                                        <th>Nama siswa</th>
+                                        <th>Mata pelajaran</th>
+                                        <th style="width: 150px;">Status nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($missingItems as $item)
+                                        <tr class="missing-grade-row"
+                                            data-class="{{ mb_strtolower($item['class_name'] ?? '') }}"
+                                            data-subject="{{ mb_strtolower($item['subject_name'] ?? '') }}"
+                                            data-student="{{ mb_strtolower($item['student_name'] ?? '') }}">
+                                            <td class="row-number">{{ $loop->iteration }}</td>
+                                            <td><span class="class-chip">{{ $item['class_name'] }}</span></td>
+                                            <td>
+                                                @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.edit'))
+                                                    <a href="{{ route('report-card-grades.edit', [
+                                                        'class' => $item['class_id'],
+                                                        'student' => $item['student_id'],
+                                                    ]) }}" class="student-grade-link">
+                                                        {{ $item['student_name'] }}
+                                                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="student-grade-name">{{ $item['student_name'] }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $item['subject_name'] }}</td>
+                                            <td><span class="missing-status"><i class="bi bi-exclamation-circle-fill"></i> Belum diisi</span></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
 
-                <div class="text-center py-5">
-                    <i class="bi bi-journal-x fs-1 text-muted"></i>
-
-                    <h6 class="fw-bold mt-3">
-                        Progres Nilai Belum Tersedia
-                    </h6>
-
-                    <p class="text-muted mb-0">
-                        Pastikan tahun ajaran aktif serta data semester sudah tersedia.
-                    </p>
-                </div>
-
+                        <div class="filter-empty-state d-none">
+                            <i class="bi bi-search"></i>
+                            <span>Tidak ada data yang cocok dengan filter tersebut.</span>
+                        </div>
+                    </div>
+                </section>
             @endif
-
-        </div>
-    </div>
+        @endforeach
+    @endif
 
 </div>
 
@@ -486,122 +381,349 @@
 
 @if ($classes->count() > 0)
 <script>
-    const classLabels = @json($classLabels);
-    const studentCounts = @json($studentCounts);
-    const chartCanvas = document.getElementById('studentClassChart');
+    document.addEventListener('DOMContentLoaded', function () {
+        const classLabels = @json($classLabels);
+        const studentCounts = @json($studentCounts);
+        const chartCanvas = document.getElementById('studentClassChart');
 
-    if (chartCanvas) {
-        new Chart(chartCanvas, {
-            type: 'bar',
-
-            data: {
-                labels: classLabels,
-                datasets: [{
-                    label: 'Jumlah Siswa',
-                    data: studentCounts,
-                    backgroundColor: 'rgba(25, 135, 84, 0.75)',
-                    borderColor: 'rgba(25, 135, 84, 1)',
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    barThickness: 32
-                }]
-            },
-
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-
-                animation: {
-                    duration: 800
+        if (chartCanvas) {
+            new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: classLabels,
+                    datasets: [{
+                        label: 'Jumlah Siswa',
+                        data: studentCounts,
+                        backgroundColor: 'rgba(22, 143, 91, 0.82)',
+                        hoverBackgroundColor: 'rgba(8, 104, 65, 0.95)',
+                        borderColor: '#168f5b',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        barThickness: 30,
+                        maxBarThickness: 38
+                    }]
                 },
-
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return ' ' + context.raw + ' siswa';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 550 },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#123c2c',
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return ' ' + context.raw + ' siswa';
+                                }
                             }
                         }
-                    }
-                },
-
-                scales: {
-                    y: {
-                        beginAtZero: true,
-
-                        ticks: {
-                            precision: 0
-                        },
-
-                        title: {
-                            display: true,
-                            text: 'Jumlah Siswa'
-                        },
-
-                        grid: {
-                            drawBorder: false
-                        }
                     },
-
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Kelas'
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: '#64748b' },
+                            title: { display: true, text: 'Jumlah siswa', color: '#64748b' },
+                            grid: { color: 'rgba(148, 163, 184, 0.18)', drawBorder: false }
                         },
-
-                        grid: {
-                            display: false
+                        x: {
+                            ticks: { color: '#64748b' },
+                            title: { display: true, text: 'Kelas', color: '#64748b' },
+                            grid: { display: false }
                         }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
+    });
 </script>
 @endif
 
+<script>
+    // Filter detail nilai berdasarkan kelas, mata pelajaran, dan nama siswa.
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.detail-collapse').forEach(function (detail) {
+            const classFilter = detail.querySelector('.detail-filter-class');
+            const subjectFilter = detail.querySelector('.detail-filter-subject');
+            const studentFilter = detail.querySelector('.detail-filter-student');
+            const rows = Array.from(detail.querySelectorAll('.missing-grade-row'));
+            const count = detail.querySelector('.visible-row-count');
+            const emptyState = detail.querySelector('.filter-empty-state');
+
+            function applyFilters() {
+                const selectedClass = classFilter ? classFilter.value : '';
+                const selectedSubject = subjectFilter ? subjectFilter.value : '';
+                const searchStudent = studentFilter ? studentFilter.value.trim().toLocaleLowerCase('id') : '';
+                let visibleCount = 0;
+
+                rows.forEach(function (row, index) {
+                    const matchesClass = !selectedClass || row.dataset.class === selectedClass;
+                    const matchesSubject = !selectedSubject || row.dataset.subject === selectedSubject;
+                    const matchesStudent = !searchStudent || row.dataset.student.includes(searchStudent);
+                    const visible = matchesClass && matchesSubject && matchesStudent;
+
+                    row.classList.toggle('d-none', !visible);
+                    if (visible) {
+                        visibleCount++;
+                        const numberCell = row.querySelector('.row-number');
+                        if (numberCell) numberCell.textContent = visibleCount;
+                    }
+                });
+
+                if (count) count.textContent = visibleCount;
+                if (emptyState) emptyState.classList.toggle('d-none', visibleCount !== 0);
+            }
+
+            [classFilter, subjectFilter].forEach(function (control) {
+                if (control) control.addEventListener('change', applyFilters);
+            });
+            if (studentFilter) studentFilter.addEventListener('input', applyFilters);
+        });
+
+        // Saat rincian dibuka, gulirkan area detail ke bagian yang terlihat.
+        document.querySelectorAll('.detail-collapse').forEach(function (detail) {
+            detail.addEventListener('shown.bs.collapse', function () {
+                window.setTimeout(function () {
+                    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 80);
+            });
+        });
+    });
+</script>
+
 <style>
-    /* Efek hover pada kartu statistik */
+    .dashboard-page {
+        --dash-green: #087647;
+        --dash-green-dark: #075b3c;
+        --dash-green-bright: #27b875;
+        --dash-text: #172b3d;
+        --dash-muted: #66788a;
+        --dash-border: #e3ebe8;
+        padding-bottom: 1.5rem;
+    }
+
+    .dashboard-heading { padding-top: 0.25rem; }
+    .dashboard-eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: var(--dash-green);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+    }
+    .dashboard-eyebrow span {
+        width: 22px;
+        height: 3px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #168653, #60d394);
+    }
+    .dashboard-title {
+        color: var(--dash-text);
+        font-size: clamp(1.55rem, 2vw, 1.9rem);
+        font-weight: 800;
+        letter-spacing: -0.035em;
+    }
+    .dashboard-heading p { font-size: 0.9rem; }
+    .dashboard-period {
+        padding: 10px 14px;
+        border: 1px solid #dce9e1;
+        border-radius: 12px;
+        background: #fff;
+        color: #607469;
+        font-size: 0.8rem;
+    }
+    .dashboard-period i { color: var(--dash-green); }
+    .dashboard-period strong { color: var(--dash-text); }
+
     .dashboard-stat-card {
-        transition: all 0.25s ease;
-    }
-
-    .dashboard-stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.10) !important;
-    }
-
-    .dashboard-stat-card .stat-icon {
-        transition: transform 0.25s ease;
-    }
-
-    .dashboard-stat-card:hover .stat-icon {
-        transform: scale(1.08);
-    }
-
-    /* Area grafik */
-    .chart-wrapper {
         position: relative;
-        width: 100%;
-        height: 350px;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        min-height: 142px;
+        padding: 22px 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 17px;
+        color: #fff;
+        box-shadow: 0 8px 22px rgba(16, 91, 59, 0.13);
+        transition: transform 0.22s ease, box-shadow 0.22s ease;
     }
-
-    /* Panel progres */
-    .semester-progress-card {
-        background-color: #fff;
-        transition: box-shadow 0.2s ease;
+    .dashboard-stat-card::before,
+    .dashboard-stat-card::after {
+        position: absolute;
+        z-index: -1;
+        content: "";
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        pointer-events: none;
     }
-
-    .semester-progress-card:hover {
-        box-shadow: 0 5px 16px rgba(0, 0, 0, 0.05);
+    .dashboard-stat-card::before { width: 150px; height: 150px; top: -88px; right: -28px; }
+    .dashboard-stat-card::after { width: 105px; height: 105px; bottom: -73px; right: 42px; }
+    .dashboard-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 13px 28px rgba(16, 91, 59, 0.18);
     }
+    .stat-green-one { background: linear-gradient(125deg, #075b43 0%, #087b51 48%, #20a86b 100%); }
+    .stat-green-two { background: linear-gradient(125deg, #08704c 0%, #14965c 52%, #39bd7b 100%); }
+    .stat-green-three { background: linear-gradient(125deg, #07654b 0%, #0c9366 55%, #2db989 100%); }
+    .stat-green-four { background: linear-gradient(125deg, #0b6242 0%, #14895a 52%, #27ab72 100%); }
+    .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 54px;
+        width: 54px;
+        height: 54px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        font-size: 1.55rem;
+        backdrop-filter: blur(4px);
+    }
+    .stat-content { position: relative; z-index: 1; min-width: 0; }
+    .stat-content p { margin: 0 0 5px; color: rgba(255,255,255,0.88); font-size: 0.83rem; font-weight: 600; }
+    .stat-content h2 { margin: 0 0 5px; color: #fff; font-size: clamp(1.7rem, 2.4vw, 2.15rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.04em; }
+    .stat-content h2.stat-year { font-size: clamp(1.18rem, 1.7vw, 1.55rem); letter-spacing: -0.02em; }
+    .stat-content span { display: block; color: rgba(255,255,255,0.78); font-size: 0.68rem; line-height: 1.45; }
+    .stat-watermark { position: absolute; right: -6px; bottom: -17px; z-index: -1; color: rgba(255,255,255,0.11); font-size: 7.5rem; transform: rotate(-12deg); }
 
-    .class-progress-item:last-child {
-        margin-bottom: 0 !important;
+    .dashboard-panel {
+        min-width: 0;
+        padding: 23px;
+        border: 1px solid #e6ece9;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgba(22, 45, 35, 0.045);
+    }
+    .panel-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 22px;
+    }
+    .panel-heading-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 40px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: #eaf7ef;
+        color: var(--dash-green);
+        font-size: 1.2rem;
+    }
+    .panel-heading h2 { margin: 1px 0 5px; color: var(--dash-text); font-size: 1.04rem; font-weight: 800; letter-spacing: -0.02em; }
+    .panel-heading p { margin: 0; color: var(--dash-muted); font-size: 0.78rem; line-height: 1.55; }
+    .chart-wrapper { position: relative; width: 100%; height: 350px; }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; text-align: center; color: var(--dash-muted); }
+    .empty-state > i { color: #7b9e8b; font-size: 2.3rem; margin-bottom: 12px; }
+    .empty-state h3 { margin-bottom: 7px; color: var(--dash-text); font-size: 0.98rem; font-weight: 750; }
+    .empty-state p { max-width: 330px; margin: 0; font-size: 0.82rem; line-height: 1.6; }
+    .empty-state-compact { min-height: 300px; }
+
+    .semester-overview-list { display: flex; flex-direction: column; gap: 14px; }
+    .semester-overview-card {
+        padding: 17px 17px 15px;
+        border: 1px solid #e3eee7;
+        border-radius: 15px;
+        background: linear-gradient(125deg, #fbfefc 0%, #f1faf4 100%);
+    }
+    .semester-overview-card.is-unavailable { background: #f8fafc; border-color: #e7edf0; }
+    .semester-overview-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 13px; }
+    .semester-overview-top h3 { margin: 0 0 5px; color: var(--dash-text); font-size: 0.91rem; font-weight: 800; }
+    .semester-overview-top p { margin: 0; color: var(--dash-muted); font-size: 0.73rem; }
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; font-size: 0.64rem; font-weight: 700; white-space: nowrap; }
+    .status-complete { background: #dff5e8; color: #147746; }
+    .status-incomplete { background: #fff2d7; color: #a75e00; }
+    .status-unavailable { background: #eef2f6; color: #687789; }
+    .semester-percentage-row { display: flex; flex-direction: column; gap: 2px; margin-bottom: 9px; }
+    .semester-percentage-row strong { color: #14834e; font-size: 1.95rem; line-height: 1.15; font-weight: 800; letter-spacing: -0.05em; }
+    .semester-percentage-row span { color: var(--dash-muted); font-size: 0.73rem; }
+    .semester-progress-bar { height: 8px; overflow: hidden; border-radius: 99px; background: #e3eae7; }
+    .semester-progress-bar .progress-bar { border-radius: 99px; background: linear-gradient(90deg, #13834e, #30b878); }
+    .semester-overview-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .semester-overview-bottom > span { color: var(--dash-muted); font-size: 0.71rem; }
+    .btn-detail { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #70be91; border-radius: 10px; background: #fff; color: #117444; font-size: 0.75rem; font-weight: 750; white-space: nowrap; transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease; }
+    .btn-detail:hover, .btn-detail[aria-expanded="true"] { border-color: var(--dash-green); background: var(--dash-green); color: #fff; transform: translateY(-1px); }
+    .btn-detail:focus-visible { outline: 3px solid rgba(22, 143, 91, 0.22); outline-offset: 2px; }
+    .complete-note { color: #147746 !important; font-weight: 700; }
+    .semester-unavailable-message { display: flex; align-items: center; gap: 9px; padding: 13px; border-radius: 10px; background: #fff; color: var(--dash-muted); font-size: 0.77rem; }
+    .semester-unavailable-message i { color: #7b8b9c; font-size: 1rem; }
+
+    .detail-collapse { scroll-margin-top: 90px; margin-top: 22px; }
+    .detail-panel { padding: 25px; }
+    .detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    .detail-title-group { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+    .detail-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 8px; color: #8a98a8; font-size: 0.66rem; }
+    .detail-breadcrumb i { font-size: 0.55rem; }
+    .detail-breadcrumb strong { color: #3b5b4a; font-weight: 700; }
+    .detail-heading h2 { margin: 0 0 6px; color: var(--dash-text); font-size: 1.2rem; font-weight: 800; }
+    .detail-heading p { margin: 0; color: var(--dash-muted); font-size: 0.8rem; line-height: 1.6; }
+    .btn-close-detail { display: flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; border: 1px solid #e0e8e4; border-radius: 10px; background: #fff; color: #637486; transition: background .18s ease, color .18s ease; }
+    .btn-close-detail:hover { background: #edf8f1; color: var(--dash-green); }
+    .detail-summary-row { display: flex; align-items: center; gap: 15px; margin-bottom: 23px; padding: 15px; border: 1px solid #e1eee5; border-radius: 14px; background: linear-gradient(110deg, #f1faf4, #fbfefc); }
+    .detail-summary-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; background: #dff3e6; color: #13804b; font-size: 1.25rem; }
+    .detail-summary-main { flex: 1; min-width: 0; }
+    .detail-summary-main > div:first-child > strong { color: var(--dash-text); font-size: 0.83rem; }
+    .detail-summary-progress { display: grid; grid-template-columns: minmax(100px, 1fr) auto; align-items: center; gap: 8px 12px; margin-top: 10px; }
+    .detail-summary-progress .progress { grid-column: 1; }
+    .detail-summary-progress > strong { color: #14834e; font-size: 1rem; }
+    .detail-summary-progress > small { grid-column: 1 / -1; color: var(--dash-muted); font-size: 0.71rem; }
+    .detail-filters { margin-bottom: 25px; }
+    .detail-filters label { display: block; margin-bottom: 7px; color: #44586a; font-size: 0.74rem; font-weight: 700; }
+    .detail-filters .form-select, .detail-search-wrap .form-control { min-height: 43px; border-color: #dce6e3; border-radius: 10px; background-color: #fff; color: #31485a; font-size: 0.77rem; box-shadow: none; }
+    .detail-filters .form-select:focus, .detail-search-wrap .form-control:focus { border-color: #51b881; box-shadow: 0 0 0 3px rgba(22, 143, 91, 0.10); }
+    .detail-search-wrap { position: relative; }
+    .detail-search-wrap > i { position: absolute; top: 50%; left: 13px; z-index: 2; color: #82918e; transform: translateY(-50%); }
+    .detail-search-wrap .form-control { padding-left: 36px; }
+    .detail-table-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .detail-table-heading h3 { margin: 0 0 4px; color: var(--dash-text); font-size: 0.9rem; font-weight: 800; }
+    .detail-table-heading p { margin: 0; color: var(--dash-muted); font-size: 0.73rem; }
+    .detail-count { flex-shrink: 0; padding: 6px 10px; border-radius: 999px; background: #eaf7ef; color: #147746; font-size: 0.72rem; font-weight: 800; }
+    .detail-table-wrap { overflow: hidden; border: 1px solid #e2eae6; border-radius: 12px; }
+    .detail-table { color: #405467; font-size: 0.78rem; }
+    .detail-table thead th { padding: 12px 14px; border-bottom: 1px solid #dfe9e4; background: #f3f8f5; color: #506758; font-size: 0.69rem; font-weight: 800; white-space: nowrap; }
+    .detail-table tbody td { padding: 12px 14px; border-color: #edf1ef; vertical-align: middle; }
+    .detail-table tbody tr:hover td { background: #f8fcf9; }
+    .row-number { color: #84938e; font-size: 0.72rem; }
+    .class-chip { display: inline-block; padding: 5px 8px; border: 1px solid #dbece1; border-radius: 7px; background: #f1faf4; color: #176b43; font-size: 0.71rem; font-weight: 750; white-space: nowrap; }
+    .student-grade-link { color: #087b4a; font-weight: 750; text-decoration: none; text-underline-offset: 3px; }
+    .student-grade-link:hover { color: #075b3c; text-decoration: underline; }
+    .student-grade-link i { font-size: 0.67rem; opacity: 0.65; }
+    .student-grade-name { color: #374b5c; font-weight: 650; }
+    .missing-status { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 999px; background: #fff1f0; color: #b63832; font-size: 0.67rem; font-weight: 750; white-space: nowrap; }
+    .filter-empty-state { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 22px 12px; color: var(--dash-muted); font-size: 0.8rem; }
+    .filter-empty-state i { color: #168653; }
+
+    @media (max-width: 1199.98px) {
+        .dashboard-stat-card { min-height: 132px; }
+        .dashboard-panel { padding: 20px; }
+        .semester-overview-card { padding: 15px; }
+    }
+    @media (max-width: 767.98px) {
+        .dashboard-period { width: 100%; }
+        .dashboard-stat-card { min-height: 120px; padding: 17px; }
+        .stat-icon { flex-basis: 46px; width: 46px; height: 46px; font-size: 1.3rem; }
+        .stat-content h2 { font-size: 1.75rem; }
+        .stat-content h2.stat-year { font-size: 1.1rem; }
+        .dashboard-panel, .detail-panel { padding: 17px; border-radius: 15px; }
+        .panel-heading { gap: 10px; }
+        .panel-heading-icon { flex-basis: 36px; width: 36px; height: 36px; }
+        .chart-wrapper { height: 290px; }
+        .detail-heading { gap: 10px; }
+        .detail-breadcrumb { font-size: 0.61rem; }
+        .detail-summary-row { align-items: flex-start; padding: 12px; gap: 10px; }
+        .detail-table { min-width: 680px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .dashboard-stat-card, .btn-detail, .student-grade-link { transition: none !important; }
     }
 </style>
 @endsection
