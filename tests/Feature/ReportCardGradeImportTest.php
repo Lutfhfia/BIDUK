@@ -850,7 +850,7 @@ class ReportCardGradeImportTest extends TestCase
     {
         [$year, $class, , , $odd] = $this->createRoster();
         $science = Subject::create([
-            'code' => 'IPA-IMPORT',
+            'code' => 'PANC-IMPORT',
             'name' => 'Pendidikan Pancasila',
             'category' => 'Intrakurikuler',
             'status' => 'Aktif',

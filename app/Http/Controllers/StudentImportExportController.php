@@ -13,6 +13,8 @@ use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StudentsTemplateExport;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Student;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -164,6 +166,175 @@ public function downloadTemplate()
         return Excel::download(
             new StudentsExport(),
             'BIDUK_Data_Siswa_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+    public function exportPdf(Request $request)
+    {
+        $search = $request->input('search');
+        $status = $request->input('status');
+        $user = $request->user();
+        $isTeacher = $user?->isGuru() ?? false;
+
+        $teacherClassIds = $isTeacher
+            ? app(TeacherClassAccess::class)->classIds($user)
+            : null;
+
+        $classId = $request->input('class_id');
+        $academicYearId = $request->input('academic_year_id');
+
+        if ($isTeacher) {
+            $teacherClasses = SchoolClass::query()
+                ->with('academicYear')
+                ->whereIn('id', $teacherClassIds)
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+
+            $academicYears = AcademicYear::query()
+                ->whereIn(
+                    'id',
+                    $teacherClasses->pluck('academic_year_id')->unique()
+                )
+                ->orderByDesc('start_date')
+                ->get();
+
+            if (
+                $academicYearId !== null &&
+                !$academicYears->contains('id', (int) $academicYearId)
+            ) {
+                abort(
+                    403,
+                    'Anda tidak memiliki penugasan wali kelas pada tahun ajaran tersebut.'
+                );
+            }
+
+            if (!$academicYearId) {
+                $activeYear = AcademicYear::getActive();
+
+                $academicYearId = $academicYears->contains(
+                    'id',
+                    $activeYear?->id
+                )
+                    ? $activeYear?->id
+                    : $academicYears->first()?->id;
+            }
+
+            $classes = $teacherClasses
+                ->where('academic_year_id', $academicYearId)
+                ->values();
+
+            if (
+                $classId !== null &&
+                $classId !== '' &&
+                !$classes->contains('id', (int) $classId)
+            ) {
+                abort(403, 'Anda tidak memiliki akses ke kelas tersebut.');
+            }
+        } else {
+            $academicYears = AcademicYear::query()
+                ->orderByDesc('start_date')
+                ->orderByDesc('id')
+                ->get();
+
+            if (
+                !$academicYearId ||
+                !$academicYears->contains('id', (int) $academicYearId)
+            ) {
+                $activeYear = AcademicYear::getActive();
+
+                $academicYearId = $academicYears->contains(
+                    'id',
+                    $activeYear?->id
+                )
+                    ? $activeYear?->id
+                    : $academicYears->first()?->id;
+            }
+
+            $classes = SchoolClass::query()
+                ->when(
+                    $academicYearId,
+                    fn ($query) => $query->where(
+                        'academic_year_id',
+                        $academicYearId
+                    )
+                )
+                ->orderBy('grade_level')
+                ->orderBy('name')
+                ->get();
+
+            if (
+                $classId !== null &&
+                $classId !== '' &&
+                !$classes->contains('id', (int) $classId)
+            ) {
+                $classId = null;
+            }
+        }
+
+        $visibleStudents = Student::query();
+
+        if ($isTeacher) {
+            $visibleStudents->whereHas(
+                'classes',
+                function ($query) use (
+                    $teacherClassIds,
+                    $academicYearId,
+                    $classId
+                ) {
+                    $query->whereIn('classes.id', $teacherClassIds)
+                        ->where(
+                            'classes.academic_year_id',
+                            $academicYearId
+                        )
+                        ->when(
+                            $classId !== null && $classId !== '',
+                            fn ($q) => $q->whereKey($classId)
+                        );
+                }
+            );
+        } elseif ($academicYearId) {
+            $visibleStudents->whereHas(
+                'classes',
+                function ($query) use ($academicYearId, $classId) {
+                    $query->where(
+                        'classes.academic_year_id',
+                        $academicYearId
+                    )->when(
+                        $classId !== null && $classId !== '',
+                        fn ($q) => $q->whereKey($classId)
+                    );
+                }
+            );
+        }
+
+        $students = (clone $visibleStudents)
+            ->search($search)
+            ->filterStatus($status)
+            ->orderByRaw(
+                'CASE WHEN nis IS NULL OR nis = "" THEN 1 ELSE 0 END, CAST(nis AS UNSIGNED) ASC, nis ASC, name ASC'
+            )
+            ->get()
+            ->values()
+            ->map(function (Student $student, int $index) {
+                return [
+                    'no' => $index + 1,
+                    'nis' => $student->nis,
+                    'nisn' => $student->nisn,
+                    'name' => $student->name,
+                    'gender' => $student->gender,
+                    'birth_place' => $student->birth_place,
+                    'birth_date' => optional($student->birth_date)
+                        ->format('Y-m-d'),
+                ];
+            });
+
+        $pdf = Pdf::loadView('students.pdf', [
+            'students' => $students,
+            'printedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download(
+            'BIDUK_Data_Siswa_' . now()->format('Ymd_His') . '.pdf'
         );
     }
 }

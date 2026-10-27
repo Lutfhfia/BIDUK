@@ -681,7 +681,7 @@
                     const sectionId = current.getAttribute('id');
                     const link = document.querySelector('.navbar-nav a[href*=' + sectionId + ']');
                     if (link && scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                        document.querySelectorAll('.navbar-nav .nav-link').forEach(n => n.classList.remove('active'));
+                        document.querySelectorAll('.navbar-nav a.active').forEach(n => n.classList.remove('active'));
                         link.classList.add('active');
                     }
                 });
@@ -710,6 +710,7 @@
         });
     </script>
     @stack('scripts')
+    @include('components.page-loader')
 </body>
 
 </html>

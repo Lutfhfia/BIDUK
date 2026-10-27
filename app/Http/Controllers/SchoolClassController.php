@@ -96,14 +96,16 @@ class SchoolClassController extends Controller
         $academicYears = AcademicYear::orderByDesc(
             'start_date'
         )->get();
-
         $teachers = User::query()
-            ->where('status', 'Aktif')
-            ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
-            ->when($request->user()->isGuru(), fn ($query) => $query->whereKey($request->user()->id))
-            ->with('employee')
-            ->orderBy('name')
-            ->get();
+        ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
+        ->when(
+            $request->user()->isGuru(),
+            fn ($query) => $query->where('id', $request->user()->id)
+        )
+        ->where('status', 'Aktif')
+        ->with('employee')
+        ->orderBy('name')
+        ->get();
 
         // Ambil hanya mata pelajaran aktif.
         $subjects = Subject::active()
@@ -352,21 +354,30 @@ class SchoolClassController extends Controller
         )->get();
 
         $teachers = User::query()
-            ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
-            ->when($request->user()->isGuru(), fn ($query) => $query->whereKey($request->user()->id))
-            ->where(function ($query) use ($class) {
-                $query->where('status', 'Aktif')
-                    ->orWhereKey($class->homeroom_teacher_user_id);
-            })
-            ->with('employee')
-            ->orderBy('name')
-            ->get();
+    ->whereHas('role', fn ($query) => $query->where('name', 'Guru'))
+    ->when(
+        $request->user()->isGuru(),
+        fn ($query) => $query->where('id', $request->user()->id)
+    )
+    ->where(function ($query) use ($class) {
+        $query->where('status', 'Aktif');
 
-        // Ambil hanya mata pelajaran aktif.
-        $subjects = Subject::active()
-            ->orderBy('code')
-            ->orderBy('id')
-            ->get();
+        if ($class->homeroom_teacher_user_id) {
+            $query->orWhere(
+                'id',
+                $class->homeroom_teacher_user_id
+            );
+        }
+    })
+    ->with('employee')
+    ->orderBy('name')
+    ->get();
+
+    // Ambil hanya mata pelajaran aktif.
+$subjects = Subject::active()
+->orderBy('code')
+->orderBy('id')
+->get();
 
         // Ambil mata pelajaran yang sudah dimiliki kelas.
         $class->load(['subjects', 'homeroomTeacher']);
