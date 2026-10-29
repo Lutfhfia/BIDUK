@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\SchoolProfile;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,10 +24,19 @@ class AppServiceProvider extends ServiceProvider
     {
         /*
          * Gunakan pagination Bootstrap 5.
-         * Tampilan BIDUK menggunakan Bootstrap,
-         * sehingga pagination Laravel harus mengikuti
-         * style Bootstrap dan bukan Tailwind.
          */
         Paginator::useBootstrapFive();
+
+        /*
+         * Sediakan profil sekolah untuk komponen loading.
+         * Logo diambil langsung dari database agar
+         * mengikuti perubahan logo pada Profil Sekolah.
+         */
+        View::composer('components.page-loader', function ($view): void {
+            $view->with(
+                'loaderSchoolProfile',
+                SchoolProfile::query()->first()
+            );
+        });
     }
 }

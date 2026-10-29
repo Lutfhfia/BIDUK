@@ -558,6 +558,53 @@
         }
     </style>
     @stack('styles')
+
+<style>
+    /* Menu profil header BIDUK */
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] {
+        padding: 6px;
+        border: 1px solid #dceee3 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 24px rgba(27, 54, 37, .12) !important;
+    }
+
+    /* Highlight menu saat disorot */
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item {
+        padding: 9px 11px;
+        border-radius: 7px;
+        transition: background-color .18s ease, color .18s ease;
+    }
+
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item:hover,
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item:focus {
+        background-color: #e5f5eb !important;
+        color: #106b40 !important;
+    }
+
+    /* Tombol Keluar juga hijau, bukan merah */
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item.text-danger {
+        color: #16834f !important;
+    }
+
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item.text-danger:hover,
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-item.text-danger:focus {
+        background-color: #e5f5eb !important;
+        color: #106b40 !important;
+    }
+
+    /* Garis pembatas menu */
+    .dropdown-menu[aria-labelledby="navbarUserDropdown"] .dropdown-divider {
+        border-color: #dceee3;
+    }
+
+    /* Fokus tombol profil */
+    #navbarUserDropdown:focus-visible {
+        outline: 2px solid #16834f;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 3px rgba(22, 131, 79, .15);
+    }
+</style>
+
 </head>
 
 <body>
@@ -642,7 +689,7 @@
                 </ol>
             </nav>
         </div>
-        
+
 <div class="dropdown">
     <button
         type="button"
@@ -693,6 +740,23 @@
                 Edit Profil
             </a>
         </li>
+
+<li>
+    <hr class="dropdown-divider my-1">
+</li>
+
+<li>
+    <form action="{{ route('logout') }}" method="POST" class="m-0">
+        @csrf
+
+        <button type="submit"
+                class="dropdown-item py-2 text-danger w-100 text-start">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            Keluar
+        </button>
+    </form>
+</li>
+
     </ul>
 </div>
 

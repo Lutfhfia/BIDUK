@@ -21,7 +21,9 @@
                     {{ $school->hero_title ?? ('Selamat Datang di ' . ($school->name ?? 'SDN 204 Palembang')) }}
                 </h1>
 
-                <p class="hero-description" style="font-size: 1.075rem; color: #475569; line-height: 1.8; margin-bottom: 2rem;">
+
+<p class="hero-description" style="font-size: 1.075rem; color: #475569; line-height: 1.8; margin-bottom: 2rem; text-align: justify; text-justify: inter-word;">
+
                     {{ $school->hero_description ?? ($school->description ? Str::limit($school->description, 210) : 'Sistem Informasi Buku Induk dan Pusat Informasi Resmi SD Negeri 204 Palembang dalam mendukung tata kelola pendidikan yang unggul, transparan, dan terpercaya.') }}
                 </p>
 
@@ -219,9 +221,11 @@
                     {{ $school->name ?? 'SD Negeri 204 Palembang' }}
                 </h3>
 
-                <p class="text-secondary mb-4" style="line-height: 1.8; font-size: 1rem;">
-                    {{ $school->description ?? 'SD Negeri 204 Palembang merupakan satuan pendidikan dasar yang berkomitmen menyediakan layanan pendidikan berkualitas bagi peserta didik serta mendukung perkembangan akademik dan karakter siswa yang unggul, berakhlak mulia, dan berprestasi.' }}
-                </p>
+
+<p class="text-secondary mb-4" style="text-align: justify; text-justify: inter-word; line-height: 1.8; font-size: 1rem;">
+    {{ $school->description ?? 'SD Negeri 204 Palembang merupakan satuan pendidikan dasar yang berkomitmen menyediakan layanan pendidikan berkualitas bagi peserta didik serta mendukung perkembangan akademik dan karakter siswa yang unggul, berakhlak mulia, dan berprestasi.' }}
+</p>
+
 
                 <div class="row g-3">
                     {{-- NPSN --}}
@@ -318,11 +322,13 @@
 </section>
 
 
+
 {{-- =========================================================
     VISI & MISI SECTION
 ========================================================= --}}
 <section class="landing-section section-light" id="visi-misi">
     <div class="container">
+
         <div class="section-header reveal">
             <span class="section-badge">
                 <i class="bi bi-bullseye"></i> Landasan Sekolah
@@ -334,45 +340,63 @@
         </div>
 
         <div class="row g-4">
-            {{-- Visi --}}
-            <div class="col-lg-6 reveal-left">
-                <div class="biduk-feature-card h-100 position-relative overflow-hidden" style="border-top: 5px solid var(--biduk-primary);">
+
+            {{-- VISI SEKOLAH --}}
+            <div class="col-12 reveal-left">
+                <div class="biduk-feature-card position-relative overflow-hidden"
+                     style="border-top: 5px solid var(--biduk-primary);">
+
                     <div class="d-flex align-items-center gap-3 mb-4">
-                        <div class="rounded-3 p-2.5 d-flex align-items-center justify-content-center"
-                             style="width: 52px; height: 52px; background: var(--biduk-primary-light); color: var(--biduk-primary); font-size: 1.5rem;">
-                            <i class="bi bi-eye-fill"></i>
+                        <div class="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                             style="width: 56px; height: 56px; background: var(--biduk-primary-light); color: var(--biduk-primary); font-size: 1.65rem;">
+                            <i class="bi bi-bullseye"></i>
                         </div>
+
                         <div>
-                            <h4 class="fw-bold text-dark mb-0">Visi Sekolah</h4>
-                            <small class="text-muted">Tujuan & Cita-Cita Utama</small>
+                            <h4 class="fw-bold text-dark mb-1">
+                                Visi Sekolah
+                            </h4>
+                            <small class="text-muted">
+                                Tujuan & Cita-Cita Utama
+                            </small>
                         </div>
                     </div>
 
-                    <div class="text-secondary" style="line-height: 1.85; font-size: 1rem; white-space: pre-line;">
+                    <div class="text-secondary fw-semibold"
+                         style="line-height: 1.9; font-size: 1rem; white-space: pre-line; text-align: justify;">
                         @if(!empty(trim($school->vision)))
                             {{ $school->vision }}
                         @else
                             "Terwujudnya peserta didik yang beriman dan bertakwa kepada Tuhan Yang Maha Esa, berakhlak mulia, cerdas, terampil, mandiri, dan berwawasan lingkungan."
                         @endif
                     </div>
+
                 </div>
             </div>
 
-            {{-- Misi --}}
-            <div class="col-lg-6 reveal-right">
-                <div class="biduk-feature-card h-100 position-relative overflow-hidden" style="border-top: 5px solid var(--biduk-secondary);">
+            {{-- MISI SEKOLAH --}}
+            <div class="col-12 reveal-right">
+                <div class="biduk-feature-card position-relative overflow-hidden"
+                     style="border-top: 5px solid var(--biduk-secondary);">
+
                     <div class="d-flex align-items-center gap-3 mb-4">
-                        <div class="rounded-3 p-2.5 d-flex align-items-center justify-content-center"
-                             style="width: 52px; height: 52px; background: var(--biduk-primary-light); color: var(--biduk-primary); font-size: 1.5rem;">
+                        <div class="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                             style="width: 56px; height: 56px; background: var(--biduk-primary-light); color: var(--biduk-primary); font-size: 1.65rem;">
                             <i class="bi bi-list-check"></i>
                         </div>
+
                         <div>
-                            <h4 class="fw-bold text-dark mb-0">Misi Sekolah</h4>
-                            <small class="text-muted">Langkah Strategis & Implementasi</small>
+                            <h4 class="fw-bold text-dark mb-1">
+                                Misi Sekolah
+                            </h4>
+                            <small class="text-muted">
+                                Langkah Strategis & Implementasi
+                            </small>
                         </div>
                     </div>
 
-                    <div class="text-secondary" style="line-height: 1.85; font-size: 0.95rem; white-space: pre-line;">
+                    <div class="text-secondary fw-semibold"
+                         style="line-height: 1.9; font-size: 0.95rem; white-space: pre-line; text-align: justify;">
                         @if(!empty(trim($school->mission)))
                             {{ $school->mission }}
                         @else
@@ -382,202 +406,14 @@
                             4. Menciptakan lingkungan sekolah yang bersih, asri, aman, dan berkarakter.
                         @endif
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 </section>
 
-
-{{-- =========================================================
-    STRUKTUR ORGANISASI SECTION
-========================================================= --}}
-<section class="landing-section" id="struktur-organisasi">
-    <div class="container">
-        <div class="section-header reveal">
-            <span class="section-badge">
-                <i class="bi bi-diagram-3"></i> Tata Kelola
-            </span>
-            <h2 class="section-title">{{ $school->organization_title ?? 'Struktur Organisasi Sekolah' }}</h2>
-            <p class="section-description">
-                {{ $school->organization_description ?? ('Bagan kepengurusan dan manajemen dalam mendukung tata kelola pendidikan di ' . ($school->name ?? 'SDN 204 Palembang') . '.') }}
-            </p>
-        </div>
-
-        <div class="row justify-content-center">
-            <div class="col-lg-10 reveal-scale">
-                @if($school->organization_image_url)
-                    <div class="p-3 bg-white rounded-4 shadow-sm border text-center position-relative">
-                        <img src="{{ $school->organization_image_url }}"
-                             alt="Struktur Organisasi {{ $school->name ?? 'Sekolah' }}"
-                             class="img-fluid rounded-3 w-100"
-                             style="max-height: 560px; object-fit: contain;">
-
-                        <div class="mt-3 d-flex justify-content-center gap-2">
-                            <button class="btn btn-biduk-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalOrgImage">
-                                <i class="bi bi-arrows-fullscreen me-1"></i> Perbesar Gambar
-                            </button>
-                            <a href="{{ $school->organization_image_url }}" target="_blank" download class="btn btn-biduk-primary btn-sm">
-                                <i class="bi bi-download me-1"></i> Unduh Bagan
-                            </a>
-                        </div>
-                    </div>
-
-                    {{-- Modal Lightbox Struktur Organisasi --}}
-                    <div class="modal fade" id="modalOrgImage" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-xl modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg rounded-4">
-                                <div class="modal-header border-0 pb-0">
-                                    <h5 class="modal-title fw-bold text-dark">{{ $school->organization_title ?? 'Struktur Organisasi' }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body text-center p-3">
-                                    <img src="{{ $school->organization_image_url }}" alt="Struktur Organisasi" class="img-fluid rounded">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @else
-                    <div class="p-5 bg-white rounded-4 border text-center shadow-sm">
-                        <div class="rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3"
-                             style="width: 64px; height: 64px; background: var(--biduk-primary-light); color: var(--biduk-primary); font-size: 1.85rem;">
-                            <i class="bi bi-diagram-3"></i>
-                        </div>
-                        <h5 class="fw-bold text-dark mb-2">Bagan Struktur Organisasi</h5>
-                        <p class="text-muted mx-auto mb-0" style="max-width: 520px; font-size: 0.95rem; line-height: 1.6;">
-                            Bagan struktur kepengurusan dan manajemen SD Negeri 204 Palembang dapat diperbarui oleh administrator melalui menu Profil Sekolah.
-                        </p>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-</section>
-
-
-{{-- =========================================================
-    PRESTASI SEKOLAH SECTION
-========================================================= --}}
-<section class="landing-section section-light" id="prestasi">
-    <div class="container">
-        <div class="section-header reveal">
-            <span class="section-badge">
-                <i class="bi bi-trophy"></i> Prestasi & Pencapaian
-            </span>
-            <h2 class="section-title">Prestasi Siswa & Sekolah</h2>
-            <p class="section-description">
-                Berbagai pencapaian membanggakan yang diraih peserta didik dan institusi dalam bidang akademik maupun non-akademik.
-            </p>
-        </div>
-
-        @if($achievements->count())
-            <div class="row g-4">
-                @foreach($achievements as $index => $item)
-                    <div class="col-md-6 col-lg-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
-                        <div class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden">
-                            @if($item->image && file_exists(public_path('storage/' . $item->image)))
-                                <img src="{{ asset('storage/' . $item->image) }}"
-                                     alt="{{ $item->title }}"
-                                     class="w-100"
-                                     style="height: 200px; object-fit: cover;">
-                            @else
-                                <div class="w-100 d-flex align-items-center justify-content-center"
-                                     style="height: 180px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #d97706;">
-                                    <i class="bi bi-trophy-fill" style="font-size: 3.25rem;"></i>
-                                </div>
-                            @endif
-
-                            <div class="p-4 d-flex flex-column flex-grow-1 justify-content-between">
-                                <div>
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <span class="badge bg-light text-dark border">
-                                            <i class="bi bi-calendar3 me-1"></i>{{ $item->year ?: 'Tahun -' }}
-                                        </span>
-                                        @if($item->level)
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                                Tingkat {{ $item->level }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    <h5 class="fw-bold text-dark mb-2" style="line-height: 1.4;">{{ $item->title }}</h5>
-                                    @if($item->description)
-                                        <p class="text-secondary small mb-0" style="line-height: 1.65;">
-                                            {{ $item->description }}
-                                        </p>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4 reveal">
-                <i class="bi bi-trophy text-muted opacity-50" style="font-size: 3.5rem;"></i>
-                <h5 class="fw-bold text-muted mt-3 mb-1">Belum Ada Data Prestasi</h5>
-                <p class="text-muted small mb-0">Daftar prestasi sekolah dan siswa akan ditampilkan di sini.</p>
-            </div>
-        @endif
-    </div>
-</section>
-
-
-{{-- =========================================================
-    EKSTRAKURIKULER SECTION
-========================================================= --}}
-<section class="landing-section" id="ekstrakurikuler">
-    <div class="container">
-        <div class="section-header reveal">
-            <span class="section-badge">
-                <i class="bi bi-people"></i> Pengembangan Minat & Bakat
-            </span>
-            <h2 class="section-title">Kegiatan Ekstrakurikuler</h2>
-            <p class="section-description">
-                Program pembinaan potensi minat, kreativitas, seni, olahraga, dan kepemimpinan di luar jam belajar formal.
-            </p>
-        </div>
-
-        @if($extracurriculars->count())
-            <div class="row g-4">
-                @foreach($extracurriculars as $index => $item)
-                    <div class="col-md-6 col-lg-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
-                        <div class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden">
-                            @if($item->image && file_exists(public_path('storage/' . $item->image)))
-                                <img src="{{ asset('storage/' . $item->image) }}"
-                                     alt="{{ $item->name }}"
-                                     class="w-100"
-                                     style="height: 190px; object-fit: cover;">
-                            @else
-                                <div class="w-100 d-flex align-items-center justify-content-center"
-                                     style="height: 180px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
-                                    <i class="bi bi-people-fill" style="font-size: 3.25rem;"></i>
-                                </div>
-                            @endif
-
-                            <div class="p-4 d-flex flex-column flex-grow-1 justify-content-between">
-                                <div>
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h5 class="fw-bold text-dark mb-0">{{ $item->name }}</h5>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Aktif</span>
-                                    </div>
-                                    <p class="text-secondary small mb-0" style="line-height: 1.65;">
-                                        {{ $item->description ?? 'Kegiatan pembinaan minat dan bakat siswa di sekolah.' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4 reveal">
-                <i class="bi bi-people text-muted opacity-50" style="font-size: 3.5rem;"></i>
-                <h5 class="fw-bold text-muted mt-3 mb-1">Belum Ada Data Ekstrakurikuler</h5>
-                <p class="text-muted small mb-0">Daftar kegiatan ekstrakurikuler akan ditampilkan di sini.</p>
-            </div>
-        @endif
-    </div>
-</section>
 
 
 {{-- =========================================================
