@@ -87,8 +87,8 @@
 
                             <select name="academic_year_id" class="form-select" onchange="this.form.submit()">
 
-                                <option value="">
-                                    -- Pilih Tahun Ajaran --
+                                <option value="" @selected(!$selectedAcademicYearId)>
+                                    -- Semua Tahun Ajaran --
                                 </option>
 
                                 @foreach ($academicYears as $academicYear)
@@ -121,7 +121,7 @@
                                     <option value="{{ $class->id }}" @selected($selectedClassId == $class->id)>
 
                                         {{ $class->grade_level }}
-                                        {{ $class->name }}
+                                        {{ $class->name }}{{ $class->academicYear ? ' (' . $class->academicYear->name . ')' : '' }}
 
                                     </option>
                                 @endforeach

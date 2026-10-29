@@ -44,13 +44,9 @@ class AchievementReportController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        /*
-         * Tahun ajaran aktif sebagai default.
-         */
-        $selectedAcademicYearId = $request->academic_year_id
-            ?? ($teacherAcademicYearIds?->contains(AcademicYear::getActive()?->id)
-                ? AcademicYear::getActive()?->id
-                : $academicYears->first()?->id);
+        $selectedAcademicYearId = $request->query->has('academic_year_id')
+            ? ($request->input('academic_year_id') ?: null)
+            : null;
 
         abort_if(
             $teacherAcademicYearIds !== null
@@ -66,25 +62,22 @@ class AchievementReportController extends Controller
          * ======================================================
          */
 
-        $classes = collect();
-
-        if ($selectedAcademicYearId) {
-
-            $classesQuery = SchoolClass::where(
-                'academic_year_id',
-                $selectedAcademicYearId
+        $classesQuery = SchoolClass::with('academicYear')
+            ->when(
+                $selectedAcademicYearId,
+                fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
             );
 
-            if ($teacherClassIds !== null) {
-                $classesQuery->whereIn('id', $teacherClassIds);
-            }
-
-            $classes = $classesQuery
-                ->where('status', 'Aktif')
-                ->orderBy('grade_level')
-                ->orderBy('name')
-                ->get();
+        if ($teacherClassIds !== null) {
+            $classesQuery->whereIn('id', $teacherClassIds);
         }
+
+        $classes = $classesQuery
+            ->where('status', 'Aktif')
+            ->orderBy('academic_year_id')
+            ->orderBy('grade_level')
+            ->orderBy('name')
+            ->get();
 
         /*
          * ======================================================
@@ -97,18 +90,11 @@ class AchievementReportController extends Controller
         /*
          * Pastikan kelas sesuai dengan tahun ajaran.
          */
-        if (
-            $selectedClassId &&
-            $selectedAcademicYearId
-        ) {
-
-            $classQuery = SchoolClass::where(
-                'id',
-                $selectedClassId
-            )
-                ->where(
-                    'academic_year_id',
-                    $selectedAcademicYearId
+        if ($selectedClassId) {
+            $classQuery = SchoolClass::where('id', $selectedClassId)
+                ->when(
+                    $selectedAcademicYearId,
+                    fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
                 )
                 ->where('status', 'Aktif');
 

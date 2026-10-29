@@ -32,7 +32,7 @@
             </h4>
 
             <p class="text-muted mb-0" style="font-size: 0.875rem;">
-                Perbarui jumlah ketidakhadiran siswa.
+                Perbarui jumlah ketidakhadiran untuk semester Ganjil dan Genap.
             </p>
         </div>
     </div>
@@ -100,106 +100,48 @@
                     </div>
 
 
-                    {{-- Semester --}}
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            Semester
-                        </label>
-
-                        <div class="form-control bg-light">
-                            {{ $rekapAbsensi->semester->name ?? '-' }}
-                        </div>
-                    </div>
-
-
                     {{-- Keterangan --}}
                     <div class="col-12">
                         <div class="alert alert-light border mb-0">
                             <i class="bi bi-info-circle me-2"></i>
-                            Perbarui jumlah hari ketidakhadiran siswa untuk semester tersebut.
+                            Perbarui jumlah hari ketidakhadiran pada masing-masing semester.
                         </div>
-                    </div>
-
-
-                    {{-- Sakit --}}
-                    <div class="col-md-4">
-                        <label for="sakit" class="form-label">
-                            Sakit <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="sakit"
-                                id="sakit"
-                                class="form-control @error('sakit') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('sakit', $rekapAbsensi->sakit) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
-                        </div>
-
-                        @error('sakit')
-                            <div class="text-danger small mt-1">
-                                {{ $message }}
-                            </div>
+                        @error('attendance')
+                            <div class="alert alert-danger mt-2 mb-0">{{ $message }}</div>
                         @enderror
                     </div>
 
-
-                    {{-- Izin --}}
-                    <div class="col-md-4">
-                        <label for="izin" class="form-label">
-                            Izin <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="izin"
-                                id="izin"
-                                class="form-control @error('izin') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('izin', $rekapAbsensi->izin) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
+                    @foreach (['ganjil' => 'Ganjil', 'genap' => 'Genap'] as $semesterKey => $semesterLabel)
+                        <div class="col-md-6">
+                            <section class="border rounded-3 p-3 h-100">
+                                <h6 class="fw-bold mb-3">Semester {{ $semesterLabel }}</h6>
+                                <div class="row g-3">
+                                    @foreach (['sakit' => 'Sakit', 'izin' => 'Izin', 'tanpa_keterangan' => 'Tanpa Keterangan'] as $field => $label)
+                                        <div class="col-12">
+                                            <label for="{{ $semesterKey }}_{{ $field }}" class="form-label">
+                                                {{ $label }} <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input
+                                                    type="number"
+                                                    name="attendance[{{ $semesterKey }}][{{ $field }}]"
+                                                    id="{{ $semesterKey }}_{{ $field }}"
+                                                    class="form-control @error('attendance.' . $semesterKey . '.' . $field) is-invalid @enderror"
+                                                    min="0"
+                                                    value="{{ old('attendance.' . $semesterKey . '.' . $field, $attendanceBySemester[$semesterKey][$field] ?? '') }}"
+                                                    required
+                                                >
+                                                <span class="input-group-text">Hari</span>
+                                            </div>
+                                            @error('attendance.' . $semesterKey . '.' . $field)
+                                                <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </section>
                         </div>
-
-                        @error('izin')
-                            <div class="text-danger small mt-1">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
-
-
-                    {{-- Tanpa Keterangan --}}
-                    <div class="col-md-4">
-                        <label for="tanpa_keterangan" class="form-label">
-                            Tanpa Keterangan <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="tanpa_keterangan"
-                                id="tanpa_keterangan"
-                                class="form-control @error('tanpa_keterangan') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('tanpa_keterangan', $rekapAbsensi->tanpa_keterangan) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
-                        </div>
-
-                        @error('tanpa_keterangan')
-                            <div class="text-danger small mt-1">
-                                {{ $message }}
-                            </div>
-                        @enderror
-                    </div>
+                    @endforeach
 
                 </div>
 

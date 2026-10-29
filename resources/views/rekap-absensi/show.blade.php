@@ -139,7 +139,7 @@
 
         <div class="card-body">
 
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-5 attendance-detail-grid">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 attendance-detail-grid">
                 <div class="col attendance-detail-field">
                     <div class="attendance-detail-label">NISN</div>
                     <div class="attendance-detail-value">
@@ -168,12 +168,6 @@
                     </div>
                 </div>
 
-                <div class="col attendance-detail-field">
-                    <div class="attendance-detail-label">Semester</div>
-                    <div class="attendance-detail-value">
-                        {{ $rekapAbsensi->semester->name ?? '-' }}
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -189,51 +183,40 @@
 
         <div class="card-body">
 
-            <div class="row row-cols-1 row-cols-sm-3 attendance-detail-summary">
-                <div class="col">
-                    <article class="attendance-detail-stat h-100">
-                        <span class="attendance-detail-stat-icon" aria-hidden="true">
-                            <i class="bi bi-thermometer-half"></i>
-                        </span>
-                        <div>
-                            <p class="attendance-detail-stat-label">Sakit</p>
-                            <div>
-                                <strong class="attendance-detail-stat-value">{{ $rekapAbsensi->sakit }}</strong>
-                                <span class="attendance-detail-stat-unit">hari</span>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <div class="col">
-                    <article class="attendance-detail-stat h-100">
-                        <span class="attendance-detail-stat-icon" aria-hidden="true">
-                            <i class="bi bi-envelope-check"></i>
-                        </span>
-                        <div>
-                            <p class="attendance-detail-stat-label">Izin</p>
-                            <div>
-                                <strong class="attendance-detail-stat-value">{{ $rekapAbsensi->izin }}</strong>
-                                <span class="attendance-detail-stat-unit">hari</span>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <div class="col">
-                    <article class="attendance-detail-stat h-100">
-                        <span class="attendance-detail-stat-icon" aria-hidden="true">
-                            <i class="bi bi-question-circle"></i>
-                        </span>
-                        <div>
-                            <p class="attendance-detail-stat-label">Tanpa Keterangan</p>
-                            <div>
-                                <strong class="attendance-detail-stat-value">{{ $rekapAbsensi->tanpa_keterangan }}</strong>
-                                <span class="attendance-detail-stat-unit">hari</span>
-                            </div>
-                        </div>
-                    </article>
-                </div>
+            <div class="row g-3">
+                @foreach (['ganjil' => 'Ganjil', 'genap' => 'Genap'] as $semesterKey => $semesterLabel)
+                    <div class="col-lg-6">
+                        <section class="border rounded-3 p-3 h-100">
+                            <h6 class="fw-bold mb-3">Semester {{ $semesterLabel }}</h6>
+                            @if ($attendanceBySemester[$semesterKey] === null)
+                                <p class="text-muted mb-0">Data absensi semester ini masih kosong.</p>
+                            @else
+                                <div class="row row-cols-1 row-cols-sm-3 attendance-detail-summary">
+                                    @foreach ([
+                                        'sakit' => ['Sakit', 'bi-thermometer-half'],
+                                        'izin' => ['Izin', 'bi-envelope-check'],
+                                        'tanpa_keterangan' => ['Tanpa Keterangan', 'bi-question-circle'],
+                                    ] as $field => [$label, $icon])
+                                        <div class="col">
+                                            <article class="attendance-detail-stat h-100">
+                                                <span class="attendance-detail-stat-icon" aria-hidden="true">
+                                                    <i class="bi {{ $icon }}"></i>
+                                                </span>
+                                                <div>
+                                                    <p class="attendance-detail-stat-label">{{ $label }}</p>
+                                                    <div>
+                                                        <strong class="attendance-detail-stat-value">{{ $attendanceBySemester[$semesterKey][$field] }}</strong>
+                                                        <span class="attendance-detail-stat-unit">hari</span>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </section>
+                    </div>
+                @endforeach
             </div>
         </div>
     </section>

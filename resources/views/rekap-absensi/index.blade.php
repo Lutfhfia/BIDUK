@@ -114,7 +114,7 @@
             </h4>
 
             <p class="text-muted mb-0" style="font-size: 0.85rem;">
-                Kelola rekap ketidakhadiran siswa berdasarkan tahun ajaran dan semester.
+                Kelola rekap ketidakhadiran siswa berdasarkan tahun ajaran dan kelas.
             </p>
         </div>
 
@@ -180,7 +180,7 @@
                 <div class="row g-3 align-items-end">
 
                     {{-- Tahun Ajaran --}}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label for="academic_year_id" class="form-label">
                             Tahun Ajaran
                         </label>
@@ -190,12 +190,12 @@
                             id="academic_year_id"
                             class="form-select"
                         >
-                            <option value="">Semua Tahun Ajaran</option>
+                            <option value="" {{ !$selectedAcademicYearId ? 'selected' : '' }}>Semua Tahun Ajaran</option>
 
                             @foreach ($academicYears as $academicYear)
                                 <option
                                     value="{{ $academicYear->id }}"
-                                    {{ request('academic_year_id') == $academicYear->id ? 'selected' : '' }}
+                                    {{ $selectedAcademicYearId == $academicYear->id ? 'selected' : '' }}
                                 >
                                     {{ $academicYear->name }}
                                 </option>
@@ -222,40 +222,30 @@
                                     value="{{ $class->id }}"
                                     {{ request('class_id') == $class->id ? 'selected' : '' }}
                                 >
-                                    {{ $class->name }}
+                                    {{ $class->name }}{{ $class->academicYear ? ' (' . $class->academicYear->name . ')' : '' }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
 
 
-                    {{-- Semester --}}
+                    {{-- Cari Siswa --}}
                     <div class="col-md-3">
-                        <label for="semester_id" class="form-label">
-                            Semester
+                        <label for="search" class="form-label">
+                            Cari Siswa
                         </label>
-
-                        <select
-                            name="semester_id"
-                            id="semester_id"
-                            class="form-select"
+                        <input
+                            type="search"
+                            name="search"
+                            id="search"
+                            class="form-control"
+                            value="{{ request('search') }}"
+                            placeholder="Nama / NIS / NISN"
                         >
-                            <option value="">Semua Semester</option>
-
-                            @foreach ($semesters as $semester)
-                                <option
-                                    value="{{ $semester->id }}"
-                                    {{ request('semester_id') == $semester->id ? 'selected' : '' }}
-                                >
-                                    {{ $semester->name }}
-                                </option>
-                            @endforeach
-                        </select>
                     </div>
-
 
                     {{-- Tombol --}}
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <div class="d-flex gap-2">
 
                             <button
@@ -315,42 +305,39 @@
                         <thead>
                             <tr>
 
-                                <th class="text-center" style="width: 60px;">
+                                <th class="text-center align-middle" rowspan="2" style="width: 60px;">
                                     No
                                 </th>
 
-                                <th style="width: 140px;">
+                                <th class="align-middle" rowspan="2" style="width: 140px;">
                                     NISN
                                 </th>
 
-                                <th style="min-width: 180px;">
+                                <th class="align-middle" rowspan="2" style="min-width: 180px;">
                                     Nama Siswa
                                 </th>
 
-                                <th style="width: 130px;">
+                                <th class="align-middle" rowspan="2" style="width: 130px;">
                                     Kelas
                                 </th>
 
-                                <th style="width: 140px;">
-                                    Semester
+                                <th class="text-center" colspan="3">
+                                    Semester Ganjil
                                 </th>
 
-                                <th class="text-center" style="width: 90px;">
-                                    Sakit
+                                <th class="text-center" colspan="3">
+                                    Semester Genap
                                 </th>
 
-                                <th class="text-center" style="width: 90px;">
-                                    Izin
-                                </th>
-
-                                <th class="text-center" style="width: 150px;">
-                                    Tanpa Keterangan
-                                </th>
-
-                                <th class="text-center" style="width: 90px;">
+                                <th class="text-center align-middle" rowspan="2" style="width: 90px;">
                                     Aksi
                                 </th>
 
+                            </tr>
+                            <tr>
+                                @foreach (['Sakit', 'Izin', 'Tanpa Keterangan', 'Sakit', 'Izin', 'Tanpa Keterangan'] as $absenceLabel)
+                                    <th class="text-center" style="min-width: 90px;">{{ $absenceLabel }}</th>
+                                @endforeach
                             </tr>
                         </thead>
 
@@ -390,31 +377,11 @@
                                         </span>
                                     </td>
 
-
-                                    {{-- Semester --}}
-                                    <td>
-                                        <span class="text-muted">
-                                            {{ $rekap->semester->name ?? '-' }}
-                                        </span>
-                                    </td>
-
-
-                                    {{-- Sakit --}}
-                                    <td class="text-center">
-                                        {{ $rekap->sakit }}
-                                    </td>
-
-
-                                    {{-- Izin --}}
-                                    <td class="text-center">
-                                        {{ $rekap->izin }}
-                                    </td>
-
-
-                                    {{-- Tanpa Keterangan --}}
-                                    <td class="text-center">
-                                        {{ $rekap->tanpa_keterangan }}
-                                    </td>
+                                    @foreach (['ganjil', 'genap'] as $semesterKey)
+                                        <td class="text-center">{{ $rekap->{$semesterKey}?->sakit ?? '-' }}</td>
+                                        <td class="text-center">{{ $rekap->{$semesterKey}?->izin ?? '-' }}</td>
+                                        <td class="text-center">{{ $rekap->{$semesterKey}?->tanpa_keterangan ?? '-' }}</td>
+                                    @endforeach
 
 
                                     {{-- Aksi --}}
@@ -441,7 +408,7 @@
                                                 <li>
                                                     <a
                                                         class="dropdown-item"
-                                                        href="{{ route('rekap-absensi.show', $rekap) }}"
+                                                        href="{{ route('rekap-absensi.show', $rekap->actionRecord) }}"
                                                     >
                                                         <i class="bi bi-eye text-success me-2" aria-hidden="true"></i>
                                                         Lihat Detail
@@ -453,7 +420,7 @@
                                                     <li>
                                                         <a
                                                             class="dropdown-item"
-                                                            href="{{ route('rekap-absensi.edit', $rekap) }}"
+                                                            href="{{ route('rekap-absensi.edit', $rekap->actionRecord) }}"
                                                         >
                                                             <i class="bi bi-pencil-square text-success me-2" aria-hidden="true"></i>
                                                             Edit
@@ -466,7 +433,7 @@
 
                                                     <li>
                                                         <form
-                                                            action="{{ route('rekap-absensi.destroy', $rekap) }}"
+                                                            action="{{ route('rekap-absensi.destroy', $rekap->actionRecord) }}"
                                                             method="POST"
                                                             onsubmit="return confirm('Yakin ingin menghapus rekap absensi ini?');"
                                                         >

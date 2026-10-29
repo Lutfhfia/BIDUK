@@ -32,7 +32,7 @@
             </h4>
 
             <p class="text-muted mb-0" style="font-size: 0.875rem;">
-                Tambahkan jumlah ketidakhadiran siswa berdasarkan semester.
+                Tambahkan jumlah ketidakhadiran siswa untuk semester Ganjil dan Genap.
             </p>
         </div>
     </div>
@@ -79,37 +79,6 @@
                         </select>
 
                         @error('academic_year_id')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-
-                    {{-- Semester --}}
-                    <div class="col-md-6">
-                        <label for="semester_id" class="form-label">
-                            Semester <span class="text-danger">*</span>
-                        </label>
-
-                        <select
-                            name="semester_id"
-                            id="semester_id"
-                            class="form-select @error('semester_id') is-invalid @enderror"
-                            required
-                        >
-                            <option value="">Pilih Semester</option>
-
-                            @foreach ($semesters as $semester)
-                                <option
-                                    value="{{ $semester->id }}"
-                                    data-academic-year="{{ $semester->academic_year_id }}"
-                                    {{ old('semester_id') == $semester->id ? 'selected' : '' }}
-                                >
-                                    {{ $semester->name }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @error('semester_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -172,84 +141,41 @@
                     <div class="col-12">
                         <div class="alert alert-light border mb-0">
                             <i class="bi bi-info-circle me-2"></i>
-                            Masukkan jumlah hari ketidakhadiran siswa untuk semester yang dipilih.
+                            Isi jumlah hari ketidakhadiran pada masing-masing semester.
                         </div>
                     </div>
 
-
-                    {{-- Sakit --}}
-                    <div class="col-md-4">
-                        <label for="sakit" class="form-label">
-                            Sakit <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="sakit"
-                                id="sakit"
-                                class="form-control @error('sakit') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('sakit', 0) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
+                    @foreach (['ganjil' => 'Ganjil', 'genap' => 'Genap'] as $semesterKey => $semesterLabel)
+                        <div class="col-md-6">
+                            <section class="border rounded-3 p-3 h-100">
+                                <h6 class="fw-bold mb-3">Semester {{ $semesterLabel }}</h6>
+                                <div class="row g-3">
+                                    @foreach (['sakit' => 'Sakit', 'izin' => 'Izin', 'tanpa_keterangan' => 'Tanpa Keterangan'] as $field => $label)
+                                        <div class="col-12">
+                                            <label for="{{ $semesterKey }}_{{ $field }}" class="form-label">
+                                                {{ $label }} <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input
+                                                    type="number"
+                                                    name="attendance[{{ $semesterKey }}][{{ $field }}]"
+                                                    id="{{ $semesterKey }}_{{ $field }}"
+                                                    class="form-control @error('attendance.' . $semesterKey . '.' . $field) is-invalid @enderror"
+                                                    min="0"
+                                                    value="{{ old('attendance.' . $semesterKey . '.' . $field) }}"
+                                                    required
+                                                >
+                                                <span class="input-group-text">Hari</span>
+                                            </div>
+                                            @error('attendance.' . $semesterKey . '.' . $field)
+                                                <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </section>
                         </div>
-
-                        @error('sakit')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-
-                    {{-- Izin --}}
-                    <div class="col-md-4">
-                        <label for="izin" class="form-label">
-                            Izin <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="izin"
-                                id="izin"
-                                class="form-control @error('izin') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('izin', 0) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
-                        </div>
-
-                        @error('izin')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-
-                    {{-- Tanpa Keterangan --}}
-                    <div class="col-md-4">
-                        <label for="tanpa_keterangan" class="form-label">
-                            Tanpa Keterangan <span class="text-danger">*</span>
-                        </label>
-
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                name="tanpa_keterangan"
-                                id="tanpa_keterangan"
-                                class="form-control @error('tanpa_keterangan') is-invalid @enderror"
-                                min="0"
-                                value="{{ old('tanpa_keterangan', 0) }}"
-                                required
-                            >
-                            <span class="input-group-text">Hari</span>
-                        </div>
-
-                        @error('tanpa_keterangan')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
+                    @endforeach
 
                 </div>
 
@@ -288,19 +214,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const classSelect = document.getElementById('class_id');
     const studentSelect = document.getElementById('student_id');
     const academicYearSelect = document.getElementById('academic_year_id');
-    const semesterSelect = document.getElementById('semester_id');
 
-    function filterSemesterAndClass() {
+    function filterClass() {
         const academicYearId = academicYearSelect.value;
-
-        Array.from(semesterSelect.options).forEach(option => {
-            if (!option.value) {
-                option.hidden = false;
-                return;
-            }
-
-            option.hidden = option.dataset.academicYear !== academicYearId;
-        });
 
         Array.from(classSelect.options).forEach(option => {
             if (!option.value) {
@@ -311,7 +227,6 @@ document.addEventListener('DOMContentLoaded', function () {
             option.hidden = option.dataset.academicYear !== academicYearId;
         });
 
-        semesterSelect.value = '';
         classSelect.value = '';
 
         studentSelect.innerHTML =
@@ -319,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         studentSelect.disabled = true;
     }
 
-    academicYearSelect.addEventListener('change', filterSemesterAndClass);
+    academicYearSelect.addEventListener('change', filterClass);
 
     classSelect.addEventListener('change', function () {
         const classId = this.value;
