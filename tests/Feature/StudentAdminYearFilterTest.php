@@ -61,6 +61,7 @@ class StudentAdminYearFilterTest extends TestCase
             $this->actingAs($user)
                 ->get(route('students.index', ['academic_year_id' => $oldYear->id]))
                 ->assertOk()
+                ->assertViewHas('stats.total', 2)
                 ->assertSeeText('2024/2025')
                 ->assertSeeText('6A')
                 ->assertSeeText('Siswa Periode Lama')
@@ -72,6 +73,7 @@ class StudentAdminYearFilterTest extends TestCase
                 'class_id' => $activeClass->id,
             ]))
                 ->assertOk()
+                ->assertViewHas('stats.total', 2)
                 ->assertSeeText('2025/2026')
                 ->assertSeeText('3A')
                 ->assertSeeText('Siswa Periode Aktif')

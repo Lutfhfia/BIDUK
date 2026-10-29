@@ -1,10 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+    @include('admin.classes._styles')
+@endpush
+
 @section('title', 'Daftar Siswa Kelas ' . $class->name)
 
 @section('content')
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 class-management-page">
 
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -28,7 +32,7 @@
 
             @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                 <a href="{{ route('classes.students.add', $class) }}"
-                   class="btn btn-primary">
+                   class="btn btn-biduk-primary">
                     + Tambah Siswa
                 </a>
             @endif
@@ -38,7 +42,7 @@
 
 
     {{-- Informasi Kelas --}}
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="biduk-card mb-4">
         <div class="card-body">
 
             <div class="row">
@@ -114,7 +118,7 @@
 
 
     {{-- Tabel Siswa --}}
-    <div class="card border-0 shadow-sm">
+    <div class="biduk-card">
 
         <div class="card-body">
 

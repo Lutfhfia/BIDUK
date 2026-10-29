@@ -12,7 +12,9 @@ use App\Models\Semester;
 use App\Models\Student;
 use App\Models\StudentPromotion;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -26,7 +28,7 @@ class RekapRapotController extends Controller
     /**
      * Halaman utama Rekap Rapot.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|JsonResponse
     {
         $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
         $teacherAcademicYearIds = $teacherClassIds === null
@@ -110,6 +112,19 @@ class RekapRapotController extends Controller
                     : 'Aktif'
         );
         $search = trim((string) $request->input('search', ''));
+
+        if ($request->boolean('student_lookup')) {
+            return $this->studentLookup(
+                $search,
+                $selectedAcademicYearId,
+                $selectedClassId,
+                $selectedStatus,
+                $teacherClassIds,
+                $request->boolean('student_list'),
+                min(100000, max(0, (int) $request->input('offset', 0)))
+            );
+        }
+
         $students = collect();
 
         if ($selectedAcademicYearId) {
@@ -121,12 +136,10 @@ class RekapRapotController extends Controller
 
             if ($selectedClass) {
                 $studentsQuery
-                    ->whereHas('classAssignments', function ($query) use ($selectedClass, $selectedStatus) {
+                    ->whereHas('classAssignments', function ($query) use ($selectedClass, $selectedAcademicYearId) {
                         $query->where('class_id', $selectedClass->id)
-                            ->when(
-                                $selectedStatus !== 'Semua',
-                                fn ($q) => $q->where('status', $selectedStatus)
-                            );
+                            ->whereHas('schoolClass', fn ($classQuery) => $classQuery
+                                ->where('academic_year_id', $selectedAcademicYearId));
                     })
                     ->when(
                         $search !== '',
@@ -163,9 +176,28 @@ class RekapRapotController extends Controller
                             ->orWhere('nisn', 'like', '%' . $search . '%');
                     });
                 }
+            } elseif ($search !== '') {
+                $studentsQuery
+                    ->whereHas('classAssignments', function ($query) use ($selectedAcademicYearId, $teacherClassIds) {
+                        $query
+                            ->when(
+                                $teacherClassIds !== null,
+                                fn ($assignmentQuery) => $assignmentQuery->whereIn('class_id', $teacherClassIds)
+                            )
+                            ->whereHas(
+                                'schoolClass',
+                                fn ($classQuery) => $classQuery->where('academic_year_id', $selectedAcademicYearId)
+                            );
+                    })
+                    ->where(function ($query) use ($search) {
+                        $query->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('nis', 'like', '%' . $search . '%')
+                            ->orWhere('nisn', 'like', '%' . $search . '%');
+                    });
             }
 
-            if ($selectedClass || $selectedClassId === 'all') {
+            if ($selectedClass || $selectedClassId === 'all' || $search !== '') {
+                $this->applyStudentStatus($studentsQuery, $selectedStatus);
                 $students = $studentsQuery->orderBy('name')->get();
             }
         }
@@ -182,6 +214,97 @@ class RekapRapotController extends Controller
             'search',
             'teacherClassIds'
         ));
+    }
+
+    private function studentLookup(
+        string $search,
+        int|string|null $academicYearId,
+        int|string|null $selectedClassId,
+        string $selectedStatus,
+        ?\Illuminate\Support\Collection $teacherClassIds,
+        bool $studentList,
+        int $offset
+    ): JsonResponse {
+        if ((!$studentList && $search === '') || !$academicYearId) {
+            return response()->json($studentList
+                ? ['data' => [], 'has_more' => false, 'next_offset' => 0]
+                : []);
+        }
+
+        $assignmentFilter = function ($query) use (
+            $academicYearId,
+            $selectedClassId,
+            $teacherClassIds
+        ) {
+            if (is_numeric($selectedClassId)) {
+                $query->where('class_id', (int) $selectedClassId);
+            } elseif ($teacherClassIds !== null) {
+                $query->whereIn('class_id', $teacherClassIds);
+            }
+
+            $query->whereHas('schoolClass', fn ($classQuery) => $classQuery
+                ->where('academic_year_id', $academicYearId)
+                ->when(
+                    $teacherClassIds === null,
+                    fn ($activeClassQuery) => $activeClassQuery->where('status', 'Aktif')
+                ));
+        };
+
+        $studentsQuery = Student::query()
+            ->when($search !== '', fn ($query) => $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('nis', 'like', '%' . $search . '%')
+                    ->orWhere('nisn', 'like', '%' . $search . '%');
+            }))
+            ->whereHas('classAssignments', $assignmentFilter)
+            ->with([
+                'classAssignments' => function ($query) use ($assignmentFilter) {
+                    $assignmentFilter($query);
+                    $query->with('schoolClass');
+                },
+            ]);
+
+        $this->applyStudentStatus($studentsQuery, $selectedStatus);
+
+        $students = $studentsQuery
+            ->orderBy('name')
+            ->offset($studentList ? $offset : 0)
+            ->limit($studentList ? 51 : 10)
+            ->get();
+
+        $hasMore = $studentList && $students->count() > 50;
+        if ($hasMore) {
+            $students->pop();
+        }
+
+        $results = $students->map(function (Student $student) {
+            $class = $student->classAssignments
+                ->first(fn ($assignment) => $assignment->schoolClass !== null)
+                ?->schoolClass;
+
+            if (!$class) {
+                return null;
+            }
+
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis,
+                'nisn' => $student->nisn,
+                'class_name' => $class->name,
+                'class_id' => $class->id,
+            ];
+        })->filter()->values();
+
+        if ($studentList) {
+            return response()->json([
+                'data' => $results,
+                'has_more' => $hasMore,
+                'next_offset' => $offset + $results->count(),
+            ]);
+        }
+
+        return response()->json($results);
     }
 
     /**
@@ -259,6 +382,7 @@ class RekapRapotController extends Controller
         $classIdInput = $request->input('class_id');
         $isAllClasses = $classIdInput === null || $classIdInput === '' || $classIdInput === 'all';
         $classId = $isAllClasses ? null : (int) $classIdInput;
+        $studentStatus = (string) $request->input('status', 'Aktif');
         $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
 
         if ($teacherClassIds !== null && $classId !== null) {
@@ -269,7 +393,7 @@ class RekapRapotController extends Controller
             );
         }
 
-        $students = Student::query()
+        $studentsQuery = Student::query()
             ->whereHas('classes', function ($query) use ($academicYearId, $classId) {
                 $query->where('classes.academic_year_id', $academicYearId)
                     ->when($classId !== null, fn ($q) => $q->where('classes.id', $classId));
@@ -283,9 +407,11 @@ class RekapRapotController extends Controller
                             ->where('academic_year_id', $academicYearId)
                             ->when($classId !== null, fn ($q) => $q->whereKey($classId)))
                 )
-            )
-            ->orderBy('name')
-            ->get();
+            );
+
+        $this->applyStudentStatus($studentsQuery, $studentStatus);
+
+        $students = $studentsQuery->orderBy('name')->get();
 
         abort_unless($students->isNotEmpty(), 422, 'Tidak ada siswa yang dapat dicetak.');
 
@@ -349,6 +475,15 @@ class RekapRapotController extends Controller
         $request->merge(['class_id' => 'all', 'pdf' => true]);
 
         return $this->batch($request);
+    }
+
+    private function applyStudentStatus(Builder $query, string $status): void
+    {
+        if ($status === 'Aktif') {
+            $query->where('students.status', 'Aktif');
+        } elseif ($status === 'Tidak Aktif') {
+            $query->where('students.status', '!=', 'Aktif');
+        }
     }
 
     /**

@@ -1,10 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+    @include('admin.classes._styles')
+@endpush
+
 @section('title', 'Tambah Kelas')
 
 @section('content')
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 class-management-page">
 
     {{-- Header --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -51,7 +55,7 @@
 
 
     {{-- Form --}}
-    <div class="card border-0 shadow-sm">
+    <div class="biduk-card">
 
         <div class="card-header bg-white border-bottom py-3">
 

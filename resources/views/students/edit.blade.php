@@ -132,7 +132,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold text-dark mb-1">
-                    <i class="bi bi-pencil-square text-warning me-2"></i>Edit Data Siswa
+                    <i class="bi bi-pencil-square text-success me-2"></i>Edit Data Siswa
                 </h4>
                 <p class="text-muted mb-0" style="font-size: 0.85rem;">
                     {{ $student->name }} — NIS: {{ $student->nis }}

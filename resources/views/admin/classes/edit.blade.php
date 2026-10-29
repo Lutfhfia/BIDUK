@@ -1,10 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+    @include('admin.classes._styles')
+@endpush
+
 @section('title', 'Edit Data Kelas')
 
 @section('content')
 
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 class-management-page">
 
         {{-- Header --}}
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -66,7 +70,7 @@
 
 
         {{-- Form Edit --}}
-        <div class="card border-0 shadow-sm">
+        <div class="biduk-card">
 
             <div class="card-header bg-white border-bottom py-3">
 
@@ -492,7 +496,7 @@
 
 
                     {{-- Informasi Siswa --}}
-                    <div class="alert alert-info mt-4 mb-0">
+                    <div class="alert alert-success mt-4 mb-0">
 
                         <div class="d-flex">
 
@@ -536,7 +540,7 @@
 
                         <button
                             type="submit"
-                            class="btn btn-primary">
+                            class="btn btn-biduk-primary">
 
                             <i class="bi bi-check-lg me-1"></i>
                             Simpan Perubahan

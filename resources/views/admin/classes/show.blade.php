@@ -1,10 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+    @include('admin.classes._styles')
+@endpush
+
 @section('title', 'Detail Kelas')
 
 @section('content')
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 class-management-page">
 
     {{-- Header --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -35,7 +39,7 @@
 
             @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                 <a href="{{ route('classes.edit', $class) }}"
-                   class="btn btn-outline-primary">
+                   class="btn btn-biduk-outline">
                     <i class="bi bi-pencil me-1"></i>
                     Edit Kelas
                 </a>
@@ -43,7 +47,7 @@
 
 
             <a href="{{ route('classes.students', $class) }}"
-               class="btn btn-primary">
+               class="btn btn-biduk-primary">
 
                 <i class="bi bi-people me-1"></i>
                 Kelola Siswa
@@ -109,14 +113,14 @@
     {{-- INFORMASI KELAS --}}
     {{-- ================================================= --}}
 
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="biduk-card mb-4">
 
         {{-- Header --}}
         <div class="card-header bg-white border-bottom py-3">
 
             <div class="d-flex align-items-center">
 
-                <div class="rounded-3 bg-primary-subtle text-primary
+                <div class="rounded-3 bg-success-subtle text-success
                             d-flex align-items-center justify-content-center me-3"
                      style="width: 42px; height: 42px;">
 
@@ -381,13 +385,13 @@
     {{-- MATA PELAJARAN --}}
     {{-- ================================================= --}}
 
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="biduk-card mb-4">
 
         <div class="card-header bg-white border-bottom py-3">
 
             <div class="d-flex align-items-center">
 
-                <div class="rounded-3 bg-primary-subtle text-primary
+                <div class="rounded-3 bg-success-subtle text-success
                             d-flex align-items-center justify-content-center me-3"
                      style="width: 42px; height: 42px;">
 
@@ -442,7 +446,7 @@
 
                 <div class="text-muted small">
 
-                    <i class="bi bi-info-circle me-1"></i>
+                    <i class="bi bi-info-circle text-success me-1"></i>
 
                     Belum ada mata pelajaran yang dipilih untuk kelas ini.
 
@@ -459,7 +463,7 @@
     {{-- DAFTAR SISWA --}}
     {{-- ================================================= --}}
 
-    <div class="card border-0 shadow-sm">
+    <div class="biduk-card">
 
         <div class="card-header bg-white border-bottom py-3">
 
@@ -472,7 +476,7 @@
 
                     <h5 class="fw-bold mb-1">
 
-                        <i class="bi bi-people me-2"></i>
+                        <i class="bi bi-people text-success me-2"></i>
                         Daftar Siswa
 
                     </h5>
@@ -489,7 +493,7 @@
 
                 @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                     <a href="{{ route('classes.students.add', $class) }}"
-                       class="btn btn-primary">
+                       class="btn btn-biduk-primary">
                         <i class="bi bi-person-plus me-1"></i>
                         Tambah Siswa
                     </a>
@@ -608,7 +612,7 @@
                                             {{-- Detail siswa --}}
                                             <a
                                                 href="{{ route('students.show', $student) }}"
-                                                class="btn btn-sm btn-outline-primary"
+                                                class="btn btn-sm btn-biduk-outline"
                                                 title="Lihat Data Siswa">
 
                                                 <i class="bi bi-eye"></i>
@@ -683,6 +687,7 @@
                     <div class="mb-3">
 
                         <i class="bi bi-people"
+                           class="text-success"
                            style="font-size: 3rem; opacity: .35;">
                         </i>
 
@@ -702,7 +707,7 @@
                     @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
                     <a
                         href="{{ route('classes.students.add', $class) }}"
-                        class="btn btn-primary">
+                        class="btn btn-biduk-primary">
 
                         <i class="bi bi-person-plus me-1"></i>
                         Tambah Siswa
@@ -752,6 +757,7 @@
 
     .class-info-label i {
         font-size: 0.9rem;
+        color: var(--biduk-primary);
     }
 
 </style>

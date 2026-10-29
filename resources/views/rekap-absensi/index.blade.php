@@ -16,8 +16,7 @@
     </li>
 @endsection
 
-@section('content')
-
+@push('styles')
 <style>
     .empty-state-action {
         padding: 0.25rem 0.65rem !important;
@@ -30,7 +29,82 @@
         font-size: 0.8rem !important;
         opacity: 1 !important;
     }
+
+    .attendance-summary-grid {
+        --bs-gutter-x: 0.85rem;
+        --bs-gutter-y: 0.85rem;
+    }
+
+    .attendance-summary-card {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-height: 88px;
+        padding: 0.9rem 1rem;
+        border: 1px solid #e5eee8;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 4px 14px rgba(20, 49, 35, 0.045);
+    }
+
+    .attendance-summary-icon {
+        display: inline-flex;
+        flex: 0 0 42px;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--biduk-primary-light);
+        color: var(--biduk-primary);
+        font-size: 1.15rem;
+    }
+
+    .attendance-summary-grid > .col:nth-child(2) .attendance-summary-icon {
+        background: #eef8f1;
+        color: #267c50;
+    }
+
+    .attendance-summary-grid > .col:nth-child(3) .attendance-summary-icon {
+        background: #e9f5ef;
+        color: var(--biduk-primary-dark);
+    }
+
+    .attendance-summary-label {
+        margin: 0 0 0.15rem;
+        color: #64746b;
+        font-size: 0.77rem;
+        font-weight: 600;
+    }
+
+    .attendance-summary-value {
+        color: #20352a;
+        font-size: 1.35rem;
+        font-weight: 750;
+        line-height: 1.1;
+    }
+
+    .attendance-summary-unit {
+        margin-left: 0.3rem;
+        color: #7a8981;
+        font-size: 0.72rem;
+        font-weight: 500;
+    }
+
+    .attendance-action-dropdown .dropdown-menu {
+        z-index: 1080;
+    }
+
+    @media (max-width: 575.98px) {
+        .attendance-summary-card {
+            min-height: 76px;
+            padding: 0.75rem 0.85rem;
+        }
+    }
 </style>
+@endpush
+
+@section('content')
 
     {{-- Header Halaman --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 fade-in-up">
@@ -51,6 +125,51 @@
         </div>
     </div>
 
+    {{-- Rangkuman Ketidakhadiran --}}
+    <div class="row row-cols-1 row-cols-sm-3 attendance-summary-grid mb-4 fade-in-up">
+        <div class="col">
+            <article class="attendance-summary-card h-100">
+                <span class="attendance-summary-icon" aria-hidden="true">
+                    <i class="bi bi-thermometer-half"></i>
+                </span>
+                <div>
+                    <p class="attendance-summary-label">Sakit</p>
+                    <div>
+                        <strong class="attendance-summary-value">{{ $rekapAbsensiSummary->sakit }}</strong>
+                        <span class="attendance-summary-unit">hari</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col">
+            <article class="attendance-summary-card h-100">
+                <span class="attendance-summary-icon" aria-hidden="true">
+                    <i class="bi bi-envelope-check"></i>
+                </span>
+                <div>
+                    <p class="attendance-summary-label">Izin</p>
+                    <div>
+                        <strong class="attendance-summary-value">{{ $rekapAbsensiSummary->izin }}</strong>
+                        <span class="attendance-summary-unit">hari</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <div class="col">
+            <article class="attendance-summary-card h-100">
+                <span class="attendance-summary-icon" aria-hidden="true">
+                    <i class="bi bi-question-circle"></i>
+                </span>
+                <div>
+                    <p class="attendance-summary-label">Tanpa Keterangan</p>
+                    <div>
+                        <strong class="attendance-summary-value">{{ $rekapAbsensiSummary->tanpa_keterangan }}</strong>
+                        <span class="attendance-summary-unit">hari</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
 
     {{-- Card Filter --}}
     <div class="biduk-card mb-4 fade-in-up">
@@ -162,52 +281,6 @@
 
             </form>
 
-        </div>
-    </div>
-
-
-    {{-- Rangkuman Ketidakhadiran --}}
-    <div class="biduk-card mb-4 fade-in-up">
-        <div class="card-header">
-            <i class="bi bi-clipboard-data me-2" style="color: var(--biduk-primary);"></i>
-            Rangkuman Ketidakhadiran
-        </div>
-
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted mb-2">
-                            <i class="bi bi-thermometer-half me-1"></i>
-                            Sakit
-                        </div>
-                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->sakit }}</div>
-                        <div class="text-muted small">Hari</div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted mb-2">
-                            <i class="bi bi-envelope-check me-1"></i>
-                            Izin
-                        </div>
-                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->izin }}</div>
-                        <div class="text-muted small">Hari</div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="text-muted mb-2">
-                            <i class="bi bi-question-circle me-1"></i>
-                            Tanpa Keterangan
-                        </div>
-                        <div class="fs-3 fw-bold">{{ $rekapAbsensiSummary->tanpa_keterangan }}</div>
-                        <div class="text-muted small">Hari</div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -347,16 +420,18 @@
                                     {{-- Aksi --}}
                                     <td class="text-center">
 
-                                        <div class="dropdown action-dropdown">
+                                        <div class="dropdown action-dropdown master-action-dropdown attendance-action-dropdown">
 
                                             <button
-                                                class="btn btn-sm btn-light"
+                                                class="btn btn-sm btn-light border-0 action-menu-toggle"
                                                 type="button"
                                                 data-bs-toggle="dropdown"
+                                                data-bs-display="static"
                                                 aria-expanded="false"
                                                 title="Aksi"
+                                                aria-label="Aksi rekap absensi {{ $rekap->student->name ?? '' }}"
                                             >
-                                                <i class="bi bi-three-dots-vertical"></i>
+                                                <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
                                             </button>
 
 
@@ -368,7 +443,7 @@
                                                         class="dropdown-item"
                                                         href="{{ route('rekap-absensi.show', $rekap) }}"
                                                     >
-                                                        <i class="bi bi-eye"></i>
+                                                        <i class="bi bi-eye text-success me-2" aria-hidden="true"></i>
                                                         Lihat Detail
                                                     </a>
                                                 </li>
@@ -380,7 +455,7 @@
                                                             class="dropdown-item"
                                                             href="{{ route('rekap-absensi.edit', $rekap) }}"
                                                         >
-                                                            <i class="bi bi-pencil-square"></i>
+                                                            <i class="bi bi-pencil-square text-success me-2" aria-hidden="true"></i>
                                                             Edit
                                                         </a>
                                                     </li>
@@ -402,7 +477,7 @@
                                                                 type="submit"
                                                                 class="dropdown-item text-danger"
                                                             >
-                                                                <i class="bi bi-trash"></i>
+                                                                <i class="bi bi-trash3 me-2" aria-hidden="true"></i>
                                                                 Hapus
                                                             </button>
                                                         </form>

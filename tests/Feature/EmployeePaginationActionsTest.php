@@ -39,17 +39,19 @@ class EmployeePaginationActionsTest extends TestCase
             ->get(route('pegawai.index'));
 
         $firstPage->assertOk();
-        $this->assertSame(10, substr_count($firstPage->getContent(), 'aria-label="Lihat detail Pegawai'));
-        $this->assertSame(10, substr_count($firstPage->getContent(), 'aria-label="Edit Pegawai'));
-        $this->assertSame(10, substr_count($firstPage->getContent(), 'aria-label="Hapus Pegawai'));
-        $firstPage->assertDontSee('dropdown action-dropdown', false);
+        $this->assertSame(10, substr_count($firstPage->getContent(), 'aria-label="Aksi pegawai '));
+        $this->assertSame(10, substr_count($firstPage->getContent(), 'Detail Pegawai'));
+        $this->assertSame(10, substr_count($firstPage->getContent(), 'Edit Pegawai'));
+        $this->assertSame(10, substr_count($firstPage->getContent(), 'Hapus Pegawai'));
+        $this->assertSame(10, substr_count($firstPage->getContent(), 'data-bs-toggle="dropdown"'));
 
         $secondPage = $this->get(route('pegawai.index', ['page' => 2]));
 
         $secondPage->assertOk();
-        $this->assertSame(2, substr_count($secondPage->getContent(), 'aria-label="Lihat detail Pegawai'));
-        $this->assertSame(2, substr_count($secondPage->getContent(), 'aria-label="Edit Pegawai'));
-        $this->assertSame(2, substr_count($secondPage->getContent(), 'aria-label="Hapus Pegawai'));
-        $secondPage->assertDontSee('dropdown action-dropdown', false);
+        $this->assertSame(2, substr_count($secondPage->getContent(), 'aria-label="Aksi pegawai '));
+        $this->assertSame(2, substr_count($secondPage->getContent(), 'Detail Pegawai'));
+        $this->assertSame(2, substr_count($secondPage->getContent(), 'Edit Pegawai'));
+        $this->assertSame(2, substr_count($secondPage->getContent(), 'Hapus Pegawai'));
+        $this->assertSame(2, substr_count($secondPage->getContent(), 'data-bs-toggle="dropdown"'));
     }
 }

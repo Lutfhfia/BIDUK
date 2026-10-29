@@ -126,7 +126,7 @@
                                     </select>
                                 </div>
 
-                                {{-- CARI NAMA / NIS PARAMETER --}}
+                                {{-- CARI NAMA / NIS PARAMETER (kecil, di sebelah status) --}}
                                 <div class="col-md-7">
                                     <label class="form-label fw-semibold">
                                         Pencarian <span class="text-muted fw-normal">(Nama / NIS)</span>
@@ -240,52 +240,17 @@
                             </div>
 
 
-                            {{-- PILIH SISWA (MODE INDIVIDU SEARCHABLE DROPDOWN) --}}
+                            {{-- PILIH SISWA (MODE INDIVIDU - LIST LANGSUNG) --}}
                             <div class="mt-4" id="studentSelection">
                                 <label class="form-label fw-semibold">
                                     Pilih Siswa <span class="text-danger">*</span>
                                 </label>
 
-                                <div class="position-relative">
-                                    <div class="input-group">
-                                        <span class="input-group-text bg-white border-end-0">
-                                            <i class="bi bi-search text-muted"></i>
-                                        </span>
-                                        <input type="text" id="studentSearchInput" class="form-control border-start-0 ps-0"
-                                            placeholder="Cari nama siswa atau NIS..." autocomplete="off"
-                                            value="{{ $selectedStudent ? $selectedStudent->name . ' (' . ($selectedStudent->nis ?: '-') . ')' : '' }}">
-                                        <button type="button" class="btn btn-outline-secondary d-none" id="clearStudentSearchInput" title="Hapus pencarian">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </div>
+                                {{-- Hidden student_id input --}}
+                                <input type="hidden" name="student_id" id="studentIdInput"
+                                    value="{{ $selectedStudent?->id ?? request('student_id') }}">
 
-                                    {{-- Hidden student_id input --}}
-                                    <input type="hidden" name="student_id" id="studentIdInput"
-                                        value="{{ $selectedStudent?->id ?? request('student_id') }}">
-
-                                    {{-- Dropdown Hasil Pencarian Card 2 --}}
-                                    <div id="studentSearchResults" class="dropdown-menu shadow-sm w-100 p-0 border mt-1"
-                                        style="display: none; max-height: 280px; overflow-y: auto; z-index: 1050;">
-                                    </div>
-                                </div>
-
-                                {{-- Card Informasi Siswa Terpilih --}}
-                                <div id="selectedStudentCard"
-                                    class="mt-2 p-2 px-3 bg-light rounded border d-flex justify-content-between align-items-center {{ $selectedStudent ? '' : 'd-none' }}">
-                                    <div class="small">
-                                        <i class="bi bi-person-check-fill text-success me-1"></i>
-                                        <span class="fw-bold text-dark" id="selectedStudentName">{{ $selectedStudent?->name }}</span>
-                                        <span class="text-muted ms-1">(NIS: <span id="selectedStudentNis">{{ $selectedStudent?->nis ?: '-' }}</span>)</span>
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle ms-2" id="selectedStudentClass">
-                                            {{ $selectedStudent?->current_class_name ? 'Kelas ' . $selectedStudent->current_class_name : 'Siswa' }}
-                                        </span>
-                                    </div>
-                                    <button type="button" class="btn btn-sm text-danger p-0 ms-2" id="deselectStudentBtn" title="Batal pilih">
-                                        <i class="bi bi-x-circle-fill fs-6"></i>
-                                    </button>
-                                </div>
-
-                                {{-- Fallback Hidden Native Select --}}
+                                {{-- Fallback Hidden Native Select (data source) --}}
                                 <select id="studentPrint" class="d-none">
                                     <option value="">Pilih Siswa</option>
                                     @foreach ($students as $student)
@@ -305,8 +270,40 @@
                                     @endforeach
                                 </select>
 
+                                {{-- Inline search filter untuk list siswa --}}
+                                <div class="input-group input-group-sm mb-2">
+                                    <span class="input-group-text bg-white border-end-0">
+                                        <i class="bi bi-funnel text-muted"></i>
+                                    </span>
+                                    <input type="text" id="studentListFilter"
+                                        class="form-control form-control-sm border-start-0 ps-0"
+                                        placeholder="Filter nama atau NIS..." autocomplete="off">
+                                </div>
+
+                                {{-- Daftar siswa langsung muncul (scrollable list) --}}
+                                <div id="studentListContainer" class="border rounded-3"
+                                    style="max-height: 260px; overflow-y: auto;">
+                                    {{-- Akan diisi oleh JavaScript --}}
+                                </div>
+
+                                {{-- Card Informasi Siswa Terpilih --}}
+                                <div id="selectedStudentCard"
+                                    class="mt-2 p-2 px-3 bg-light rounded border d-flex justify-content-between align-items-center {{ $selectedStudent ? '' : 'd-none' }}">
+                                    <div class="small">
+                                        <i class="bi bi-person-check-fill text-success me-1"></i>
+                                        <span class="fw-bold text-dark" id="selectedStudentName">{{ $selectedStudent?->name }}</span>
+                                        <span class="text-muted ms-1">(NIS: <span id="selectedStudentNis">{{ $selectedStudent?->nis ?: '-' }}</span>)</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle ms-2" id="selectedStudentClass">
+                                            {{ $selectedStudent?->current_class_name ? 'Kelas ' . $selectedStudent->current_class_name : 'Siswa' }}
+                                        </span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm text-danger p-0 ms-2" id="deselectStudentBtn" title="Batal pilih">
+                                        <i class="bi bi-x-circle-fill fs-6"></i>
+                                    </button>
+                                </div>
+
                                 <div class="form-text mt-1 text-muted">
-                                    Ketik nama atau NIS, lalu pilih salah satu siswa dari daftar dropdown pencarian.
+                                    Pilih salah satu siswa dari daftar di atas, atau gunakan filter untuk mempersempit pencarian.
                                 </div>
                             </div>
 
@@ -478,168 +475,56 @@
     </div>
 
 
-    {{-- =============================================================
-     STYLE
-============================================================= --}}
+    @include('reports._shared-ui-styles')
+
+    {{-- TAMBAHAN STYLE UNTUK LIST SISWA --}}
     <style>
-        .print-type-card {
-            position: relative;
-            border: 1.5px solid #dce3ed;
-            border-radius: 10px;
-            padding: 18px 12px;
-            min-height: 145px;
-            text-align: center;
-            cursor: pointer;
-            background: #fff;
-            transition: all .2s ease;
-            overflow: hidden;
-        }
-
-        .print-type-card:hover {
-            border-color: var(--biduk-primary, #1a7a4c);
-            background: var(--biduk-primary-light, #e8f5ee);
-            transform: translateY(-1px);
-        }
-
-        .print-type-card.active {
-            border-color: var(--biduk-primary, #1a7a4c);
-            background: var(--biduk-primary-light, #e8f5ee);
-            box-shadow: 0 0 0 1px rgba(26, 122, 76, .15);
-        }
-
-        .radio-circle {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 18px;
-            height: 18px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: transparent;
-            font-size: 11px;
-        }
-
-        .print-type-card.active .radio-circle {
-            border-color: var(--biduk-primary, #1a7a4c);
-            background: var(--biduk-primary, #1a7a4c);
-            color: #fff;
-        }
-
-        .print-icon {
-            font-size: 35px;
-            color: var(--biduk-primary, #1a7a4c);
-            margin-bottom: 7px;
-        }
-
-        .print-type-card h6 {
-            margin-bottom: 5px;
-            color: #212529;
-        }
-
-        .print-type-card small {
-            display: block;
-            line-height: 1.45;
-        }
-
-        .preview-toolbar {
-            min-height: 42px;
-            border: 1px solid #e3e8ef;
-            border-radius: 8px;
-            padding: 8px 12px;
+        .student-list-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #fff;
-        }
-
-        .preview-wrapper {
-            width: 100%;
-            overflow: hidden;
-            border-radius: 8px;
-            background: #343a40;
-            border: 1px solid #dce3ed;
-        }
-
-        .preview-frame {
-            display: block;
-            width: 100%;
-            height: 620px;
-            border: 0;
-            background: #fff;
-        }
-
-        .preview-placeholder {
-            min-height: 620px;
-            border: 2px dashed #dce3ed;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-
-        .preview-placeholder-icon {
-            width: 75px;
-            height: 75px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: var(--biduk-primary-light, #e8f5ee);
-            color: var(--biduk-primary, #1a7a4c);
-            font-size: 38px;
-        }
-
-        .information-icon {
-            width: 40px;
-            height: 40px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: #fff8e8;
-            color: #f59e0b;
-            font-size: 20px;
-        }
-
-        .form-select,
-        .form-control {
-            min-height: 42px;
-            border-color: #dce3ed;
-        }
-
-        .form-select:focus,
-        .form-control:focus {
-            border-color: var(--biduk-primary, #1a7a4c);
-            box-shadow: 0 0 0 0.15rem rgba(26, 122, 76, 0.15);
-        }
-
-        .alert {
-            border-radius: 8px;
-        }
-
-        /* Search Dropdown item hover */
-        .student-search-item {
+            padding: 8px 12px;
             cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
             transition: background-color 0.15s ease;
         }
-        .student-search-item:hover, .student-search-item:focus {
+        .student-list-item:last-child {
+            border-bottom: none;
+        }
+        .student-list-item:hover {
             background-color: var(--biduk-primary-light, #e8f5ee) !important;
         }
-
-        @media (max-width: 991.98px) {
-            .preview-frame,
-            .preview-placeholder {
-                min-height: 500px;
-                height: 500px;
-            }
+        .student-list-item.active {
+            background-color: var(--biduk-primary-light, #e8f5ee) !important;
+            border-left: 3px solid var(--biduk-primary, #1a7a4c);
+        }
+        .student-list-item .student-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .student-list-item .student-name {
+            font-weight: 600;
+            font-size: 13px;
+            color: #212529;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .student-list-item .student-meta {
+            font-size: 11.5px;
+            color: #6c757d;
+        }
+        .student-list-empty {
+            padding: 24px 12px;
+            text-align: center;
+            color: #6c757d;
+        }
+        .student-list-empty i {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 6px;
+            color: var(--biduk-primary, #1a7a4c);
+            opacity: 0.6;
         }
     </style>
 
@@ -662,16 +547,14 @@
             const resetButton = document.getElementById('resetButton');
             const previewPdfButton = document.getElementById('previewPdfButton');
 
-            // Search Inputs in Card 1 & Card 2
-            const studentSearch = document.getElementById('studentSearch'); // Card 1
-            const studentSearchInput = document.getElementById('studentSearchInput'); // Card 2
+            // Search Input in Card 1
+            const studentSearch = document.getElementById('studentSearch');
 
             // Hidden Student ID Input
             const studentIdInput = document.getElementById('studentIdInput');
 
             // Search Dropdown Elements
             const studentSearchResults1 = document.getElementById('studentSearchResults1');
-            const studentSearchResults = document.getElementById('studentSearchResults');
 
             // Selected Student Info Card
             const selectedStudentCard = document.getElementById('selectedStudentCard');
@@ -679,10 +562,13 @@
             const selectedStudentNis = document.getElementById('selectedStudentNis');
             const selectedStudentClass = document.getElementById('selectedStudentClass');
 
-            // Clear Buttons
+            // Clear & Deselect Buttons
             const deselectStudentBtn = document.getElementById('deselectStudentBtn');
             const clearStudentSearch1 = document.getElementById('clearStudentSearch1');
-            const clearStudentSearchInput = document.getElementById('clearStudentSearchInput');
+
+            // Student list elements
+            const studentListContainer = document.getElementById('studentListContainer');
+            const studentListFilter = document.getElementById('studentListFilter');
 
             // Bulk modal elements
             const bulkStudentModalElement = document.getElementById('bulkStudentModal');
@@ -710,8 +596,65 @@
                     }));
             }
 
+
             /* =========================================================
-               SEARCHABLE STUDENT DROPDOWN RENDER
+               STUDENT LIST - RENDER LANGSUNG (seperti Buku Induk)
+            ========================================================== */
+            function renderStudentList(filterKeyword) {
+                if (!studentListContainer) return;
+
+                const classId = classSelect ? classSelect.value : '';
+                const query = (filterKeyword || '').toLowerCase().trim();
+                const allStudents = getStudentsData();
+
+                // Filter matching students
+                const matches = allStudents.filter(student => {
+                    const matchClass = !classId || student.classIds.length === 0 || student.classIds.includes(String(classId));
+                    const matchSearch = !query ||
+                        student.name.toLowerCase().includes(query) ||
+                        student.displayName.toLowerCase().includes(query) ||
+                        student.nis.toLowerCase().includes(query);
+                    return matchClass && matchSearch;
+                });
+
+                studentListContainer.innerHTML = '';
+                const currentSelectedId = studentIdInput ? studentIdInput.value : '';
+
+                if (matches.length === 0) {
+                    studentListContainer.innerHTML = `
+                        <div class="student-list-empty">
+                            <i class="bi bi-person-x"></i>
+                            <div class="small">Data siswa tidak ditemukan</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                matches.forEach((student, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'student-list-item' + (student.id === currentSelectedId ? ' active' : '');
+                    item.innerHTML = `
+                        <div class="student-info">
+                            <div class="student-name">${index + 1}. ${student.displayName}</div>
+                            <div class="student-meta">NIS: ${student.nis || '-'} · Kelas ${student.className}</div>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle" style="font-size: 10.5px;">
+                            ${student.className}
+                        </span>
+                    `;
+                    item.addEventListener('click', function() {
+                        selectStudent(student);
+                        // Update active state in list
+                        studentListContainer.querySelectorAll('.student-list-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                    });
+                    studentListContainer.appendChild(item);
+                });
+            }
+
+
+            /* =========================================================
+               SEARCHABLE STUDENT DROPDOWN RENDER (Card 1 Pencarian)
             ========================================================== */
             function renderSearchResults(keyword, targetContainer) {
                 if (!targetContainer) return;
@@ -774,19 +717,14 @@
                 if (studentIdInput) studentIdInput.value = student.id;
                 if (studentSelect) studentSelect.value = student.id;
 
-                const displayVal = `${student.displayName} (${student.nis || '-'})`;
-                if (studentSearchInput) studentSearchInput.value = displayVal;
-
                 if (selectedStudentName) selectedStudentName.textContent = student.displayName;
                 if (selectedStudentNis) selectedStudentNis.textContent = student.nis || '-';
                 if (selectedStudentClass) selectedStudentClass.textContent = `Kelas ${student.className}`;
 
                 if (selectedStudentCard) selectedStudentCard.classList.remove('d-none');
                 if (clearStudentSearch1) clearStudentSearch1.classList.remove('d-none');
-                if (clearStudentSearchInput) clearStudentSearchInput.classList.remove('d-none');
 
                 if (studentSearchResults1) studentSearchResults1.style.display = 'none';
-                if (studentSearchResults) studentSearchResults.style.display = 'none';
 
                 // Automatically activate 'individual' print mode card
                 if (selectedPrintType !== 'individual') {
@@ -794,23 +732,26 @@
                     if (printTypeInput) printTypeInput.value = 'individual';
                     updatePrintType();
                 }
+
+                // Re-render list to update active state
+                renderStudentList(studentListFilter ? studentListFilter.value : '');
             }
 
             function clearSelection() {
                 if (studentIdInput) studentIdInput.value = '';
                 if (studentSelect) studentSelect.value = '';
                 if (studentSearch) studentSearch.value = '';
-                if (studentSearchInput) studentSearchInput.value = '';
 
                 if (selectedStudentCard) selectedStudentCard.classList.add('d-none');
                 if (clearStudentSearch1) clearStudentSearch1.classList.add('d-none');
-                if (clearStudentSearchInput) clearStudentSearchInput.classList.add('d-none');
 
                 if (studentSearchResults1) studentSearchResults1.style.display = 'none';
-                if (studentSearchResults) studentSearchResults.style.display = 'none';
+
+                // Re-render list to remove active state
+                renderStudentList(studentListFilter ? studentListFilter.value : '');
             }
 
-            // Setup Search Input Helper
+            // Setup Search Input for Card 1 (Pencarian parameter)
             function bindSearchInput(inputEl, dropdownEl, clearBtnEl) {
                 if (!inputEl) return;
                 let timer = null;
@@ -844,7 +785,6 @@
             }
 
             bindSearchInput(studentSearch, studentSearchResults1, clearStudentSearch1);
-            bindSearchInput(studentSearchInput, studentSearchResults, clearStudentSearchInput);
 
             if (deselectStudentBtn) deselectStudentBtn.addEventListener('click', clearSelection);
 
@@ -855,10 +795,15 @@
                 });
             }
 
-            if (clearStudentSearchInput) {
-                clearStudentSearchInput.addEventListener('click', function() {
-                    clearSelection();
-                    if (studentSearchInput) studentSearchInput.focus();
+            // Filter inline untuk list siswa (Card 2)
+            if (studentListFilter) {
+                let filterTimer = null;
+                studentListFilter.addEventListener('input', function() {
+                    clearTimeout(filterTimer);
+                    const val = this.value;
+                    filterTimer = setTimeout(function() {
+                        renderStudentList(val);
+                    }, 150);
                 });
             }
 
@@ -866,9 +811,6 @@
             document.addEventListener('click', function(e) {
                 if (studentSearchResults1 && studentSearch && !studentSearch.contains(e.target) && !studentSearchResults1.contains(e.target)) {
                     studentSearchResults1.style.display = 'none';
-                }
-                if (studentSearchResults && studentSearchInput && !studentSearchInput.contains(e.target) && !studentSearchResults.contains(e.target)) {
-                    studentSearchResults.style.display = 'none';
                 }
             });
 
@@ -909,7 +851,9 @@
                     printTypeInfo.className = 'alert alert-info mt-3 mb-0';
                     printTypeInfo.innerHTML =
                         '<i class="bi bi-info-circle me-2"></i>' +
-                        'Mode <strong>Per Individu</strong> dipilih. Silakan cari dan pilih siswa yang akan dicetak.';
+                        'Mode <strong>Per Individu</strong> dipilih. Silakan pilih siswa dari daftar di bawah.';
+                    // Render student list
+                    renderStudentList(studentListFilter ? studentListFilter.value : '');
                 } else if (selectedPrintType === 'class') {
                     studentSelection.style.display = 'none';
                     printTypeInfo.className = 'alert alert-info mt-3 mb-0';
@@ -956,6 +900,9 @@
                 if (studentSelect.value && studentSelect.selectedOptions[0] && studentSelect.selectedOptions[0].hidden) {
                     clearSelection();
                 }
+
+                // Re-render student list
+                renderStudentList(studentListFilter ? studentListFilter.value : '');
             }
 
 
@@ -1022,7 +969,7 @@
                        VALIDASI PER INDIVIDU
                     ------------------------------------------------ */
                     if (selectedPrintType === 'individual' && !studentId) {
-                        alert('Silakan cari dan pilih siswa terlebih dahulu.');
+                        alert('Silakan pilih siswa terlebih dahulu dari daftar.');
                         return;
                     }
 
@@ -1095,7 +1042,7 @@
 
                 const studentId = studentIdInput?.value || studentSelect?.value || '';
                 if (!studentId) {
-                    alert('Silakan cari dan pilih siswa terlebih dahulu.');
+                    alert('Silakan pilih siswa terlebih dahulu dari daftar.');
                     return;
                 }
 

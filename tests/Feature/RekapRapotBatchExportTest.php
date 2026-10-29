@@ -20,6 +20,88 @@ class RekapRapotBatchExportTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_batch_respects_selected_class_academic_year_and_student_status(): void
+    {
+        $academicYear = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $otherYear = AcademicYear::create([
+            'name' => '2024/2025',
+            'start_date' => '2024-07-01',
+            'end_date' => '2025-06-30',
+            'status' => 'inactive',
+        ]);
+        $classA = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '1A',
+            'grade_level' => 1,
+            'status' => 'Aktif',
+        ]);
+        $classB = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '1B',
+            'grade_level' => 1,
+            'status' => 'Aktif',
+        ]);
+        $oldClass = SchoolClass::create([
+            'academic_year_id' => $otherYear->id,
+            'name' => '1C',
+            'grade_level' => 1,
+            'status' => 'Aktif',
+        ]);
+
+        $students = collect([
+            ['nis' => 'NIS-ACTIVE-A', 'nisn' => 'NISN-ACTIVE-A', 'name' => 'Siswa Aktif A', 'status' => 'Aktif', 'class' => $classA],
+            ['nis' => 'NIS-INACTIVE-A', 'nisn' => 'NISN-INACTIVE-A', 'name' => 'Siswa Nonaktif A', 'status' => 'Nonaktif', 'class' => $classA],
+            ['nis' => 'NIS-ACTIVE-B', 'nisn' => 'NISN-ACTIVE-B', 'name' => 'Siswa Aktif B', 'status' => 'Aktif', 'class' => $classB],
+            ['nis' => 'NIS-ACTIVE-OLD', 'nisn' => 'NISN-ACTIVE-OLD', 'name' => 'Siswa Aktif Lama', 'status' => 'Aktif', 'class' => $oldClass],
+        ])->map(function (array $data) {
+            $class = $data['class'];
+            unset($data['class']);
+            $student = Student::create(array_merge($data, ['gender' => 'L']));
+            ClassStudent::create([
+                'class_id' => $class->id,
+                'student_id' => $student->id,
+                'status' => 'Aktif',
+            ]);
+
+            return $student;
+        });
+
+        $classResponse = app(RekapRapotController::class)->batch(
+            Request::create('/laporan/rekap-rapot/batch', 'GET', [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $classA->id,
+                'status' => 'Tidak Aktif',
+                'pdf' => false,
+            ])
+        );
+        $classReports = $classResponse->getData()['reports'];
+
+        $this->assertCount(1, $classReports);
+        $this->assertSame($students[1]->id, $classReports->first()['student']->id);
+        $this->assertSame($classA->id, $classReports->first()['class']->id);
+
+        $allClassesResponse = app(RekapRapotController::class)->batch(
+            Request::create('/laporan/rekap-rapot/batch', 'GET', [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => 'all',
+                'status' => 'Aktif',
+                'pdf' => false,
+            ])
+        );
+        $allClassReports = $allClassesResponse->getData()['reports'];
+
+        $this->assertCount(2, $allClassReports);
+        $this->assertEqualsCanonicalizing(
+            [$students[0]->id, $students[2]->id],
+            $allClassReports->pluck('student.id')->all()
+        );
+    }
+
     public function test_all_class_batch_includes_students_from_a_nonactive_graduated_grade_six_class(): void
     {
         $academicYear = AcademicYear::create([

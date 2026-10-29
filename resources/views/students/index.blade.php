@@ -251,15 +251,6 @@
         color: #687989;
     }
 
-    .student-actions-cell .btn {
-        width: 34px;
-        height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-    }
-
     .student-pagination {
         gap: .75rem;
     }
@@ -549,7 +540,7 @@
                             <th>JK</th>
                             <th>Kelas</th>
                             <th>Status</th>
-                            <th style="width: 135px;" class="text-center">Aksi</th>
+                            <th style="width: 80px;" class="text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -618,49 +609,62 @@
                                 </td>
 
                                 <td class="text-center student-actions-cell">
-                                    <div class="d-flex justify-content-center align-items-center gap-1">
-                                        <a
-                                        href="{{ route('students.show', array_merge(
-    ['student' => $student->id],
-    request()->only(['search', 'class_id', 'status', 'academic_year_id'])
-)) }}"
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="Lihat detail"
-                                            aria-label="Lihat detail {{ $student->name }}"
+                                    <div class="action-dropdown master-action-dropdown dropdown">
+                                        <button
+                                            class="btn btn-sm btn-light border-0 action-menu-toggle"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-display="static"
+                                            aria-expanded="false"
+                                            aria-label="Aksi siswa {{ $student->name }}"
                                         >
-                                            <i class="bi bi-eye"></i>
-                                        </a>
+                                            <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                        </button>
 
-                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
-                                            <a
-                                                href="{{ route('students.edit', $student->id) }}"
-                                                class="btn btn-sm btn-outline-warning"
-                                                title="Edit data"
-                                                aria-label="Edit data {{ $student->name }}"
-                                            >
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-                                        @endif
-
-                                        @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.delete'))
-                                            <form
-                                                action="{{ route('students.destroy', $student->id) }}"
-                                                method="POST"
-                                                class="d-inline"
-                                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    title="Hapus data"
-                                                    aria-label="Hapus data {{ $student->name }}"
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a
+                                                    class="dropdown-item"
+                                                    href="{{ route('students.show', array_merge(
+                                                        ['student' => $student->id],
+                                                        request()->only(['search', 'class_id', 'status', 'academic_year_id'])
+                                                    )) }}"
                                                 >
-                                                    <i class="bi bi-trash3"></i>
-                                                </button>
-                                            </form>
-                                        @endif
+                                                    <i class="bi bi-eye text-success me-2" aria-hidden="true"></i>
+                                                    Detail Siswa
+                                                </a>
+                                            </li>
+
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.edit'))
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a
+                                                        class="dropdown-item"
+                                                        href="{{ route('students.edit', $student->id) }}"
+                                                    >
+                                                        <i class="bi bi-pencil-square text-success me-2" aria-hidden="true"></i>
+                                                        Edit Siswa
+                                                    </a>
+                                                </li>
+                                            @endif
+
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('students.delete'))
+                                                <li>
+                                                    <form
+                                                        action="{{ route('students.destroy', $student->id) }}"
+                                                        method="POST"
+                                                        onsubmit="return confirm('Apakah Anda yakin ingin menghapus data siswa ini?')"
+                                                    >
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="bi bi-trash3 me-2" aria-hidden="true"></i>
+                                                            Hapus Siswa
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
+                                        </ul>
                                     </div>
                                 </td>
                             </tr>

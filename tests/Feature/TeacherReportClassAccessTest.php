@@ -317,7 +317,20 @@ class TeacherReportClassAccessTest extends TestCase
             'student' => $historyStudent->id,
             'academic_year_id' => $olderYear->id,
         ]))->assertOk()
-            ->assertSeeText($historyStudent->name);
+            ->assertSeeText($historyStudent->name)
+            ->assertSee('data-bs-target="#keterangan"', false)
+            ->assertSee('data-bs-target="#ortu"', false)
+            ->assertSee('data-bs-target="#perkembangan"', false)
+            ->assertSee('data-bs-target="#physique"', false)
+            ->assertSee('data-bs-target="#health"', false)
+            ->assertSee('data-bs-target="#lainnya"', false)
+            ->assertSee('id="keterangan" role="tabpanel" aria-labelledby="keterangan-tab"', false)
+            ->assertSee('id="ortu" role="tabpanel" aria-labelledby="ortu-tab"', false)
+            ->assertSee('id="perkembangan" role="tabpanel" aria-labelledby="perkembangan-tab"', false)
+            ->assertSee('id="physique" role="tabpanel" aria-labelledby="physique-tab"', false)
+            ->assertSee('id="health" role="tabpanel" aria-labelledby="health-tab"', false)
+            ->assertSee('id="lainnya" role="tabpanel" aria-labelledby="lainnya-tab"', false)
+            ->assertSee('window.location.hash', false);
 
         $this->get(route('students.index', [
             'academic_year_id' => $olderYear->id,

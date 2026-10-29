@@ -1,10 +1,14 @@
 @extends('layouts.app')
 
+@push('styles')
+    @include('admin.classes._styles')
+@endpush
+
 @section('title', 'Tambah Siswa ke Kelas ' . $class->name)
 
 @section('content')
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 class-management-page">
 
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,7 +37,7 @@
 
 
     {{-- Info --}}
-    <div class="alert alert-info">
+    <div class="alert alert-success">
 
         <strong>{{ $class->name }}</strong>
 
@@ -68,7 +72,7 @@
 
 
     {{-- Pencarian Siswa --}}
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="biduk-card mb-4">
 
         <div class="card-body">
 
@@ -94,7 +98,7 @@
 
                     <div class="col-md-4 d-flex gap-2">
 
-                        <button type="submit" class="btn btn-success">
+                        <button type="submit" class="btn btn-biduk-primary">
 
                             <i class="bi bi-search me-1"></i>
 
@@ -132,7 +136,7 @@
         @csrf
 
         {{-- Tombol Simpan & Batal di BAGIAN ATAS --}}
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="biduk-card mb-4">
 
             <div class="card-body py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
 
@@ -146,7 +150,7 @@
 
                     <button
                         type="submit"
-                        class="btn btn-success">
+                        class="btn btn-biduk-primary">
 
                         <i class="bi bi-check-lg me-1"></i>
 
@@ -169,7 +173,7 @@
         </div>
 
 
-        <div class="card border-0 shadow-sm">
+        <div class="biduk-card">
 
             <div class="card-body">
 
@@ -192,7 +196,7 @@
 
                         <button
                             type="button"
-                            class="btn btn-sm btn-outline-primary"
+                            class="btn btn-sm btn-biduk-outline"
                             id="checkAll">
 
                             Pilih Semua
@@ -333,7 +337,7 @@
 
                         <button
                             type="submit"
-                            class="btn btn-success">
+                            class="btn btn-biduk-primary">
 
                             <i class="bi bi-check-lg me-1"></i>
 

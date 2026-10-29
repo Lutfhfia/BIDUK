@@ -213,33 +213,14 @@
         font-weight: 600;
     }
 
-    .employee-page .employee-action-menu {
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #e2e8e5;
-        border-radius: 8px;
-        background: #fff;
-        color: #506274;
-    }
-
-    .employee-page .employee-action-menu:hover,
-    .employee-page .employee-action-menu[aria-expanded="true"] {
-        border-color: #a9d9bc;
-        background: #effaf3;
-        color: #147847;
-    }
-
-    .employee-page .dropdown-menu {
+    .employee-page .employee-export-menu {
         padding: .4rem;
         border: 1px solid #e7eeea;
         border-radius: 10px;
         box-shadow: 0 10px 28px rgba(15, 45, 32, .12);
     }
 
-    .employee-page .dropdown-item {
+    .employee-page .employee-export-menu .dropdown-item {
         padding: .55rem .7rem;
         border-radius: 6px;
         font-size: .85rem;
@@ -376,7 +357,7 @@
         Export
     </button>
 
-    <ul class="dropdown-menu dropdown-menu-end">
+    <ul class="dropdown-menu dropdown-menu-end employee-export-menu">
         <li>
             <a
                 class="dropdown-item"
@@ -641,7 +622,7 @@
                             <th>Jabatan</th>
                             <th>Wali Kelas</th>
                             <th>Status</th>
-                            <th class="text-center">Aksi</th>
+                            <th class="text-center" style="width: 80px;">Aksi</th>
                         </tr>
 
                     </thead>
@@ -770,49 +751,54 @@
 
                                 {{-- Aksi --}}
                                 <td class="text-center">
+                                    <div class="action-dropdown master-action-dropdown dropdown">
+                                        <button
+                                            class="btn btn-sm btn-light border-0 action-menu-toggle"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-display="static"
+                                            aria-expanded="false"
+                                            aria-label="Aksi pegawai {{ $employee->name }}"
+                                        >
+                                            <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
+                                        </button>
 
-                                <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-nowrap">
-    <a
-        class="btn btn-sm btn-light text-primary"
-        href="{{ route('pegawai.show', $employee) }}"
-        title="Lihat Detail"
-        aria-label="Lihat detail Pegawai"
-    >
-        <i class="bi bi-eye"></i>
-    </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('pegawai.show', $employee) }}">
+                                                    <i class="bi bi-eye text-success me-2" aria-hidden="true"></i>
+                                                    Detail Pegawai
+                                                </a>
+                                            </li>
 
-    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
-        <a
-            class="btn btn-sm btn-light text-warning"
-            href="{{ route('pegawai.edit', $employee) }}"
-            title="Edit"
-            aria-label="Edit Pegawai"
-        >
-            <i class="bi bi-pencil"></i>
-        </a>
-    @endif
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.edit'))
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('pegawai.edit', $employee) }}">
+                                                        <i class="bi bi-pencil-square text-success me-2" aria-hidden="true"></i>
+                                                        Edit Pegawai
+                                                    </a>
+                                                </li>
+                                            @endif
 
-    @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.delete'))
-        <form
-            action="{{ route('pegawai.destroy', $employee) }}"
-            method="POST"
-            onsubmit="return confirm('Yakin ingin menghapus pegawai ini? Akun login BIDUK yang terhubung juga akan dihapus.')"
-        >
-            @csrf
-            @method('DELETE')
-
-            <button
-                type="submit"
-                class="btn btn-sm btn-light text-danger"
-                title="Hapus"
-                aria-label="Hapus Pegawai"
-            >
-                <i class="bi bi-trash"></i>
-            </button>
-        </form>
-    @endif
-</div>
-
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('employees.delete'))
+                                                <li>
+                                                    <form
+                                                        action="{{ route('pegawai.destroy', $employee) }}"
+                                                        method="POST"
+                                                        onsubmit="return confirm('Yakin ingin menghapus pegawai ini? Akun login BIDUK yang terhubung juga akan dihapus.')"
+                                                    >
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="bi bi-trash3 me-2" aria-hidden="true"></i>
+                                                            Hapus Pegawai
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </div>
                                 </td>
 
                             </tr>

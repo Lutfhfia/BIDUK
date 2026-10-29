@@ -450,9 +450,40 @@
             display: none;
         }
 
+        .master-action-dropdown .action-menu-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            border-radius: 8px;
+            color: var(--biduk-primary);
+        }
+
+        .master-action-dropdown .action-menu-toggle:hover,
+        .master-action-dropdown .action-menu-toggle[aria-expanded="true"] {
+            background: var(--biduk-primary-light);
+            color: var(--biduk-primary-dark);
+        }
+
+        .master-action-dropdown .action-menu-toggle:focus-visible {
+            border-color: var(--biduk-primary);
+            box-shadow: 0 0 0 0.2rem rgba(26, 122, 76, 0.18);
+        }
+
         .action-dropdown .dropdown-menu {
             border: none;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            border-radius: 8px;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .master-action-dropdown .dropdown-menu {
+            min-width: 10rem;
+            border: 1px solid #e7eeea;
+            box-shadow: 0 10px 28px rgba(15, 45, 32, 0.12);
             border-radius: 8px;
             padding: 0.5rem;
             font-size: 0.85rem;
@@ -470,7 +501,21 @@
             background: var(--biduk-primary-light);
         }
 
-        .action-dropdown .dropdown-item.text-danger:hover {
+        .master-action-dropdown .dropdown-item:hover {
+            color: var(--biduk-primary-dark);
+            background: var(--biduk-primary-light);
+        }
+
+        .master-action-dropdown .dropdown-item:focus,
+        .master-action-dropdown .dropdown-item:active {
+            color: var(--biduk-primary-dark);
+            background: var(--biduk-primary-light);
+        }
+
+        .master-action-dropdown .dropdown-item.text-danger:hover,
+        .master-action-dropdown .dropdown-item.text-danger:focus,
+        .master-action-dropdown .dropdown-item.text-danger:active {
+            color: #bb2d3b;
             background: #fff5f5;
         }
 
@@ -788,6 +833,74 @@
 
     {{-- Bootstrap 5 JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        (() => {
+            const actionDropdownSelector = '.master-action-dropdown';
+            const viewportPadding = 8;
+            const gap = 4;
+
+            const positionActionMenu = (toggle) => {
+                const dropdown = toggle.closest(actionDropdownSelector);
+                const menu = dropdown?.querySelector('.dropdown-menu');
+
+                if (!menu || !menu.classList.contains('show')) return;
+
+                menu.style.position = 'fixed';
+                menu.style.inset = 'auto';
+                menu.style.top = '0';
+                menu.style.left = '0';
+                menu.style.transform = 'none';
+                menu.style.margin = '0';
+                menu.style.maxHeight = `calc(100vh - ${viewportPadding * 2}px)`;
+                menu.style.overflowY = 'auto';
+
+                const toggleRect = toggle.getBoundingClientRect();
+                const menuRect = menu.getBoundingClientRect();
+                const belowTop = toggleRect.bottom + gap;
+                const aboveTop = toggleRect.top - menuRect.height - gap;
+                const opensBelow = belowTop + menuRect.height <= window.innerHeight - viewportPadding
+                    || aboveTop < viewportPadding;
+                const top = opensBelow
+                    ? Math.min(belowTop, window.innerHeight - viewportPadding - menuRect.height)
+                    : aboveTop;
+                const maximumLeft = Math.max(
+                    viewportPadding,
+                    window.innerWidth - menuRect.width - viewportPadding
+                );
+                const left = Math.min(
+                    Math.max(viewportPadding, toggleRect.right - menuRect.width),
+                    maximumLeft
+                );
+
+                menu.style.top = `${Math.max(viewportPadding, top)}px`;
+                menu.style.left = `${left}px`;
+            };
+
+            const positionOpenActionMenus = () => {
+                document.querySelectorAll(`${actionDropdownSelector} .dropdown-menu.show`).forEach((menu) => {
+                    const toggle = menu.closest(actionDropdownSelector)
+                        ?.querySelector('[data-bs-toggle="dropdown"]');
+                    if (toggle) positionActionMenu(toggle);
+                });
+            };
+
+            document.addEventListener('shown.bs.dropdown', (event) => {
+                if (event.target.closest(actionDropdownSelector)) {
+                    positionActionMenu(event.target);
+                }
+            });
+
+            document.addEventListener('hidden.bs.dropdown', (event) => {
+                const dropdown = event.target.closest(actionDropdownSelector);
+                const menu = dropdown?.querySelector('.dropdown-menu');
+                if (menu) menu.removeAttribute('style');
+            });
+
+            window.addEventListener('resize', positionOpenActionMenus);
+            window.addEventListener('scroll', positionOpenActionMenus, true);
+        })();
+    </script>
 
     <script>
         // Sidebar toggle for mobile

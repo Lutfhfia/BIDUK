@@ -73,63 +73,63 @@
         </div>
     </div>
     @if (auth()->user()->isGuru())
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-0 pt-4 px-4">
-            <h5 class="fw-bold mb-1">Riwayat Kelas Wali</h5>
-            <p class="text-muted mb-0">
-                Pilih kelas untuk melihat tahun ajaran dan daftar siswanya.
-            </p>
-        </div>
-
-        <div class="card-body p-4">
-            @forelse ($teacherClassHistory as $historyClass)
-                <div class="border rounded-3 mb-3">
-                    <button
-                        class="btn btn-link text-decoration-none text-start w-100 p-3"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#teacherClassHistory{{ $historyClass->id }}"
-                        aria-expanded="false"
-                        aria-controls="teacherClassHistory{{ $historyClass->id }}"
-                    >
-                        <span class="fw-semibold">
-                            Kelas {{ $historyClass->name }}
-                        </span>
-                        <span class="text-muted ms-2">
-                            {{ $historyClass->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}
-                        </span>
-                        <i class="bi bi-chevron-down float-end"></i>
-                    </button>
-
-                    <div class="collapse"
-                         id="teacherClassHistory{{ $historyClass->id }}">
-                        <div class="px-3 pb-3">
-                            <h6 class="fw-semibold">
-                                Daftar Siswa ({{ $historyClass->students->count() }})
-                            </h6>
-
-                            @if ($historyClass->students->isNotEmpty())
-                                <ul class="mb-0">
-                                    @foreach ($historyClass->students as $historyStudent)
-                                        <li>{{ $historyStudent->name }}</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                <p class="text-muted mb-0">
-                                    Belum ada siswa yang tercatat pada kelas ini.
-                                </p>
-                            @endif
-                        </div>
-                    </div>
+        <section class="dashboard-panel teacher-history-panel mb-4">
+            <div class="panel-heading">
+                <div class="panel-heading-icon"><i class="bi bi-mortarboard-fill"></i></div>
+                <div>
+                    <h2>Riwayat Kelas Wali</h2>
+                    <p>Pilih kelas untuk melihat tahun ajaran dan daftar siswanya.</p>
                 </div>
-            @empty
-                <p class="text-muted mb-0">
-                    Belum ada riwayat kelas wali yang tercatat untuk akun ini.
-                </p>
-            @endforelse
-        </div>
-    </div>
-@endif
+            </div>
+
+            <div class="teacher-history-list">
+                @forelse ($teacherClassHistory as $historyClass)
+                    <article class="teacher-history-item">
+                        <button
+                            class="teacher-history-toggle"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#teacherClassHistory{{ $historyClass->id }}"
+                            aria-expanded="false"
+                            aria-controls="teacherClassHistory{{ $historyClass->id }}"
+                        >
+                            <span class="teacher-history-class">
+                                <span class="teacher-history-class-icon"><i class="bi bi-people-fill"></i></span>
+                                <span>Kelas {{ $historyClass->name }}</span>
+                            </span>
+                            <span class="teacher-history-year">
+                                {{ $historyClass->academicYear?->name ?? 'Tahun ajaran tidak tersedia' }}
+                            </span>
+                            <i class="bi bi-chevron-down teacher-history-chevron" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="collapse" id="teacherClassHistory{{ $historyClass->id }}">
+                            <div class="teacher-history-content">
+                                <h3>Daftar Siswa <span>{{ $historyClass->students->count() }}</span></h3>
+
+                                @if ($historyClass->students->isNotEmpty())
+                                    <ul class="teacher-history-students">
+                                        @foreach ($historyClass->students as $historyStudent)
+                                            <li>{{ $historyStudent->name }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <p class="teacher-history-empty">
+                                        Belum ada siswa yang tercatat pada kelas ini.
+                                    </p>
+                                @endif
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="teacher-history-empty-state">
+                        <i class="bi bi-journal-x" aria-hidden="true"></i>
+                        <p>Belum ada riwayat kelas wali yang tercatat untuk akun ini.</p>
+                    </div>
+                @endforelse
+            </div>
+        </section>
+    @endif
 
     {{-- Grafik dan progres nilai rapor --}}
     <div class="row g-3 g-xl-4 align-items-stretch">
@@ -621,6 +621,27 @@
     }
     .panel-heading h2 { margin: 1px 0 5px; color: var(--dash-text); font-size: 1.04rem; font-weight: 800; letter-spacing: -0.02em; }
     .panel-heading p { margin: 0; color: var(--dash-muted); font-size: 0.78rem; line-height: 1.55; }
+    .teacher-history-panel { padding-bottom: 12px; }
+    .teacher-history-list { display: grid; gap: 10px; }
+    .teacher-history-item { overflow: hidden; border: 1px solid #e3ebe8; border-radius: 12px; background: #fff; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .teacher-history-item:has(.teacher-history-toggle[aria-expanded="true"]) { border-color: #b9ddc9; box-shadow: 0 4px 14px rgba(16, 91, 59, 0.07); }
+    .teacher-history-toggle { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 0; background: #fff; color: var(--dash-text); text-align: left; font-size: 0.8rem; transition: background 0.2s ease; }
+    .teacher-history-toggle:hover, .teacher-history-toggle[aria-expanded="true"] { background: #f7fbf8; }
+    .teacher-history-toggle:focus-visible { outline: 3px solid rgba(8, 118, 71, 0.25); outline-offset: -3px; }
+    .teacher-history-class { display: inline-flex; align-items: center; gap: 9px; color: var(--dash-green); font-weight: 750; }
+    .teacher-history-class-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: #eaf7ef; color: var(--dash-green); }
+    .teacher-history-year { padding: 5px 9px; border: 1px solid #e3ebe8; border-radius: 999px; background: #f7faf8; color: var(--dash-muted); font-size: 0.7rem; font-weight: 600; }
+    .teacher-history-chevron { margin-left: auto; color: var(--dash-green); font-size: 0.75rem; transition: transform 0.2s ease; }
+    .teacher-history-toggle[aria-expanded="true"] .teacher-history-chevron { transform: rotate(180deg); }
+    .teacher-history-content { margin: 0 14px; padding: 13px 0 14px; border-top: 1px solid #edf1ef; }
+    .teacher-history-content h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--dash-text); font-size: 0.78rem; font-weight: 750; }
+    .teacher-history-content h3 span { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #eaf7ef; color: var(--dash-green); font-size: 0.67rem; }
+    .teacher-history-students { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 7px 16px; margin: 0; padding: 0; list-style: none; }
+    .teacher-history-students li { position: relative; padding-left: 15px; color: #405467; font-size: 0.76rem; line-height: 1.5; }
+    .teacher-history-students li::before { position: absolute; top: 0.57em; left: 2px; width: 5px; height: 5px; border-radius: 50%; background: #27b875; content: ""; }
+    .teacher-history-empty, .teacher-history-empty-state p { margin: 0; color: var(--dash-muted); font-size: 0.76rem; }
+    .teacher-history-empty-state { display: flex; align-items: center; gap: 10px; padding: 16px; border: 1px dashed #dbe7e0; border-radius: 12px; background: #f8fbf9; }
+    .teacher-history-empty-state i { color: var(--dash-green); font-size: 1.1rem; }
     .chart-wrapper { position: relative; width: 100%; height: 350px; }
     .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 260px; text-align: center; color: var(--dash-muted); }
     .empty-state > i { color: #7b9e8b; font-size: 2.3rem; margin-bottom: 12px; }
@@ -716,6 +737,13 @@
         .dashboard-panel, .detail-panel { padding: 17px; border-radius: 15px; }
         .panel-heading { gap: 10px; }
         .panel-heading-icon { flex-basis: 36px; width: 36px; height: 36px; }
+        .teacher-history-panel { padding-bottom: 10px; }
+        .teacher-history-toggle { flex-wrap: wrap; gap: 8px; padding: 11px; }
+        .teacher-history-class { flex: 1 1 auto; }
+        .teacher-history-year { margin-left: 39px; }
+        .teacher-history-chevron { margin-left: auto; }
+        .teacher-history-content { margin: 0 11px; }
+        .teacher-history-students { grid-template-columns: 1fr; }
         .chart-wrapper { height: 290px; }
         .detail-heading { gap: 10px; }
         .detail-breadcrumb { font-size: 0.61rem; }

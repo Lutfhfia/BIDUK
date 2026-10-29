@@ -131,7 +131,9 @@ class StudentController extends Controller
 
         // Statistik hanya dihitung dari siswa yang boleh dilihat role ini.
         $stats = [
-            'total' => (clone $visibleStudents)->count(),
+            'total' => $isTeacher
+                ? (clone $visibleStudents)->count()
+                : Student::query()->count(),
             'active' => (clone $visibleStudents)->where('status', 'Aktif')->count(),
             'male' => (clone $visibleStudents)->where('gender', 'L')->count(),
             'female' => (clone $visibleStudents)->where('gender', 'P')->count(),

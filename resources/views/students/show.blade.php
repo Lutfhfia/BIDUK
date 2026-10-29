@@ -39,7 +39,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
             <div>
                 <h4 class="fw-bold text-dark mb-1">
-                    <i class="bi bi-person-lines-fill text-primary me-2"></i>Detail Data Siswa
+                    <i class="bi bi-person-lines-fill text-success me-2"></i>Detail Data Siswa
                 </h4>
                 <p class="text-muted mb-0" style="font-size: 0.85rem;">
                     Informasi lengkap peserta didik
@@ -153,7 +153,7 @@
 
     <li class="nav-item" role="presentation">
         <button
-            class="nav-link fw-medium px-1 py-2"
+            class="nav-link active fw-medium px-1 py-2"
             id="keterangan-tab"
             data-bs-toggle="tab"
             data-bs-target="#keterangan"
@@ -241,7 +241,7 @@
                     <div class="card-body p-4">
                         <div class="tab-content" id="studentTabContent">
                             {{-- Tab 1: Keterangan Siswa --}}
-                            <div class="tab-pane fade show active" id="keterangan" role="tabpanel">
+                            <div class="tab-pane fade show active" id="keterangan" role="tabpanel" aria-labelledby="keterangan-tab">
                                 <div class="mb-4">
                                     <h6 class="text-success mb-3 fw-bold"><i class="bi bi-person-badge me-2"></i>Identitas
                                         Peserta Didik</h6>
@@ -451,7 +451,7 @@
                             </div>
 
                             {{-- Tab 2: Orang Tua / Wali --}}
-                            <div class="tab-pane fade" id="ortu" role="tabpanel">
+                            <div class="tab-pane fade" id="ortu" role="tabpanel" aria-labelledby="ortu-tab">
                                 <div class="row g-4">
                                     <div class="col-md-6">
                                         <h6 class="text-success mb-3 fw-bold"><i class="bi bi-person me-2"></i>Data Ayah
@@ -532,7 +532,7 @@
                             </div>
 
                             {{-- Tab 3: Perkembangan Peserta Didik --}}
-                            <div class="tab-pane fade" id="perkembangan" role="tabpanel">
+                            <div class="tab-pane fade" id="perkembangan" role="tabpanel" aria-labelledby="perkembangan-tab">
                                 <div class="row g-4">
                                     <div class="col-12">
                                         <h6 class="text-success mb-3 fw-bold"><i
@@ -613,7 +613,7 @@
                             </div>
 
                             {{-- Tab 4: Tinggi & Berat Badan --}}
-                            <div class="tab-pane fade" id="physique" role="tabpanel">
+                            <div class="tab-pane fade" id="physique" role="tabpanel" aria-labelledby="physique-tab">
                                 <h6 class="text-success mb-3 fw-bold"><i class="bi bi-rulers me-2"></i>Tinggi & Berat
                                     Badan</h6>
                                 @if ($student->physiques && $student->physiques->count() > 0)
@@ -645,7 +645,7 @@
                             </div>
 
                             {{-- Tab 5: Kesehatan --}}
-                            <div class="tab-pane fade" id="health" role="tabpanel">
+                            <div class="tab-pane fade" id="health" role="tabpanel" aria-labelledby="health-tab">
                                 <h6 class="text-success mb-3 fw-bold"><i class="bi bi-heart-pulse me-2"></i>Kondisi
                                     Kesehatan</h6>
                                 @if ($student->healths && $student->healths->count() > 0)
@@ -681,7 +681,7 @@
                             </div>
 
                             {{-- Tab 6: Bagian Lainnya --}}
-                            <div class="tab-pane fade" id="lainnya" role="tabpanel">
+                            <div class="tab-pane fade" id="lainnya" role="tabpanel" aria-labelledby="lainnya-tab">
                                 <h6 class="text-success mb-3 fw-bold"><i
                                         class="bi bi-list-columns-reverse me-2"></i>Bagian Lainnya</h6>
                                 <div class="row g-3">
@@ -725,3 +725,58 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabList = document.getElementById('studentTab');
+        if (!tabList) return;
+
+        const tabs = tabList.querySelectorAll('[data-bs-toggle="tab"][data-bs-target]');
+        const updateTabHash = function (target) {
+            window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${target}`);
+        };
+        const activateTab = function (tab) {
+            if (window.bootstrap?.Tab) {
+                window.bootstrap.Tab.getOrCreateInstance(tab).show();
+                return;
+            }
+
+            tabs.forEach((item) => {
+                const isActive = item === tab;
+                item.classList.toggle('active', isActive);
+                item.setAttribute('aria-selected', String(isActive));
+                item.tabIndex = isActive ? 0 : -1;
+
+                const target = item.dataset.bsTarget;
+                const pane = target ? document.getElementById(target.slice(1)) : null;
+                if (pane) {
+                    pane.classList.toggle('active', isActive);
+                    pane.classList.toggle('show', isActive);
+                }
+            });
+
+            if (tab.dataset.bsTarget) updateTabHash(tab.dataset.bsTarget);
+        };
+        const showTabFromHash = function () {
+            const targetId = window.location.hash.slice(1);
+            if (!targetId) return;
+
+            const tab = Array.from(tabs).find((item) => item.dataset.bsTarget === `#${targetId}`);
+            if (tab) activateTab(tab);
+        };
+
+        showTabFromHash();
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', function () {
+                activateTab(tab);
+            });
+            tab.addEventListener('shown.bs.tab', function (event) {
+                const target = event.target.dataset.bsTarget;
+                if (target) updateTabHash(target);
+            });
+        });
+    });
+</script>
+@endpush
