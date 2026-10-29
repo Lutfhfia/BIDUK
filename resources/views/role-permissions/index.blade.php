@@ -803,6 +803,103 @@
             padding: 13px 15px;
         }
     }
+
+/* ==========================================
+   Header Hak Akses Role
+   Diseragamkan dengan Manajemen User
+   dan Tahun Ajaran
+========================================== */
+
+.role-permission-page .page-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 23px 26px;
+    margin-bottom: 24px !important;
+    border: 1px solid #dceee3;
+    border-radius: 16px;
+    background: linear-gradient(
+        115deg,
+        #e5f5eb 0%,
+        #f8fcf9 48%,
+        #def2e6 100%
+    );
+}
+
+/* Kotak ikon hijau muda */
+.role-permission-page .page-heading-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    border: 1px solid #d1eadd;
+    border-radius: 15px;
+    background: linear-gradient(
+        145deg,
+        #e4f6eb 0%,
+        #cfeedd 100%
+    );
+    color: #16834f;
+    font-size: 26px;
+}
+
+/* Judul header */
+.role-permission-page .page-heading h4 {
+    margin-bottom: 6px !important;
+    color: #1f3026;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 750;
+}
+
+/* Deskripsi header */
+.role-permission-page .page-heading p {
+    margin-bottom: 0;
+    color: #66766c;
+    font-size: .9rem;
+    line-height: 1.6;
+}
+
+/* Tampilan ponsel */
+@media (max-width: 576px) {
+    .role-permission-page .page-heading {
+        gap: 12px;
+        padding: 18px;
+    }
+
+    .role-permission-page .page-heading-icon {
+        flex-basis: 48px;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        font-size: 22px;
+    }
+
+    .role-permission-page .page-heading p {
+        font-size: .82rem;
+    }
+}
+
+/* Checkbox Hak Akses Role - tema hijau BIDUK */
+.role-permission-page input[type="checkbox"] {
+    accent-color: #16834f;
+}
+
+/* Checkbox yang sudah dicentang */
+.role-permission-page input[type="checkbox"]:checked,
+.role-permission-page .form-check-input:checked {
+    background-color: #16834f !important;
+    border-color: #16834f !important;
+}
+
+/* Efek fokus saat checkbox dipilih */
+.role-permission-page input[type="checkbox"]:focus,
+.role-permission-page .form-check-input:focus {
+    border-color: #16834f;
+    box-shadow: 0 0 0 3px rgba(22, 131, 79, .15);
+}
+
 </style>
 
 <script>
