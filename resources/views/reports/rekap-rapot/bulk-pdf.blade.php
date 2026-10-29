@@ -145,7 +145,7 @@
 </head>
 <body>
 
-@foreach($reports as $report)
+@forelse($reports as $report)
     <div class="student-report{{ !empty($report['isFinalClass']) ? ' final-class-report' : '' }}">
         @if (!empty($report['isFinalClass']))
             @include('reports.rekap-rapot.kelas-6', array_merge($report, ['isBulkReport' => true]))
@@ -153,7 +153,12 @@
             @include('reports.rekap-rapot.print', array_merge($report, ['isBulkReport' => true]))
         @endif
     </div>
-@endforeach
+@empty
+    <div class="student-report">
+        <h2>Data siswa masih kosong</h2>
+        <p>Tidak ada siswa atau nilai siswa pada kelas dan parameter yang dipilih.</p>
+    </div>
+@endforelse
 
 </body>
 </html>

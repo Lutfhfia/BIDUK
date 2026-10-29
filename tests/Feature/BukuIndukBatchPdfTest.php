@@ -56,6 +56,36 @@ class BukuIndukBatchPdfTest extends TestCase
         $this->assertSame(4, $this->pdfPageCount($response->getContent()));
     }
 
+    public function test_class_pdf_shows_an_empty_state_when_the_class_has_no_students(): void
+    {
+        $academicYear = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $class = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '1A',
+            'grade_level' => 1,
+            'status' => 'Aktif',
+        ]);
+
+        $response = app(BukuIndukController::class)->batchPdf(Request::create(
+            '/laporan/buku-induk/cetak-batch-pdf',
+            'GET',
+            [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $class->id,
+                'status' => 'aktif',
+                'print_type' => 'class',
+            ]
+        ));
+
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertSame(1, $this->pdfPageCount($response->getContent()));
+    }
+
     public function test_all_class_pdf_ignores_the_preview_student_label_as_a_search_filter(): void
     {
         [$academicYear, $class, $student] = $this->createClassStudent('Aktif');
@@ -101,6 +131,67 @@ class BukuIndukBatchPdfTest extends TestCase
 
         $this->assertTrue($view->getData()['selectedStudent']->is($student));
         $this->assertTrue($view->getData()['students']->contains('id', $student->id));
+    }
+
+    public function test_batch_preview_renders_class_and_all_class_student_reports(): void
+    {
+        [$academicYear, $class] = $this->createClassStudent('Aktif');
+        $otherClass = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '6B',
+            'grade_level' => 6,
+            'status' => 'Aktif',
+        ]);
+        $otherStudent = $this->addStudentToClass($otherClass, 'NIS-SECOND', 'Siswa Kedua');
+
+        $classPreview = app(BukuIndukController::class)->previewBatch(Request::create(
+            '/laporan/buku-induk/preview-batch',
+            'GET',
+            [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $class->id,
+                'status' => 'aktif',
+                'print_type' => 'class',
+            ]
+        ));
+
+        $emptyClass = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '5A',
+            'grade_level' => 5,
+            'status' => 'Aktif',
+        ]);
+        $emptyPreview = app(BukuIndukController::class)->previewBatch(Request::create(
+            '/laporan/buku-induk/preview-batch',
+            'GET',
+            [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $emptyClass->id,
+                'status' => 'aktif',
+                'print_type' => 'class',
+            ]
+        ));
+
+        $allClassesPreview = app(BukuIndukController::class)->previewBatch(Request::create(
+            '/laporan/buku-induk/preview-batch',
+            'GET',
+            [
+                'academic_year_id' => $academicYear->id,
+                'status' => 'aktif',
+                'print_type' => 'all',
+                'student_id' => Student::where('nis', 'NIS-TEST')->value('id'),
+                'search' => 'Siswa Uji (NIS-TEST)',
+            ]
+        ));
+
+        $this->assertCount(1, $classPreview->getData()['studentPages']);
+        $this->assertStringContainsString('Siswa Uji', $classPreview->render());
+        $this->assertStringNotContainsString($otherStudent->name, $classPreview->render());
+        $this->assertCount(0, $emptyPreview->getData()['studentPages']);
+        $this->assertStringContainsString('Data siswa masih kosong', $emptyPreview->render());
+        $this->assertCount(2, $allClassesPreview->getData()['studentPages']);
+        $this->assertStringContainsString('Siswa Uji', $allClassesPreview->render());
+        $this->assertStringContainsString($otherStudent->name, $allClassesPreview->render());
     }
 
     public function test_single_student_print_uses_the_students_position_in_its_class(): void

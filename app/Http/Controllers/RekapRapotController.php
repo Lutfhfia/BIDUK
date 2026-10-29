@@ -413,8 +413,6 @@ class RekapRapotController extends Controller
 
         $students = $studentsQuery->orderBy('name')->get();
 
-        abort_unless($students->isNotEmpty(), 422, 'Tidak ada siswa yang dapat dicetak.');
-
         $reports = $students->map(function ($student) use ($academicYearId, $semesterMode, $classId) {
             $class = $this->resolveStudentClass($student, $academicYearId, $classId);
 
@@ -448,8 +446,6 @@ class RekapRapotController extends Controller
                 (string) ($right['student']->name ?? '')
             );
         })->values();
-
-        abort_unless($reports->isNotEmpty(), 422, 'Tidak ada rapor yang dapat dicetak untuk kelas/tahun ajaran tersebut.');
 
         $view = view('reports.rekap-rapot.bulk-pdf', compact('reports'));
 

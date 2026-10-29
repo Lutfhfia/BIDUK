@@ -23,7 +23,7 @@
 
         @if ($students->isEmpty())
             <div class="alert alert-warning">
-                Tidak ada siswa yang sesuai dengan kelas, tahun ajaran, dan status yang dipilih.
+                Data siswa masih kosong pada kelas dan parameter yang dipilih.
             </div>
         @else
             <div class="card border-0 shadow-sm">

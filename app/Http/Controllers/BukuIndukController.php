@@ -239,6 +239,115 @@ class BukuIndukController extends Controller
     }
 
     /**
+     * Menampilkan pratinjau Buku Induk untuk satu kelas atau seluruh kelas.
+     */
+    public function previewBatch(Request $request): View
+    {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
+        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $academicYearId = $request->input(
+            'academic_year_id',
+            AcademicYear::getActive()?->id
+        );
+        $isAllClasses = $request->input('print_type') === 'all';
+        $classId = $isAllClasses || !$request->filled('class_id')
+            ? null
+            : (int) $request->input('class_id');
+
+        if ($teacherClassIds !== null && $classId !== null) {
+            abort_unless(
+                $teacherClassIds->contains($classId),
+                403,
+                'Anda tidak memiliki akses ke kelas ini.'
+            );
+        }
+
+        $class = $classId !== null
+            ? SchoolClass::where('academic_year_id', $academicYearId)->findOrFail($classId)
+            : null;
+        $studentStatus = $request->input('status', 'aktif');
+        $search = $request->input('search');
+
+        if ($request->filled('student_id') && $request->filled('search')) {
+            $previewStudent = Student::find($request->input('student_id'));
+            $previewStudentLabel = $previewStudent
+                ? $previewStudent->name . ' (' . ($previewStudent->nis ?: '-') . ')'
+                : null;
+
+            if ($previewStudentLabel !== null && trim($search) === $previewStudentLabel) {
+                $search = null;
+            }
+        }
+
+        $studentsQuery = Student::query()
+            ->when($studentStatus !== '', function ($query) use ($studentStatus) {
+                $query->where(
+                    'status',
+                    $studentStatus === 'aktif' ? 'Aktif' : 'Nonaktif'
+                );
+            })
+            ->when(
+                $search !== null && $search !== '',
+                fn ($query) => $query->search($search)
+            )
+            ->whereHas('classAssignments', function ($query) use (
+                $classId,
+                $academicYearId,
+                $teacherClassIds
+            ) {
+                $query->when($classId, fn ($assignmentQuery) => $assignmentQuery->where('class_id', $classId))
+                    ->whereHas('schoolClass', function ($classQuery) use ($academicYearId, $teacherClassIds) {
+                        $classQuery->when(
+                            $academicYearId,
+                            fn ($yearQuery) => $yearQuery->where('academic_year_id', $academicYearId)
+                        );
+                        if ($teacherClassIds !== null) {
+                            $classQuery->whereIn('id', $teacherClassIds);
+                        }
+                    });
+            });
+
+        $this->applyStudentClassOrdering(
+            $studentsQuery,
+            $academicYearId ? (int) $academicYearId : null,
+            $classId
+        );
+
+        $students = $studentsQuery->get();
+        $style = '';
+        $studentPages = [];
+        $classOrderNumbers = [];
+
+        foreach ($students as $student) {
+            $reportData = $this->reportData($request, $student);
+            $this->applyClassOrderNumber(
+                $reportData['student'],
+                $reportData['class'],
+                $classOrderNumbers
+            );
+
+            $html = view('reports.buku-induk.print', $reportData)->render();
+
+            if ($style === '' && preg_match('/<style[^>]*>(.*?)<\/style>/is', $html, $styleMatch)) {
+                $style = $styleMatch[1];
+            }
+
+            if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $bodyMatch)) {
+                $studentPages[] = trim($bodyMatch[1]);
+            }
+        }
+
+        return view('reports.buku-induk.batch-preview', compact(
+            'class',
+            'isAllClasses',
+            'style',
+            'studentPages'
+        ));
+    }
+
+    /**
      * Menampilkan Buku Induk dalam format siap cetak.
      */
     public function print(Request $request, Student $student)
@@ -384,11 +493,17 @@ class BukuIndukController extends Controller
             $students = $studentsQuery->get();
         }
 
-        abort_if(
-            $students->isEmpty(),
-            404,
-            'Siswa tidak ditemukan.'
-        );
+        if ($students->isEmpty()) {
+            $emptyPdf = '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><style>'
+                . 'body{font-family:Arial,sans-serif;text-align:center;padding:80px 24px;color:#333}'
+                . 'h2{font-size:20px;margin-bottom:12px}p{font-size:14px;color:#666}'
+                . '</style></head><body><h2>Data siswa masih kosong</h2>'
+                . '<p>Tidak ada siswa pada kelas dan parameter yang dipilih.</p></body></html>';
+
+            return Pdf::loadHTML($emptyPdf)
+                ->setPaper('a4', 'portrait')
+                ->download('buku-induk-kosong.pdf');
+        }
 
         $style = '';
         $studentPages = [];

@@ -29,7 +29,7 @@
         z-index: 1050;
     }
     .rr-student-list {
-        max-height: 280px;
+        max-height: 170px;
         overflow-y: auto;
         background: #fff;
     }
@@ -67,8 +67,8 @@
         white-space: nowrap;
     }
     .rr-student-list-item .student-meta { color: #6c757d; font-size: 11.5px; }
-    .rr-student-list-empty { padding: 24px 12px; color: #6c757d; text-align: center; }
-    .rr-student-list-more { padding: 10px; text-align: center; }
+    .rr-student-list-empty { padding: 14px 12px; color: #6c757d; text-align: center; }
+    .rr-student-list-more { padding: 8px; text-align: center; }
     .print-type-card:focus-visible {
         outline: 3px solid rgba(26, 122, 76, .25);
         outline-offset: 2px;
@@ -110,7 +110,7 @@
 @endphp
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h3 class="fw-bold mb-1 text-dark">
                 <i class="bi bi-file-earmark-text text-success me-2"></i>Rekap Rapot
@@ -132,19 +132,19 @@
         </div>
     @endif
 
-    <div class="row g-4 align-items-start">
+    <div class="row g-3 align-items-start">
         <div class="col-lg-5">
             <form method="GET" action="{{ route('rekap-rapot.index') }}" id="rekap-rapot-filter-form">
                 <input type="hidden" name="print_type" id="rrPrintTypeInput" value="{{ $selectedPrintType }}">
 
                 {{-- 1. PILIH PARAMETER LAPORAN --}}
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-white py-3">
+                <div class="card border-0 shadow-sm mb-3 report-setup-card">
+                    <div class="card-header bg-white py-2">
                         <h5 class="mb-0 fw-bold text-dark">
                             <i class="bi bi-sliders text-success me-2"></i>1. Pilih Parameter Laporan
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body py-2">
                         {{-- BARIS 1: TAHUN AJARAN, SEMESTER, KELAS --}}
                         <div class="row g-3">
                             <div class="col-md-4">
@@ -225,7 +225,7 @@
                         </div>
 
                         {{-- INFO PARAMETER --}}
-                        <div class="alert alert-success bg-success-subtle text-success-emphasis border-0 mt-4 mb-0">
+                        <div class="alert alert-success bg-success-subtle text-success-emphasis border-0 mt-2 mb-0">
                             <div class="d-flex">
                                 <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                                 <div class="small">
@@ -239,13 +239,13 @@
 
 
                 {{-- 2. PILIH JENIS CETAK --}}
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3">
+                <div class="card border-0 shadow-sm report-setup-card">
+                    <div class="card-header bg-white py-2">
                         <h5 class="mb-0 fw-bold text-dark">
                             <i class="bi bi-printer text-success me-2"></i>2. Pilih Jenis Cetak
                         </h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body py-2">
                         {{-- KATEGORI CETAK --}}
                         <div class="row g-3">
                             {{-- PER INDIVIDU --}}
@@ -288,8 +288,21 @@
                         </div>
 
 
+                        {{-- ACTION BUTTONS --}}
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ route('rekap-rapot.index') }}" class="btn btn-outline-secondary" id="rrResetButton">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                Reset
+                            </a>
+
+                            <button type="button" class="btn btn-biduk-primary" id="rrPreviewButton">
+                                <i class="bi bi-search me-1"></i>
+                                Preview Laporan
+                            </button>
+                        </div>
+
                         {{-- PILIH SISWA (MODE INDIVIDU) --}}
-                        <div class="mt-4" id="rrStudentSelection" style="{{ $selectedPrintType === 'individual' ? '' : 'display:none' }}">
+                        <div class="mt-3" id="rrStudentSelection" style="{{ $selectedPrintType === 'individual' ? '' : 'display:none' }}">
                             <label class="form-label fw-semibold">
                                 Pilih Siswa <span class="text-danger">*</span>
                             </label>
@@ -331,7 +344,7 @@
 
 
                         {{-- INFO JENIS CETAK --}}
-                        <div class="alert alert-info mt-3 mb-0" id="rrPrintTypeInfo">
+                        <div class="alert alert-info mt-2 mb-0" id="rrPrintTypeInfo">
                             <i class="bi bi-info-circle me-2"></i>
                             <span>
                                 @if($selectedPrintType === 'class')
@@ -348,18 +361,6 @@
                         </div>
 
 
-                        {{-- ACTION BUTTONS --}}
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="{{ route('rekap-rapot.index') }}" class="btn btn-outline-secondary" id="rrResetButton">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i>
-                                Reset
-                            </a>
-
-                            <button type="button" class="btn btn-biduk-primary" id="rrPreviewButton">
-                                <i class="bi bi-search me-1"></i>
-                                Preview Laporan
-                            </button>
-                        </div>
                     </div>
                 </div>
             </form>
@@ -385,17 +386,20 @@
                             <span class="text-muted small">Laporan:</span>
                             <strong class="text-dark" id="rrPreviewStudentName">{{ $previewStudent?->name }}</strong>
                         </div>
-                        <a
-                            class="btn btn-sm btn-danger"
-                            id="rrExportPreviewPdf"
-                            target="_blank"
-                            rel="noopener"
-                            @if($previewStudentClass)
-                                href="{{ route('rekap-rapot.print', array_merge($commonParams, ['student' => $previewStudent->id, 'class_id' => $previewStudentClass->id, 'pdf' => 1])) }}"
-                            @endif
-                        >
-                            <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge text-bg-light border text-dark" id="rrPreviewPageCount">Menghitung halaman...</span>
+                            <a
+                                class="btn btn-sm btn-danger"
+                                id="rrExportPreviewPdf"
+                                target="_blank"
+                                rel="noopener"
+                                @if($previewStudentClass)
+                                    href="{{ route('rekap-rapot.print', array_merge($commonParams, ['student' => $previewStudent->id, 'class_id' => $previewStudentClass->id, 'pdf' => 1])) }}"
+                                @endif
+                            >
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                            </a>
+                        </div>
                     </div>
                     <div id="rrPreviewPlaceholder" class="preview-placeholder {{ $previewStudentClass ? 'd-none' : '' }}">
                         <div class="preview-placeholder-icon"><i class="bi bi-journal-text"></i></div>
@@ -468,6 +472,7 @@
         const previewToolbar = document.getElementById('rrPreviewToolbar');
         const previewStudentName = document.getElementById('rrPreviewStudentName');
         const exportPreviewPdf = document.getElementById('rrExportPreviewPdf');
+        const previewPageCount = document.getElementById('rrPreviewPageCount');
 
         const form = document.getElementById('rekap-rapot-filter-form');
         const studentSelection = document.getElementById('rrStudentSelection');
@@ -489,6 +494,23 @@
         let listOffset = 0;
         let listHasMore = false;
         let currentListQuery = '';
+
+        function updatePreviewPageCount() {
+            if (!previewFrame || !previewPageCount || !previewFrame.contentDocument) return;
+
+            const documentBody = previewFrame.contentDocument.body;
+            const pageCount = documentBody.querySelectorAll('.page').length;
+            const totalPages = pageCount || (documentBody.textContent.trim() !== '' ? 1 : 0);
+
+            previewPageCount.textContent = totalPages > 0
+                ? 'Total ' + totalPages + ' halaman'
+                : 'Jumlah halaman tidak tersedia';
+        }
+
+        previewFrame?.addEventListener('load', updatePreviewPageCount);
+        if (previewFrame?.contentDocument?.readyState === 'complete') {
+            updatePreviewPageCount();
+        }
 
         function studentLookupUrl(keyword, listMode, offset = 0) {
             const params = new URLSearchParams(new FormData(form));
@@ -787,20 +809,20 @@
 
             if (selectedPrintType === 'individual') {
                 if (studentSelection) studentSelection.style.display = 'block';
-                printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                 printTypeInfo.innerHTML =
                     '<i class="bi bi-info-circle me-2"></i>' +
                     'Mode <strong>Per Individu</strong> dipilih. Pilih siswa dari daftar, lalu klik Preview Laporan.';
                 loadStudentList(studentListFilter?.value || '');
             } else if (selectedPrintType === 'class') {
                 if (studentSelection) studentSelection.style.display = 'none';
-                printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                 printTypeInfo.innerHTML =
                     '<i class="bi bi-people me-2"></i>' +
                     'Mode <strong>Per Kelas</strong> dipilih. Pilih kelas pada parameter laporan, lalu klik Preview Laporan.';
             } else if (selectedPrintType === 'all') {
                 if (studentSelection) studentSelection.style.display = 'none';
-                printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                 printTypeInfo.innerHTML =
                     '<i class="bi bi-building me-2"></i>' +
                     'Mode <strong>Semua Kelas</strong> dipilih. Klik Preview Laporan untuk melihat seluruh kelas sesuai parameter.';
@@ -827,6 +849,7 @@
             const studentNameVal = data.studentName || data.name;
             const formData = new FormData(form);
 
+            previewPageCount.textContent = 'Menghitung halaman...';
             previewFrame.src = previewUrl;
             previewFrame.title = 'Preview rapor ' + studentNameVal;
             previewStudentName.textContent = studentNameVal;

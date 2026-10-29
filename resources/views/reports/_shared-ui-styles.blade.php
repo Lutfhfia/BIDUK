@@ -1,10 +1,35 @@
 <style>
+    .report-setup-card .form-label {
+        margin-bottom: 4px;
+        font-size: .9rem;
+    }
+
+    .report-setup-card .card-header h5 {
+        font-size: 1rem;
+    }
+
+    .report-setup-card .row {
+        --bs-gutter-x: .75rem;
+        --bs-gutter-y: .5rem;
+    }
+
+    .report-setup-card .form-select,
+    .report-setup-card .form-control {
+        min-height: 38px;
+        font-size: .9rem;
+    }
+
+    .report-setup-card .alert {
+        padding: 8px 12px;
+        font-size: .85rem;
+    }
+
     .print-type-card {
         position: relative;
         border: 1.5px solid #dce3ed;
         border-radius: 10px;
-        padding: 18px 12px;
-        min-height: 145px;
+        padding: 12px 8px;
+        min-height: 105px;
         text-align: center;
         cursor: pointer;
         background: #fff;
@@ -26,10 +51,10 @@
 
     .radio-circle {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        width: 18px;
-        height: 18px;
+        top: 8px;
+        left: 8px;
+        width: 16px;
+        height: 16px;
         border: 1.5px solid #cbd5e1;
         border-radius: 50%;
         display: flex;
@@ -46,19 +71,21 @@
     }
 
     .print-icon {
-        font-size: 35px;
+        font-size: 27px;
         color: var(--biduk-primary, #1a7a4c);
-        margin-bottom: 7px;
+        margin-bottom: 3px;
     }
 
     .print-type-card h6 {
-        margin-bottom: 5px;
+        margin-bottom: 3px;
         color: #212529;
+        font-size: .9rem;
     }
 
     .print-type-card small {
         display: block;
-        line-height: 1.45;
+        line-height: 1.3;
+        font-size: .75rem;
     }
 
     .preview-toolbar {

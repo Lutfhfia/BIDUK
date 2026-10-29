@@ -85,6 +85,12 @@ Route::middleware('auth')->group(function () {
         ->name('buku-induk.batch');
 
     Route::get(
+        '/laporan/buku-induk/preview-batch',
+        [BukuIndukController::class, 'previewBatch']
+    )->middleware('permission:student_records.view')
+        ->name('buku-induk.preview-batch');
+
+    Route::get(
         '/laporan/buku-induk/cetak-batch-pdf',
         [BukuIndukController::class, 'batchPdf']
     )->middleware('permission:student_records.view')

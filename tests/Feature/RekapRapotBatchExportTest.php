@@ -102,6 +102,34 @@ class RekapRapotBatchExportTest extends TestCase
         );
     }
 
+    public function test_batch_preview_shows_an_empty_state_when_the_selected_class_has_no_students(): void
+    {
+        $academicYear = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $class = SchoolClass::create([
+            'academic_year_id' => $academicYear->id,
+            'name' => '1A',
+            'grade_level' => 1,
+            'status' => 'Aktif',
+        ]);
+
+        $response = app(RekapRapotController::class)->batch(
+            Request::create('/laporan/rekap-rapot/batch', 'GET', [
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $class->id,
+                'status' => 'Aktif',
+                'pdf' => false,
+            ])
+        );
+
+        $this->assertSame([], $response->getData()['reports']->all());
+        $this->assertStringContainsString('Data siswa masih kosong', $response->render());
+    }
+
     public function test_all_class_batch_includes_students_from_a_nonactive_graduated_grade_six_class(): void
     {
         $academicYear = AcademicYear::create([

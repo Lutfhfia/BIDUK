@@ -8,7 +8,7 @@
         {{-- =========================================================
          HEADER
     ========================================================== --}}
-        <div class="d-flex justify-content-between align-items-start mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
                 <h3 class="fw-bold mb-1 text-dark">
                     <i class="bi bi-book-fill text-success me-2"></i>Buku Induk
@@ -31,7 +31,7 @@
         {{-- =========================================================
          MAIN CONTENT
     ========================================================== --}}
-        <div class="row g-4 align-items-start">
+        <div class="row g-3 align-items-start">
 
             {{-- =====================================================
              LEFT : PARAMETER + JENIS CETAK
@@ -45,15 +45,15 @@
                     {{-- =================================================
                      1. PILIH PARAMETER LAPORAN
                 ================================================== --}}
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white py-3">
+                    <div class="card border-0 shadow-sm mb-3 report-setup-card">
+                        <div class="card-header bg-white py-2">
                             <h5 class="mb-0 fw-bold text-dark">
                                 <i class="bi bi-sliders text-success me-2"></i>
                                 1. Pilih Parameter Laporan
                             </h5>
                         </div>
 
-                        <div class="card-body">
+                        <div class="card-body py-2">
                             {{-- BARIS 1: TAHUN AJARAN, SEMESTER, KELAS --}}
                             <div class="row g-3">
                                 {{-- TAHUN AJARAN --}}
@@ -154,7 +154,7 @@
                             </div>
 
                             {{-- INFO PARAMETER --}}
-                            <div class="alert alert-success bg-success-subtle text-success-emphasis border-0 mt-4 mb-0">
+                            <div class="alert alert-success bg-success-subtle text-success-emphasis border-0 mt-2 mb-0">
                                 <div class="d-flex">
                                     <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                                     <div class="small">
@@ -170,15 +170,15 @@
                     {{-- =================================================
                      2. PILIH JENIS CETAK
                 ================================================== --}}
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white py-3">
+                    <div class="card border-0 shadow-sm report-setup-card">
+                        <div class="card-header bg-white py-2">
                             <h5 class="mb-0 fw-bold text-dark">
                                 <i class="bi bi-printer text-success me-2"></i>
                                 2. Pilih Jenis Cetak
                             </h5>
                         </div>
 
-                        <div class="card-body">
+                        <div class="card-body py-2">
                             {{-- PILIHAN JENIS CETAK --}}
                             <div class="row g-3">
                                 {{-- PER INDIVIDU --}}
@@ -240,8 +240,21 @@
                             </div>
 
 
+                            {{-- ACTION --}}
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-outline-secondary" id="resetButton">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                    Reset
+                                </button>
+
+                                <button type="button" class="btn btn-biduk-primary" id="previewButton">
+                                    <i class="bi bi-search me-1"></i>
+                                    Preview Laporan
+                                </button>
+                            </div>
+
                             {{-- PILIH SISWA (MODE INDIVIDU - LIST LANGSUNG) --}}
-                            <div class="mt-4" id="studentSelection">
+                            <div class="mt-3" id="studentSelection">
                                 <label class="form-label fw-semibold">
                                     Pilih Siswa <span class="text-danger">*</span>
                                 </label>
@@ -282,7 +295,7 @@
 
                                 {{-- Daftar siswa langsung muncul (scrollable list) --}}
                                 <div id="studentListContainer" class="border rounded-3"
-                                    style="max-height: 260px; overflow-y: auto;">
+                                    style="max-height: 170px; overflow-y: auto;">
                                     {{-- Akan diisi oleh JavaScript --}}
                                 </div>
 
@@ -309,7 +322,7 @@
 
 
                             {{-- INFO JENIS CETAK --}}
-                            <div class="alert alert-info mt-3 mb-0" id="printTypeInfo">
+                            <div class="alert alert-info mt-2 mb-0" id="printTypeInfo">
                                 <i class="bi bi-info-circle me-2"></i>
                                 <span>
                                     Mode <strong>Per Individu</strong> dipilih.
@@ -318,18 +331,6 @@
                             </div>
 
 
-                            {{-- ACTION --}}
-                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                <button type="button" class="btn btn-outline-secondary" id="resetButton">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i>
-                                    Reset
-                                </button>
-
-                                <button type="button" class="btn btn-biduk-primary" id="previewButton">
-                                    <i class="bi bi-search me-1"></i>
-                                    Preview Laporan
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </form>
@@ -353,38 +354,41 @@
                         <div class="alert alert-success bg-success-subtle text-success-emphasis border-0 d-flex align-items-start mb-3">
                             <i class="bi bi-info-circle-fill me-2 mt-1"></i>
                             <div class="small">
-                                Berikut adalah preview Buku Induk siswa.
+                                Berikut adalah preview Buku Induk sesuai jenis cetak yang dipilih.
                                 Pastikan data sudah sesuai sebelum mencetak
                                 atau menyimpan dokumen sebagai PDF.
                             </div>
                         </div>
 
                         {{-- PREVIEW FRAME / PLACEHOLDER --}}
-                        @if ($selectedStudent)
-                            <div class="preview-toolbar mb-3">
+                        <div class="preview-toolbar mb-3 {{ $selectedStudent ? '' : 'd-none' }}" id="previewToolbar">
                                 <div>
                                     <span class="text-muted small">
-                                        Siswa:
+                                        <span id="previewLabel">{{ $selectedStudent ? 'Siswa:' : 'Laporan:' }}</span>
                                     </span>
-                                    <strong class="text-dark">
-                                        {{ $selectedStudent->name }}
+                                    <strong class="text-dark" id="previewStudentName">
+                                        {{ $selectedStudent?->name }}
                                     </strong>
                                 </div>
 
-                                <button type="button" class="btn btn-sm btn-danger" id="previewPdfButton">
-                                    <i class="bi bi-file-earmark-pdf me-1"></i>
-                                    Export PDF
-                                </button>
-                            </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge text-bg-light border text-dark" id="previewPageCount">Menghitung halaman...</span>
+                                    <button type="button" class="btn btn-sm btn-danger" id="previewPdfButton">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>
+                                        Export PDF
+                                    </button>
+                                </div>
+                        </div>
 
-                            <div class="preview-wrapper">
-                                <iframe id="previewFrame" class="preview-frame"
+                        <div class="preview-wrapper {{ $selectedStudent ? '' : 'd-none' }}" id="previewWrapper">
+                            <iframe id="previewFrame" class="preview-frame"
+                                @if ($selectedStudent)
                                     src="{{ route('buku-induk.print', $selectedStudent) . '?' . http_build_query(request()->only(['academic_year_id', 'semester_id', 'class_id', 'status'])) }}"
-                                    title="Preview Buku Induk {{ $selectedStudent->name }}">
-                                </iframe>
-                            </div>
-                        @else
-                            <div class="preview-placeholder">
+                                @endif
+                                title="Preview Buku Induk {{ $selectedStudent?->name }}">
+                            </iframe>
+                        </div>
+                        <div class="preview-placeholder {{ $selectedStudent ? 'd-none' : '' }}" id="previewPlaceholder">
                                 <div class="preview-placeholder-icon">
                                     <i class="bi bi-journal-text"></i>
                                 </div>
@@ -394,12 +398,11 @@
                                 </h5>
 
                                 <p class="text-muted mb-0">
-                                    Pilih parameter dan siswa terlebih dahulu,
+                                    Pilih parameter dan jenis cetak terlebih dahulu,
                                     kemudian klik <strong>Preview Laporan</strong>
                                     untuk menampilkan dokumen.
                                 </p>
-                            </div>
-                        @endif
+                        </div>
                     </div>
                 </div>
 
@@ -442,38 +445,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Modal Daftar Siswa untuk Mode Per Kelas / Semua Kelas --}}
-    <div class="modal fade" id="bulkStudentModal" tabindex="-1" aria-labelledby="bulkStudentModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header">
-                    <div>
-                        <h5 class="modal-title fw-bold" id="bulkStudentModalLabel">Pilih Siswa untuk Pratinjau</h5>
-                        <p class="text-muted small mb-0" id="bulkStudentModalDescription"></p>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="list-group" id="bulkStudentList"></div>
-                    <div class="text-center text-muted py-4 d-none" id="bulkStudentEmpty">
-                        Data siswa tidak ditemukan sesuai dengan parameter yang dipilih.
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <span class="small text-muted" id="bulkStudentCount"></span>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="button" class="btn btn-success" id="downloadAllDocumentsButton">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Unduh 1 File PDF
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     @include('reports._shared-ui-styles')
 
@@ -546,6 +517,13 @@
             const previewButton = document.getElementById('previewButton');
             const resetButton = document.getElementById('resetButton');
             const previewPdfButton = document.getElementById('previewPdfButton');
+            const previewFrame = document.getElementById('previewFrame');
+            const previewToolbar = document.getElementById('previewToolbar');
+            const previewWrapper = document.getElementById('previewWrapper');
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const previewStudentName = document.getElementById('previewStudentName');
+            const previewLabel = document.getElementById('previewLabel');
+            const previewPageCount = document.getElementById('previewPageCount');
 
             // Search Input in Card 1
             const studentSearch = document.getElementById('studentSearch');
@@ -570,15 +548,24 @@
             const studentListContainer = document.getElementById('studentListContainer');
             const studentListFilter = document.getElementById('studentListFilter');
 
-            // Bulk modal elements
-            const bulkStudentModalElement = document.getElementById('bulkStudentModal');
-            const bulkStudentList = document.getElementById('bulkStudentList');
-            const bulkStudentEmpty = document.getElementById('bulkStudentEmpty');
-            const bulkStudentCount = document.getElementById('bulkStudentCount');
-            const bulkStudentDescription = document.getElementById('bulkStudentModalDescription');
-            const downloadAllDocumentsButton = document.getElementById('downloadAllDocumentsButton');
+            function updatePreviewPageCount() {
+                if (!previewFrame || !previewPageCount || !previewFrame.contentDocument) return;
 
-            let bulkStudents = [];
+                const documentBody = previewFrame.contentDocument.body;
+                let pageCount = documentBody.querySelectorAll('.page').length;
+                if (pageCount === 0 && documentBody.textContent.trim() !== '') {
+                    pageCount = 1;
+                }
+
+                previewPageCount.textContent = pageCount > 0
+                    ? 'Total ' + pageCount + ' halaman'
+                    : 'Jumlah halaman tidak tersedia';
+            }
+
+            previewFrame?.addEventListener('load', updatePreviewPageCount);
+            if (previewFrame?.contentDocument?.readyState === 'complete') {
+                updatePreviewPageCount();
+            }
 
             // Build Client-Side Student Data array from native select
             function getStudentsData() {
@@ -848,7 +835,7 @@
 
                 if (selectedPrintType === 'individual') {
                     studentSelection.style.display = 'block';
-                    printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                    printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                     printTypeInfo.innerHTML =
                         '<i class="bi bi-info-circle me-2"></i>' +
                         'Mode <strong>Per Individu</strong> dipilih. Silakan pilih siswa dari daftar di bawah.';
@@ -856,14 +843,14 @@
                     renderStudentList(studentListFilter ? studentListFilter.value : '');
                 } else if (selectedPrintType === 'class') {
                     studentSelection.style.display = 'none';
-                    printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                    printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                     printTypeInfo.innerHTML =
                         '<i class="bi bi-people me-2"></i>' +
                         'Mode <strong>Per Kelas</strong> dipilih. Silakan pilih kelas pada parameter laporan. ' +
                         'Seluruh siswa pada kelas tersebut akan menjadi data cetak / export PDF.';
                 } else if (selectedPrintType === 'all') {
                     studentSelection.style.display = 'none';
-                    printTypeInfo.className = 'alert alert-info mt-3 mb-0';
+                    printTypeInfo.className = 'alert alert-info mt-2 mb-0';
                     printTypeInfo.innerHTML =
                         '<i class="bi bi-building me-2"></i>' +
                         'Mode <strong>Semua Kelas</strong> dipilih. Sistem akan menggunakan seluruh siswa sesuai parameter tahun ajaran dan status.';
@@ -906,53 +893,30 @@
             }
 
 
-            function showBulkStudentModal() {
-                if (!studentSelect || !bulkStudentModalElement) return;
-
-                bulkStudents = Array.from(studentSelect.options)
-                    .filter((option, index) => index > 0 && !option.hidden)
-                    .map(option => ({
-                        id: option.value,
-                        name: option.textContent.trim(),
-                    }));
-
-                const modeLabel = selectedPrintType === 'class' ? 'kelas yang dipilih' : 'semua kelas';
-                bulkStudentDescription.textContent =
-                    'Pilih nama siswa untuk melihat pratinjau Buku Induk satu per satu (' + modeLabel + ').';
-                bulkStudentCount.textContent = bulkStudents.length + ' siswa ditemukan';
-                bulkStudentList.innerHTML = '';
-                bulkStudentEmpty.classList.toggle('d-none', bulkStudents.length > 0);
-                downloadAllDocumentsButton.disabled = bulkStudents.length === 0;
-
-                bulkStudents.forEach(function(student, index) {
-                    const item = document.createElement('button');
-                    item.type = 'button';
-                    item.className = 'list-group-item list-group-item-action d-flex align-items-center justify-content-between';
-                    item.innerHTML =
-                        '<span><span class="text-muted me-3">' + (index + 1) +
-                        '.</span><strong></strong></span>' +
-                        '<span class="btn btn-sm btn-outline-success"><i class="bi bi-eye me-1"></i>Pratinjau</span>';
-                    item.querySelector('strong').textContent = student.name;
-                    item.addEventListener('click', function() {
-                        const parameters = reportParameters();
-                        parameters.set('student_id', student.id);
-                        window.location.href = '{{ route('buku-induk.index') }}?' + parameters.toString();
-                    });
-                    bulkStudentList.appendChild(item);
-                });
-
-                bootstrap.Modal.getOrCreateInstance(bulkStudentModalElement).show();
-            }
-
-            downloadAllDocumentsButton?.addEventListener('click', function() {
+            function showBatchPreview() {
                 const parameters = reportParameters();
-                parameters.set('pdf', '1');
+
                 if (selectedPrintType === 'all') {
                     parameters.delete('class_id');
                 }
-                parameters.delete('student_id');
-                window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
-            });
+
+                previewPageCount.textContent = 'Menghitung halaman...';
+                previewFrame.src = '{{ route('buku-induk.preview-batch') }}?' + parameters.toString();
+                previewFrame.title = selectedPrintType === 'all'
+                    ? 'Preview Buku Induk semua kelas'
+                    : 'Preview Buku Induk kelas ' + classSelect.options[classSelect.selectedIndex].text;
+                previewLabel.textContent = selectedPrintType === 'all' ? 'Jenis:' : 'Kelas:';
+                previewStudentName.textContent = selectedPrintType === 'all'
+                    ? 'Semua Kelas'
+                    : classSelect.options[classSelect.selectedIndex].text;
+                previewToolbar.classList.remove('d-none');
+                previewWrapper.classList.remove('d-none');
+                previewPlaceholder.classList.add('d-none');
+
+                if (window.matchMedia('(max-width: 991.98px)').matches) {
+                    previewWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
 
             if (classSelect) classSelect.addEventListener('change', filterStudents);
 
@@ -990,7 +954,7 @@
                         return;
                     }
 
-                    showBulkStudentModal();
+                    showBatchPreview();
                 });
             }
 
