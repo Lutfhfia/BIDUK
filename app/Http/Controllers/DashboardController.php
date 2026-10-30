@@ -17,12 +17,10 @@ class DashboardController extends Controller
         // Tahun ajaran aktif.
         $activeAcademicYear = AcademicYear::getActive();
 
-        // Total siswa dan pegawai aktif.
+        // Statistik umum tetap digunakan oleh role selain Guru.
         $totalStudents = Student::active()->count();
         $totalEmployees = Employee::active()->count();
 
-        // Kelas aktif pada tahun ajaran aktif,
-        // beserta siswa dan mata pelajaran aktif.
         // Pengguna yang sedang login.
         $user = auth()->user();
         $teacherClassIds = app(TeacherClassAccess::class)->classIds($user);
@@ -40,16 +38,13 @@ class DashboardController extends Controller
                 ->values();
         }
 
-        // Query kelas aktif pada tahun ajaran aktif.
+        // Kelas aktif pada tahun ajaran aktif.
         $classesQuery = SchoolClass::active()
             ->when($activeAcademicYear, function ($query) use ($activeAcademicYear) {
-                $query->where(
-                    'academic_year_id',
-                    $activeAcademicYear->id
-                );
+                $query->where('academic_year_id', $activeAcademicYear->id);
             });
 
-        // Guru hanya boleh melihat kelas yang menjadi wali kelasnya.
+        // Guru hanya melihat kelas yang menjadi wali kelasnya.
         if ($user->isGuru()) {
             $classesQuery->whereIn('id', $teacherClassIds);
         } elseif (
@@ -62,6 +57,7 @@ class DashboardController extends Controller
         }
 
         // Ambil kelas beserta siswa dan mata pelajaran aktif.
+        // Kolom gender diperlukan untuk statistik khusus Guru.
         $classes = $classesQuery
             ->withCount([
                 'students as active_students_count' => function ($query) {
@@ -74,7 +70,7 @@ class DashboardController extends Controller
             ->with([
                 'students' => function ($query) {
                     $query->wherePivot('status', 'Aktif')
-                        ->select('students.id', 'students.name');
+                        ->select('students.id', 'students.name', 'students.gender');
                 },
                 'subjects' => function ($query) {
                     $query->where('subjects.status', 'Aktif')
@@ -85,6 +81,23 @@ class DashboardController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Statistik siswa khusus Guru dihitung dari kelas yang ditugaskan
+        // pada tahun ajaran aktif. Hanya anggota kelas dengan pivot Aktif
+        // yang dihitung, mengikuti sumber data grafik/progres kelas.
+        $teacherTotalStudents = 0;
+        $teacherMaleStudents = 0;
+        $teacherFemaleStudents = 0;
+
+        if ($user->isGuru() && $activeAcademicYear) {
+            $teacherStudents = $classes
+                ->flatMap(fn (SchoolClass $class) => $class->students)
+                ->unique('id')
+                ->values();
+
+            $teacherTotalStudents = $teacherStudents->count();
+            $teacherMaleStudents = $teacherStudents->where('gender', 'L')->count();
+            $teacherFemaleStudents = $teacherStudents->where('gender', 'P')->count();
+        }
 
         // Total kelas aktif.
         $totalClasses = $classes->count();
@@ -95,10 +108,7 @@ class DashboardController extends Controller
 
         // Ambil semester pada tahun ajaran aktif.
         $semesters = $activeAcademicYear
-            ? Semester::where(
-                'academic_year_id',
-                $activeAcademicYear->id
-            )->get()
+            ? Semester::where('academic_year_id', $activeAcademicYear->id)->get()
             : collect();
 
         $semesterGanjil = $semesters->first(
@@ -177,54 +187,42 @@ class DashboardController extends Controller
                     ->where('class_id', $class->id)
                     ->where('semester_id', $semester->id);
 
-                // Hanya hitung nilai untuk siswa aktif dan
-                // mata pelajaran aktif di kelas tersebut.
-                // Pasangan siswa dan mata pelajaran yang nilainya terisi.
-$filledPairs = $classGrades
-->filter(function ($grade) use (
-    $activeStudentIds,
-    $activeSubjectIds
-) {
-    return $activeStudentIds->contains(
-        $grade->student_id
-    ) && $activeSubjectIds->contains(
-        $grade->subject_id
-    );
-})
-->mapWithKeys(function ($grade) {
-    return [
-        $grade->student_id . '-' . $grade->subject_id => true,
-    ];
-});
+                // Hanya hitung nilai untuk siswa aktif dan mata pelajaran aktif.
+                $filledPairs = $classGrades
+                    ->filter(function ($grade) use ($activeStudentIds, $activeSubjectIds) {
+                        return $activeStudentIds->contains($grade->student_id)
+                            && $activeSubjectIds->contains($grade->subject_id);
+                    })
+                    ->mapWithKeys(function ($grade) {
+                        return [
+                            $grade->student_id . '-' . $grade->subject_id => true,
+                        ];
+                    });
 
-$filledGrades = $filledPairs->count();
+                $filledGrades = $filledPairs->count();
 
-// Cari kombinasi siswa dan mata pelajaran yang
-// belum memiliki nilai terisi pada semester ini.
-foreach ($class->students as $student) {
-foreach ($class->subjects as $subject) {
-    $pairKey = $student->id . '-' . $subject->id;
+                // Cari kombinasi siswa dan mata pelajaran yang belum memiliki nilai.
+                foreach ($class->students as $student) {
+                    foreach ($class->subjects as $subject) {
+                        $pairKey = $student->id . '-' . $subject->id;
 
-    if (!$filledPairs->has($pairKey)) {
-        $missingItems[] = [
-            'class_id' => $class->id,
-            'class_name' => $class->name,
-            'student_id' => $student->id,
-            'student_name' => $student->name,
-            'subject_name' => $subject->name,
-        ];
-    }
-}
-}
+                        if (!$filledPairs->has($pairKey)) {
+                            $missingItems[] = [
+                                'class_id' => $class->id,
+                                'class_name' => $class->name,
+                                'student_id' => $student->id,
+                                'student_name' => $student->name,
+                                'subject_name' => $subject->name,
+                            ];
+                        }
+                    }
+                }
 
                 $percentage = $expectedGrades > 0
-                    ? (int) round(
-                        ($filledGrades / $expectedGrades) * 100
-                    )
+                    ? (int) round(($filledGrades / $expectedGrades) * 100)
                     : 0;
 
-                $isComplete = $expectedGrades > 0
-                    && $filledGrades >= $expectedGrades;
+                $isComplete = $expectedGrades > 0 && $filledGrades >= $expectedGrades;
 
                 if ($isComplete) {
                     $completedClasses++;
@@ -248,9 +246,7 @@ foreach ($class->subjects as $subject) {
             }
 
             $overallPercentage = $totalExpectedGrades > 0
-                ? (int) round(
-                    ($totalFilledGrades / $totalExpectedGrades) * 100
-                )
+                ? (int) round(($totalFilledGrades / $totalExpectedGrades) * 100)
                 : 0;
 
             $semesterProgress->put($semesterName, [
@@ -272,6 +268,9 @@ foreach ($class->subjects as $subject) {
             'totalStudents',
             'totalEmployees',
             'totalClasses',
+            'teacherTotalStudents',
+            'teacherMaleStudents',
+            'teacherFemaleStudents',
             'classes',
             'teacherClassHistory',
             'classLabels',

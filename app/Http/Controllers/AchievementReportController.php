@@ -11,36 +11,33 @@ use Illuminate\Http\Request;
 class AchievementReportController extends Controller
 {
     /**
-     * ==========================================================
-     * INDEX
-     * ==========================================================
-     *
      * Menampilkan rekap prestasi siswa.
-     *
      * Siswa tanpa prestasi tidak ditampilkan.
      */
     public function index(Request $request)
     {
-        /*
-         * ======================================================
-         * TAHUN AJARAN
-         * ======================================================
-         */
-
         $classAccess = app(TeacherClassAccess::class);
         $user = $request->user();
+
+        // null berarti pengguna bukan Guru sehingga tidak dibatasi ke kelas tertentu.
+        // Untuk Guru, hasilnya berisi kelas yang ditugaskan kepadanya.
         $teacherClassIds = $classAccess->classIds($user);
+
         $teacherAcademicYearIds = $teacherClassIds === null
             ? null
-            : SchoolClass::whereIn('id', $teacherClassIds)
+            : SchoolClass::query()
+                ->whereIn('id', $teacherClassIds)
                 ->distinct()
                 ->pluck('academic_year_id');
 
+        // Super Admin, Admin, dan Kepala Sekolah dapat memilih seluruh tahun ajaran.
+        // Guru hanya melihat tahun ajaran dari kelas yang menjadi tanggung jawabnya.
         $academicYears = AcademicYear::query()
             ->when(
                 $teacherAcademicYearIds !== null,
                 fn ($query) => $query->whereIn('id', $teacherAcademicYearIds)
             )
+            ->orderByDesc('start_date')
             ->orderByDesc('id')
             ->get();
 
@@ -57,12 +54,13 @@ class AchievementReportController extends Controller
         );
 
         /*
-         * ======================================================
-         * KELAS
-         * ======================================================
+         * Daftar kelas:
+         * - Non-Guru: seluruh kelas, termasuk kelas dari tahun ajaran lama/nonaktif.
+         * - Guru: hanya kelas yang ada dalam TeacherClassAccess, termasuk riwayat kelas.
+         * Status kelas tidak dipakai untuk menghapus riwayat dari laporan.
          */
-
-        $classesQuery = SchoolClass::with('academicYear')
+        $classesQuery = SchoolClass::query()
+            ->with('academicYear')
             ->when(
                 $selectedAcademicYearId,
                 fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
@@ -73,55 +71,45 @@ class AchievementReportController extends Controller
         }
 
         $classes = $classesQuery
-            ->where('status', 'Aktif')
             ->orderBy('academic_year_id')
             ->orderBy('grade_level')
             ->orderBy('name')
             ->get();
 
         /*
-         * ======================================================
-         * FILTER KELAS
-         * ======================================================
+         * Validasi kelas yang dipilih.
+         * Pengecekan ini dilakukan di server supaya Guru tidak dapat membuka
+         * kelas milik Guru lain dengan mengubah parameter URL.
          */
+        $selectedClassId = $request->input('class_id') ?: null;
 
-        $selectedClassId = $request->class_id;
-
-        /*
-         * Pastikan kelas sesuai dengan tahun ajaran.
-         */
-        if ($selectedClassId) {
-            $classQuery = SchoolClass::where('id', $selectedClassId)
+        if ($selectedClassId !== null) {
+            $classQuery = SchoolClass::query()
+                ->whereKey($selectedClassId)
                 ->when(
                     $selectedAcademicYearId,
                     fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
-                )
-                ->where('status', 'Aktif');
+                );
 
             if ($teacherClassIds !== null) {
                 $classQuery->whereIn('id', $teacherClassIds);
             }
 
-            $classExists = $classQuery->exists();
-
-            if (!$classExists) {
-                abort(403, 'Anda tidak memiliki akses ke kelas ini.');
-            }
+            abort_unless(
+                $classQuery->exists(),
+                403,
+                'Anda tidak memiliki akses ke kelas ini.'
+            );
         }
 
-        /*
-         * ======================================================
-         * QUERY PRESTASI
-         * ======================================================
-         *
-         * Hanya mengambil siswa yang memiliki prestasi.
-         */
-
-        $query = Achievement::with([
-            'student',
-            'schoolClass',
-            'academicYear'
-        ])
+        // Query data prestasi. Pengguna non-Guru tidak dibatasi kelas;
+        // Guru hanya memperoleh data dari kelas yang ditugaskan kepadanya.
+        $query = Achievement::query()
+            ->with([
+                'student',
+                'schoolClass',
+                'academicYear',
+            ])
             ->when(
                 $selectedAcademicYearId,
                 fn ($query) => $query->where('academic_year_id', $selectedAcademicYearId)
@@ -131,68 +119,35 @@ class AchievementReportController extends Controller
             $query->whereIn('class_id', $teacherClassIds);
         }
 
-        /*
-         * Filter kelas jika dipilih.
-         */
-        if ($selectedClassId) {
-
-            $query->where(
-                'class_id',
-                $selectedClassId
-            );
+        if ($selectedClassId !== null) {
+            $query->where('class_id', $selectedClassId);
         }
 
-        /*
-         * Search siswa / NIS / NISN.
-         */
         if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
 
-            $search = $request->search;
-
-            $query->whereHas(
-                'student',
-                function ($studentQuery) use ($search) {
-
-                    $studentQuery
+            $query->whereHas('student', function ($studentQuery) use ($search) {
+                $studentQuery->where(function ($searchQuery) use ($search) {
+                    $searchQuery
                         ->where('name', 'like', "%{$search}%")
-                        ->orWhere(
-                            'nis',
-                            'like',
-                            "%{$search}%"
-                        )
-                        ->orWhere(
-                            'nisn',
-                            'like',
-                            "%{$search}%"
-                        );
-                }
-            );
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('nisn', 'like', "%{$search}%");
+                });
+            });
         }
 
-        /*
-         * Urutan data.
-         */
         $achievements = $query
             ->orderBy('class_id')
             ->orderBy('student_id')
             ->orderBy('id')
             ->get();
 
-        /*
-         * ======================================================
-         * RETURN VIEW
-         * ======================================================
-         */
-
-        return view(
-            'admin.achievement-reports.index',
-            compact(
-                'academicYears',
-                'classes',
-                'achievements',
-                'selectedAcademicYearId',
-                'selectedClassId'
-            )
-        );
+        return view('admin.achievement-reports.index', compact(
+            'academicYears',
+            'classes',
+            'achievements',
+            'selectedAcademicYearId',
+            'selectedClassId'
+        ));
     }
 }

@@ -22,44 +22,83 @@
         </div>
     </div>
 
-    {{-- Kartu statistik utama --}}
+    {{-- Kartu statistik utama: statistik khusus Guru dan statistik umum role lain --}}
     <div class="row g-3 g-xl-4 mb-4">
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dashboard-stat-card stat-green-one h-100">
-                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-                <div class="stat-content">
-                    <p>Total Siswa Aktif</p>
-                    <h2>{{ number_format($totalStudents) }}</h2>
-                    <span>Siswa terdata pada sistem</span>
+        @if (auth()->user()->isGuru())
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-one h-100">
+                    <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                    <div class="stat-content">
+                        <p>Total Siswa</p>
+                        <h2>{{ number_format($teacherTotalStudents) }}</h2>
+                        <span>Siswa pada kelas yang diampu di tahun ajaran aktif</span>
+                    </div>
+                    <i class="bi bi-people stat-watermark" aria-hidden="true"></i>
                 </div>
-                <i class="bi bi-people stat-watermark" aria-hidden="true"></i>
             </div>
-        </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dashboard-stat-card stat-green-two h-100">
-                <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
-                <div class="stat-content">
-                    <p>Total Pegawai Aktif</p>
-                    <h2>{{ number_format($totalEmployees) }}</h2>
-                    <span>Pegawai terdata pada sistem</span>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-two h-100">
+                    <div class="stat-icon"><i class="bi bi-gender-male"></i></div>
+                    <div class="stat-content">
+                        <p>Laki-laki</p>
+                        <h2>{{ number_format($teacherMaleStudents) }}</h2>
+                        <span>Jumlah siswa laki-laki</span>
+                    </div>
+                    <i class="bi bi-gender-male stat-watermark" aria-hidden="true"></i>
                 </div>
-                <i class="bi bi-person-badge stat-watermark" aria-hidden="true"></i>
             </div>
-        </div>
 
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="dashboard-stat-card stat-green-three h-100">
-                <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
-                <div class="stat-content">
-                    <p>Total Rombel</p>
-                    <h2>{{ number_format($totalClasses) }}</h2>
-                    <span>Rombongan belajar terdata</span>
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-three h-100">
+                    <div class="stat-icon"><i class="bi bi-gender-female"></i></div>
+                    <div class="stat-content">
+                        <p>Perempuan</p>
+                        <h2>{{ number_format($teacherFemaleStudents) }}</h2>
+                        <span>Jumlah siswa perempuan</span>
+                    </div>
+                    <i class="bi bi-gender-female stat-watermark" aria-hidden="true"></i>
                 </div>
-                <i class="bi bi-buildings stat-watermark" aria-hidden="true"></i>
             </div>
-        </div>
+        @else
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-one h-100">
+                    <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                    <div class="stat-content">
+                        <p>Total Siswa Aktif</p>
+                        <h2>{{ number_format($totalStudents) }}</h2>
+                        <span>Siswa terdata pada sistem</span>
+                    </div>
+                    <i class="bi bi-people stat-watermark" aria-hidden="true"></i>
+                </div>
+            </div>
 
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-two h-100">
+                    <div class="stat-icon"><i class="bi bi-person-badge-fill"></i></div>
+                    <div class="stat-content">
+                        <p>Total Pegawai Aktif</p>
+                        <h2>{{ number_format($totalEmployees) }}</h2>
+                        <span>Pegawai terdata pada sistem</span>
+                    </div>
+                    <i class="bi bi-person-badge stat-watermark" aria-hidden="true"></i>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="dashboard-stat-card stat-green-three h-100">
+                    <div class="stat-icon"><i class="bi bi-building-fill"></i></div>
+                    <div class="stat-content">
+                        <p>Total Rombel</p>
+                        <h2>{{ number_format($totalClasses) }}</h2>
+                        <span>Rombongan belajar terdata</span>
+                    </div>
+                    <i class="bi bi-buildings stat-watermark" aria-hidden="true"></i>
+                </div>
+            </div>
+        @endif
+
+        {{-- Kartu tahun ajaran tetap sama untuk semua role. --}}
         <div class="col-12 col-md-6 col-xl-3">
             <div class="dashboard-stat-card stat-green-four h-100">
                 <div class="stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
