@@ -84,13 +84,43 @@ class TeacherReportClassAccessTest extends TestCase
             'print_type' => 'class',
         ]))->assertForbidden();
 
-        $this->get(route('rekap-rapot.index', [
-            'academic_year_id' => $year->id,
-            'class_id' => 'all',
-        ]))
-            ->assertOk()
-            ->assertSeeText($teacherStudent->name)
-            ->assertDontSeeText($otherStudent->name);
+
+$recapResponse = $this->get(route('rekap-rapot.index', [
+    'academic_year_id' => $year->id,
+    'class_id' => 'all',
+]))->assertOk();
+
+$recapStudents = $recapResponse->viewData('students');
+
+$this->assertTrue(
+    $recapStudents->contains('id', $teacherStudent->id),
+    'Siswa dari kelas wali seharusnya tersedia pada data Rekap Rapot.'
+);
+
+$this->assertFalse(
+    $recapStudents->contains('id', $otherStudent->id),
+    'Siswa dari kelas lain tidak boleh masuk ke data Rekap Rapot Guru.'
+);
+
+// Pastikan pencarian AJAX juga hanya mengembalikan siswa kelas wali.
+$lookupResponse = $this->get(route('rekap-rapot.index', [
+    'academic_year_id' => $year->id,
+    'class_id' => 'all',
+    'student_lookup' => 1,
+    'student_list' => 1,
+    'offset' => 0,
+]))->assertOk();
+
+$lookupResponse->assertJsonFragment([
+    'id' => $teacherStudent->id,
+    'name' => $teacherStudent->name,
+]);
+
+$lookupResponse->assertJsonMissing([
+    'id' => $otherStudent->id,
+    'name' => $otherStudent->name,
+]);
+
 
         $this->get(route('rekap-rapot.batch', [
             'academic_year_id' => $year->id,
@@ -371,9 +401,30 @@ class TeacherReportClassAccessTest extends TestCase
             'class_id' => $historicalClass->id,
         ]))
         ->assertOk()
-        ->assertSeeText($historicalStudent->name)
         ->assertSeeText($historicalClass->name)
         ->assertSeeText('Semua Status');
+
+    $historicalStudents = $response->viewData('students');
+
+    $this->assertTrue(
+        $historicalStudents->contains('id', $historicalStudent->id),
+        'Siswa yang berstatus Naik Kelas harus tetap tersedia dalam riwayat kelas sebelumnya.'
+    );
+
+    // Pastikan pencarian AJAX dapat menemukan siswa pada kelas Nonaktif.
+    $historicalLookup = $this->get(route('rekap-rapot.index', [
+        'academic_year_id' => $historicalYear->id,
+        'class_id' => $historicalClass->id,
+        'status' => 'Semua',
+        'student_lookup' => 1,
+        'student_list' => 1,
+        'offset' => 0,
+    ]))->assertOk();
+
+    $historicalLookup->assertJsonFragment([
+        'id' => $historicalStudent->id,
+        'name' => $historicalStudent->name,
+    ]);
 
         $this->assertSame(
         [$historicalClass->id],
@@ -381,13 +432,19 @@ class TeacherReportClassAccessTest extends TestCase
         );
         $this->assertSame('Semua', $response->viewData('selectedStatus'));
 
-        $changedYearResponse = $this->get(route('rekap-rapot.index', [
-            'academic_year_id' => $historicalYear->id,
-            'class_id' => $currentClass->id,
-        ]))
-            ->assertOk()
-            ->assertSeeText($historicalStudent->name)
-            ->assertSeeText($historicalClass->name);
+
+$changedYearResponse = $this->get(route('rekap-rapot.index', [
+    'academic_year_id' => $historicalYear->id,
+    'class_id' => $currentClass->id,
+]))
+    ->assertOk()
+    ->assertSeeText($historicalClass->name);
+
+$this->assertTrue(
+    $changedYearResponse->viewData('students')->contains('id', $historicalStudent->id),
+    'Saat tahun ajaran berubah, data siswa harus mengikuti kelas historis yang ditugaskan.'
+);
+
 
         $this->assertSame('all', $changedYearResponse->viewData('selectedClassId'));
         $this->assertSame('Semua', $changedYearResponse->viewData('selectedStatus'));

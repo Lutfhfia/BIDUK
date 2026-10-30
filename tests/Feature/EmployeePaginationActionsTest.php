@@ -43,7 +43,13 @@ class EmployeePaginationActionsTest extends TestCase
         $this->assertSame(10, substr_count($firstPage->getContent(), 'Detail Pegawai'));
         $this->assertSame(10, substr_count($firstPage->getContent(), 'Edit Pegawai'));
         $this->assertSame(10, substr_count($firstPage->getContent(), 'Hapus Pegawai'));
-        $this->assertSame(10, substr_count($firstPage->getContent(), 'data-bs-toggle="dropdown"'));
+        $this->assertSame(
+            10,
+            preg_match_all(
+                '/<button\b(?=[^>]*aria-label="Aksi pegawai [^"]+")(?=[^>]*data-bs-toggle="dropdown")[^>]*>/s',
+                $firstPage->getContent()
+            )
+        );
 
         $secondPage = $this->get(route('pegawai.index', ['page' => 2]));
 
@@ -52,6 +58,12 @@ class EmployeePaginationActionsTest extends TestCase
         $this->assertSame(2, substr_count($secondPage->getContent(), 'Detail Pegawai'));
         $this->assertSame(2, substr_count($secondPage->getContent(), 'Edit Pegawai'));
         $this->assertSame(2, substr_count($secondPage->getContent(), 'Hapus Pegawai'));
-        $this->assertSame(2, substr_count($secondPage->getContent(), 'data-bs-toggle="dropdown"'));
+        $this->assertSame(
+            2,
+            preg_match_all(
+                '/<button\b(?=[^>]*aria-label="Aksi pegawai [^"]+")(?=[^>]*data-bs-toggle="dropdown")[^>]*>/s',
+                $secondPage->getContent()
+            )
+        );
     }
 }
