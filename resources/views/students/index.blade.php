@@ -473,6 +473,9 @@
         name="academic_year_id"
         class="form-select"
     >
+        @unless ($isTeacher)
+            <option value="" @selected(!$academicYearId)>Semua Tahun Ajaran</option>
+        @endunless
         @foreach ($academicYears as $academicYear)
             <option
                 value="{{ $academicYear->id }}"
@@ -491,7 +494,7 @@
                             <option value="">Semua Kelas</option>
                             @foreach ($classes as $class)
                                 <option value="{{ $class->id }}" {{ (string) $classId === (string) $class->id ? 'selected' : '' }}>
-                                    {{ $class->name }}
+                                    {{ $class->name }}{{ !$academicYearId && $class->academicYear ? ' — ' . $class->academicYear->name : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -515,7 +518,7 @@
                         <button type="submit" class="btn btn-biduk-primary w-100">
                             <i class="bi bi-search me-1"></i>Filter
                         </button>
-                        @if ($search || $classId || $status)
+                        @if ($search || $classId || $status || $academicYearId)
                             <a href="{{ route('students.index') }}" class="btn btn-outline-secondary" title="Reset filter" aria-label="Reset filter">
                                 <i class="bi bi-x-lg"></i>
                             </a>

@@ -44,6 +44,7 @@ class StudentImportTargetTest extends TestCase
             ->assertOk()
             ->assertSeeText($year->name)
             ->assertSeeText($class->name)
+            ->assertSeeText('Semua Kelas (tanpa penempatan kelas)')
             ->assertDontSeeText($otherYear->name)
             ->assertDontSeeText($otherClass->name);
     }
@@ -158,6 +159,37 @@ class StudentImportTargetTest extends TestCase
 
         $this->assertDatabaseMissing('students', [
             'name' => 'Harus Ditolak',
+        ]);
+    }
+
+    public function test_teacher_can_import_students_without_class_placement(): void
+    {
+        [$teacher, $year] = $this->createTeacherWithClass();
+        $file = $this->makeWorkbook([
+            'B4' => 'NIS-IMPORT-NO-CLASS',
+            'C4' => 'NISN-IMPORT-NO-CLASS',
+            'D4' => 'Siswa Tanpa Kelas',
+        ]);
+
+        $response = $this->actingAs($teacher)->post(route('students.import'), [
+            'academic_year_id' => $year->id,
+            'class_id' => '',
+            'file' => new UploadedFile(
+                $file,
+                'students.xlsx',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                null,
+                true
+            ),
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $response->assertSessionHas('success');
+
+        $student = Student::where('nis', 'NIS-IMPORT-NO-CLASS')->firstOrFail();
+        $this->assertSame('Siswa Tanpa Kelas', $student->name);
+        $this->assertDatabaseMissing('class_student', [
+            'student_id' => $student->id,
         ]);
     }
 

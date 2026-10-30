@@ -195,6 +195,8 @@ class ReportCardGradeImportTest extends TestCase
         ]))
             ->assertOk()
             ->assertSeeText('Sudah Diisi')
+            ->assertSeeText('Kelas 1A')
+            ->assertDontSeeText('Kelas 1 1A')
             ->assertDontSeeText('Belum Diisi');
 
         $this->get(route('report-card-grades.history', $student))

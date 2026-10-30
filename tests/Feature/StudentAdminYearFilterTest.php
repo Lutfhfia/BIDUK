@@ -16,6 +16,70 @@ class StudentAdminYearFilterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_default_list_includes_all_students_with_or_without_class_assignments(): void
+    {
+        $permission = Permission::create(['name' => 'students.view']);
+        $role = Role::create(['name' => 'Admin']);
+        $role->permissions()->attach($permission->id);
+        $admin = User::create([
+            'name' => 'Admin Master Data',
+            'username' => 'admin-master-data',
+            'email' => 'admin-master-data@example.test',
+            'password' => 'password',
+            'role_id' => $role->id,
+            'status' => 'Aktif',
+        ]);
+        $oldYear = AcademicYear::create([
+            'name' => '2024/2025',
+            'start_date' => '2024-07-01',
+            'end_date' => '2025-06-30',
+            'status' => 'inactive',
+        ]);
+        $activeYear = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $oldClass = $this->createClass($oldYear, '6A', 6);
+        $activeClass = $this->createClass($activeYear, '3A', 3);
+        $oldStudent = $this->createStudent('NIS-ALL-OLD', 'Siswa Kelas Tahun Lama', 'Lulus');
+        $activeStudent = $this->createStudent('NIS-ALL-ACTIVE', 'Siswa Kelas Aktif', 'Aktif');
+        $unassignedStudent = $this->createStudent(
+            'NIS-ALL-UNASSIGNED',
+            'Siswa Belum Masuk Kelas',
+            'Aktif'
+        );
+        ClassStudent::create([
+            'class_id' => $oldClass->id,
+            'student_id' => $oldStudent->id,
+            'status' => 'Naik Kelas',
+        ]);
+        ClassStudent::create([
+            'class_id' => $activeClass->id,
+            'student_id' => $activeStudent->id,
+            'status' => 'Aktif',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('students.index'))
+            ->assertOk()
+            ->assertViewHas('academicYearId', null)
+            ->assertViewHas('students', fn ($students) => $students->total() === 3)
+            ->assertSeeText('Semua Tahun Ajaran')
+            ->assertSeeText('Siswa Kelas Tahun Lama')
+            ->assertSeeText('Siswa Kelas Aktif')
+            ->assertSeeText('Siswa Belum Masuk Kelas');
+
+        $this->get(route('students.index', ['class_id' => $oldClass->id]))
+            ->assertOk()
+            ->assertViewHas('academicYearId', null)
+            ->assertViewHas('students', fn ($students) => $students->total() === 1)
+            ->assertSeeText('Siswa Kelas Tahun Lama')
+            ->assertDontSeeText('Siswa Kelas Aktif')
+            ->assertDontSeeText('Siswa Belum Masuk Kelas');
+    }
+
     public function test_admin_roles_can_filter_students_by_academic_year_and_class(): void
     {
         $permission = Permission::create(['name' => 'students.view']);

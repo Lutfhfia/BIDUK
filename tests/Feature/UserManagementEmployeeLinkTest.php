@@ -7,6 +7,7 @@ use App\Imports\EmployeeImport;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class UserManagementEmployeeLinkTest extends TestCase
@@ -66,6 +67,36 @@ class UserManagementEmployeeLinkTest extends TestCase
             'status' => 'Nonaktif',
         ]);
         $this->assertDatabaseCount('employees', 2);
+    }
+
+    public function test_generated_password_can_authenticate_new_user(): void
+    {
+        $admin = $this->createSuperAdmin();
+        $teacherRole = Role::create(['name' => 'Guru']);
+        $employee = $this->createEmployee([
+            'name' => 'Guru Password',
+            'nip' => '70007',
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('users.store'), [
+            'employee_id' => $employee->id,
+            'role_id' => $teacherRole->id,
+            'status' => 'Aktif',
+        ]);
+
+        $response->assertRedirect(route('users.index'));
+        $password = $response->getSession()->get('generated_password');
+        $this->assertIsString($password);
+
+        $user = User::where('username', '70007')->firstOrFail();
+        $this->assertTrue(Hash::check($password, $user->password));
+
+        auth()->logout();
+
+        $this->post(route('login'), [
+            'login' => $user->username,
+            'password' => $password,
+        ])->assertRedirect(route('dashboard'));
     }
 
     public function test_updating_user_uses_existing_employee_without_creating_employee_and_keeps_role_status_managed_here(): void

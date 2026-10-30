@@ -479,7 +479,7 @@
             <button
                 type="button"
                 class="btn btn-sm btn-outline-dark"
-                onclick="copyResetPassword(this)"
+                onclick="copyPassword(this, 'resetPasswordValue')"
             >
                 <i class="bi bi-copy me-1"></i>
                 Salin Password
@@ -499,9 +499,18 @@
             Password Awal User
         </div>
 
-        <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             User berhasil dibuat. Password awal:
-            <code class="fs-6">{{ session('generated_password') }}</code>
+            <code id="generatedPasswordValue" class="fs-6">{{ session('generated_password') }}</code>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-dark"
+                onclick="copyPassword(this, 'generatedPasswordValue')"
+            >
+                <i class="bi bi-copy me-1"></i>
+                Salin Password
+            </button>
         </div>
 
         <div class="small text-muted mt-2">
@@ -823,8 +832,8 @@
 
     </div>
     <script>
-    function copyResetPassword(button) {
-        const passwordElement = document.getElementById('resetPasswordValue');
+    function copyPassword(button, passwordId) {
+        const passwordElement = document.getElementById(passwordId);
 
         if (!passwordElement) {
             return;

@@ -58,8 +58,10 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="import-class" class="form-label fw-semibold">Kelas Tujuan</label>
-                                <select name="class_id" id="import-class" class="form-select" required>
-                                    <option value="">Pilih kelas</option>
+                                <select name="class_id" id="import-class" class="form-select">
+                                    <option value="" @selected($selectedClassId === null)>
+                                        Semua Kelas (tanpa penempatan kelas)
+                                    </option>
                                     @foreach ($classes as $class)
                                         <option
                                             value="{{ $class->id }}"
@@ -72,11 +74,11 @@
                                 </select>
                                 @if ($classes->isEmpty())
                                     <div class="form-text text-danger">
-                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini.
+                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini. Data tetap dapat diimpor tanpa penempatan kelas.
                                     </div>
                                 @else
                                     <div id="import-class-empty" class="form-text text-danger d-none">
-                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini.
+                                        Belum ada kelas yang dapat dipilih pada tahun ajaran ini. Data tetap dapat diimpor tanpa penempatan kelas.
                                     </div>
                                 @endif
                             </div>
@@ -88,7 +90,7 @@
                         </div>
 
                         <div class="d-flex gap-2 flex-wrap">
-                            <button id="import-submit" type="submit" class="btn btn-biduk-primary px-4 py-2" @disabled($classes->isEmpty())>
+                            <button id="import-submit" type="submit" class="btn btn-biduk-primary px-4 py-2">
                                 <i class="bi bi-upload me-1"></i> Mulai Import
                             </button>
                             <a href="{{ route('students.import.template') }}" class="btn btn-outline-primary px-3 py-2">
@@ -112,13 +114,15 @@
             const emptyMessage = document.getElementById('import-class-empty');
             if (!yearSelect || !classSelect) return;
 
+            const noClassOption = classSelect.options[0].cloneNode(true);
             const allClassOptions = Array.from(classSelect.options)
-                .filter(option => option.value !== '');
+                .filter(option => option.value !== '')
+                .map(option => option.cloneNode(true));
 
             function filterClasses() {
                 const selectedYear = yearSelect.value;
                 const previousClassId = classSelect.value;
-                classSelect.innerHTML = '<option value="">Pilih kelas</option>';
+                classSelect.replaceChildren(noClassOption.cloneNode(true));
 
                 let firstAvailableClass = null;
                 allClassOptions.forEach(option => {
@@ -134,8 +138,8 @@
                     ? previousClassId
                     : (firstAvailableClass ?? '');
 
-                const hasAvailableClass = Boolean(classSelect.value);
-                if (submitButton) submitButton.disabled = !hasAvailableClass;
+                const hasAvailableClass = Boolean(firstAvailableClass);
+                if (submitButton) submitButton.disabled = !selectedYear;
                 if (emptyMessage) emptyMessage.classList.toggle('d-none', hasAvailableClass);
             }
 

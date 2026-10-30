@@ -60,10 +60,20 @@ class StudentImportExportController extends Controller
             ->get();
 
         $selectedClassId = $request->input('class_id');
-        if (!$classes->contains(fn ($class) =>
-            (int) $class->id === (int) $selectedClassId
-            && (int) $class->academic_year_id === (int) $selectedAcademicYearId
-        )) {
+        if ($selectedClassId === '') {
+            $selectedClassId = null;
+        }
+
+        if (
+            !$request->exists('class_id')
+            || (
+                $selectedClassId !== null
+                && !$classes->contains(fn ($class) =>
+                    (int) $class->id === (int) $selectedClassId
+                    && (int) $class->academic_year_id === (int) $selectedAcademicYearId
+                )
+            )
+        ) {
             $selectedClassId = $classes
                 ->first(fn ($class) => (int) $class->academic_year_id === (int) $selectedAcademicYearId)
                 ?->id;
@@ -86,7 +96,7 @@ class StudentImportExportController extends Controller
         $request->validate([
             'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
             'class_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('classes', 'id')->where(
                     'academic_year_id',
@@ -103,23 +113,26 @@ class StudentImportExportController extends Controller
 
         try {
             $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
-            $class = SchoolClass::query()
-                ->where('academic_year_id', $request->integer('academic_year_id'))
-                ->when(
-                    $teacherClassIds !== null,
-                    fn ($query) => $query->whereIn('id', $teacherClassIds)
-                )
-                ->find($request->integer('class_id'));
+            $class = null;
+            if ($request->filled('class_id')) {
+                $class = SchoolClass::query()
+                    ->where('academic_year_id', $request->integer('academic_year_id'))
+                    ->when(
+                        $teacherClassIds !== null,
+                        fn ($query) => $query->whereIn('id', $teacherClassIds)
+                    )
+                    ->find($request->integer('class_id'));
 
-            abort_unless(
-                $class,
-                403,
-                'Kelas yang dipilih bukan kelas yang dapat Anda kelola pada tahun ajaran tersebut.'
-            );
+                abort_unless(
+                    $class,
+                    403,
+                    'Kelas yang dipilih bukan kelas yang dapat Anda kelola pada tahun ajaran tersebut.'
+                );
+            }
 
             $import = new StudentsImport(
                 $request->integer('academic_year_id'),
-                $class->id
+                $class?->id
             );
 
             Excel::import($import, $request->file('file'));

@@ -921,7 +921,21 @@
                                             {{-- Kelas --}}
                                             <td>
                                                 @if ($targetClass)
-                                                    Kelas {{ $targetClass->grade_level }} {{ $targetClass->name }}
+                                                    @php
+                                                        $className = trim((string) $targetClass->name);
+                                                        $gradeLevel = trim((string) $targetClass->grade_level);
+                                                        $classNameIncludesGrade = $gradeLevel !== ''
+                                                            && preg_match(
+                                                                '/^(?:kelas\s*)?' . preg_quote($gradeLevel, '/') . '(?:\s|[[:alpha:]]|$)/iu',
+                                                                $className
+                                                            ) === 1;
+                                                        $classLabel = preg_match('/^kelas\b/iu', $className) === 1
+                                                            ? $className
+                                                            : ($classNameIncludesGrade
+                                                                ? 'Kelas ' . $className
+                                                                : 'Kelas ' . $gradeLevel . ' ' . $className);
+                                                    @endphp
+                                                    {{ $classLabel }}
                                                 @else
                                                     <span class="badge bg-warning-subtle text-warning">
                                                         <i class="bi bi-exclamation-circle me-1"></i>

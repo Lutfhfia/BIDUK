@@ -565,6 +565,155 @@
             .btn-sidebar-toggle {
                 display: block;
             }
+
+            .biduk-content {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .biduk-navbar {
+                height: 58px;
+                padding: 0 0.75rem;
+            }
+
+            .biduk-navbar .navbar-left {
+                flex: 1;
+                min-width: 0;
+                gap: 0.5rem;
+            }
+
+            .biduk-navbar .navbar-left > nav {
+                min-width: 0;
+                overflow: hidden;
+            }
+
+            .biduk-navbar .breadcrumb {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow: hidden;
+                font-size: 0.75rem;
+                white-space: nowrap;
+            }
+
+            .biduk-navbar .breadcrumb-item:not(:last-child) {
+                display: none;
+            }
+
+            .biduk-navbar .breadcrumb-item:last-child {
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .biduk-navbar .breadcrumb-item:last-child::before {
+                display: none;
+            }
+
+            .biduk-navbar > .dropdown {
+                flex-shrink: 0;
+            }
+
+            .navbar-user {
+                gap: 0.4rem;
+            }
+
+            .navbar-user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+
+            .biduk-main {
+                padding-top: 58px;
+            }
+
+            .biduk-content {
+                padding: 0.75rem;
+            }
+
+            .biduk-content .biduk-card,
+            .biduk-content .card {
+                border-radius: 10px;
+            }
+
+            .biduk-content .biduk-card .card-header,
+            .biduk-content .card > .card-header {
+                padding: 0.7rem 0.85rem;
+            }
+
+            .biduk-content .biduk-card .card-body,
+            .biduk-content .card > .card-body {
+                padding: 0.85rem;
+            }
+
+            .biduk-content .biduk-card .card-footer,
+            .biduk-content .card > .card-footer {
+                padding: 0.7rem 0.85rem;
+            }
+
+            .biduk-content .row {
+                --bs-gutter-x: 0.75rem;
+                --bs-gutter-y: 0.75rem;
+            }
+
+            .biduk-content .table-responsive {
+                max-width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .biduk-content .table-responsive > table {
+                min-width: 600px;
+            }
+
+            .biduk-content .table-responsive > table.table-sm,
+            .biduk-content .table-responsive > table[data-mobile-compact] {
+                min-width: 0;
+            }
+
+            .biduk-content .btn,
+            .biduk-content form .btn {
+                min-height: 38px;
+            }
+
+            .biduk-content .pagination {
+                flex-wrap: wrap;
+                row-gap: 0.35rem;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .biduk-navbar .navbar-user .text-start {
+                display: none;
+            }
+
+            .biduk-content .page-header,
+            .biduk-content .d-flex.justify-content-between.align-items-center {
+                flex-wrap: wrap;
+                row-gap: 0.65rem;
+            }
+
+            .biduk-content form .card-body .row.g-3 {
+                --bs-gutter-x: 0.65rem;
+                --bs-gutter-y: 0.65rem;
+            }
+
+            .biduk-content form .form-control,
+            .biduk-content form .form-select,
+            .biduk-content form textarea.form-control {
+                min-height: 2.5rem;
+                padding: 0.6rem 0.7rem;
+                font-size: 0.84rem;
+            }
+
+            .biduk-content .table-responsive > table {
+                min-width: 520px;
+            }
+
+            .biduk-content .table-responsive > table.table-sm,
+            .biduk-content .table-responsive > table[data-mobile-compact] {
+                min-width: 0;
+            }
         }
 
         /* ============ ANIMATIONS ============ */
@@ -662,7 +811,14 @@
     {{-- Navbar --}}
     <nav class="biduk-navbar">
         <div class="navbar-left">
-            <button class="btn-sidebar-toggle" id="sidebarToggle">
+            <button
+                type="button"
+                class="btn-sidebar-toggle"
+                id="sidebarToggle"
+                aria-label="Buka menu navigasi"
+                aria-controls="sidebar"
+                aria-expanded="false"
+            >
                 <i class="bi bi-list"></i>
             </button>
             <nav aria-label="breadcrumb">
@@ -742,6 +898,7 @@
         id="navbarUserDropdown"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        aria-label="Buka menu profil pengguna"
         style="border: 0; background: transparent; padding: 0; cursor: pointer;"
     >
     <div class="navbar-user-avatar" style="overflow: hidden;">
@@ -908,19 +1065,35 @@
         const overlay = document.getElementById('sidebarOverlay');
         const toggleBtn = document.getElementById('sidebarToggle');
 
+        const closeSidebar = () => {
+            if (!sidebar || !overlay || !toggleBtn) return;
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        };
+
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('show');
-                overlay.classList.toggle('show');
+                if (!sidebar || !overlay) return;
+                const isOpen = sidebar.classList.toggle('show');
+                overlay.classList.toggle('show', isOpen);
+                toggleBtn.setAttribute('aria-expanded', String(isOpen));
             });
         }
 
         if (overlay) {
-            overlay.addEventListener('click', () => {
-                sidebar.classList.remove('show');
-                overlay.classList.remove('show');
+            overlay.addEventListener('click', closeSidebar);
+        }
+
+        if (sidebar) {
+            sidebar.addEventListener('click', (event) => {
+                if (event.target.closest('a')) closeSidebar();
             });
         }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') closeSidebar();
+        });
 
         // Auto-dismiss alerts after 5 seconds
         document.querySelectorAll('.alert-dismissible').forEach(alert => {

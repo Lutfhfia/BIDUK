@@ -72,14 +72,15 @@ class StudentController extends Controller
                 ->orderByDesc('id')
                 ->get();
 
-            if (!$academicYearId || !$academicYears->contains('id', (int) $academicYearId)) {
-                $activeYear = AcademicYear::getActive();
-                $academicYearId = $academicYears->contains('id', $activeYear?->id)
-                    ? $activeYear?->id
-                    : $academicYears->first()?->id;
+            if (
+                !$academicYearId
+                || !$academicYears->contains('id', (int) $academicYearId)
+            ) {
+                $academicYearId = null;
             }
 
             $classes = SchoolClass::query()
+                ->with('academicYear')
                 ->when($academicYearId, fn ($query) => $query->where('academic_year_id', $academicYearId))
                 ->orderBy('grade_level')
                 ->orderBy('name')
@@ -101,9 +102,9 @@ class StudentController extends Controller
                     ->where('classes.academic_year_id', $academicYearId)
                     ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
             });
-        } elseif ($academicYearId) {
+        } elseif ($academicYearId || ($classId !== null && $classId !== '')) {
             $visibleStudents->whereHas('classes', function ($query) use ($academicYearId, $classId) {
-                $query->where('classes.academic_year_id', $academicYearId)
+                $query->when($academicYearId, fn ($q) => $q->where('classes.academic_year_id', $academicYearId))
                     ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
             });
         }
@@ -116,8 +117,8 @@ class StudentController extends Controller
                     $query->whereIn('classes.id', $teacherClassIds)
                         ->where('classes.academic_year_id', $academicYearId)
                         ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
-                } elseif ($academicYearId) {
-                    $query->where('classes.academic_year_id', $academicYearId)
+                } elseif ($academicYearId || ($classId !== null && $classId !== '')) {
+                    $query->when($academicYearId, fn ($q) => $q->where('classes.academic_year_id', $academicYearId))
                         ->when($classId !== null && $classId !== '', fn ($q) => $q->whereKey($classId));
                 }
             }])

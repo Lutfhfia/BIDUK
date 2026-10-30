@@ -452,6 +452,107 @@
             transform: translateY(-4px) scale(1.05);
             box-shadow: 0 12px 28px rgba(21, 128, 61, 0.45);
         }
+
+        @media (max-width: 767.98px) {
+            html {
+                scroll-padding-top: 70px;
+            }
+
+            .landing-navbar {
+                padding: 0.65rem 0;
+            }
+
+            .brand-logo-wrap {
+                width: 38px;
+                height: 38px;
+                border-radius: 10px;
+            }
+
+            .brand-name-wrap .title {
+                font-size: 1.1rem;
+            }
+
+            .brand-name-wrap .subtitle {
+                max-width: min(58vw, 260px);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .landing-section {
+                padding: 3.5rem 0;
+            }
+
+            .landing-section#beranda {
+                padding-top: 2rem !important;
+                padding-bottom: 3rem !important;
+            }
+
+            .section-header {
+                margin-bottom: 2rem;
+            }
+
+            .section-title {
+                font-size: clamp(1.65rem, 7vw, 2rem);
+            }
+
+            .section-description {
+                font-size: 0.95rem;
+            }
+
+            .biduk-feature-card {
+                padding: 1.15rem;
+                border-radius: 14px;
+            }
+
+            .footer-biduk {
+                padding: 3.25rem 0 1.75rem;
+            }
+
+            #btn-back-to-top {
+                right: 16px;
+                bottom: 16px;
+                width: 42px;
+                height: 42px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .landing-navbar > .container {
+                padding-right: 0.9rem;
+                padding-left: 0.9rem;
+            }
+
+            .navbar-collapse {
+                max-height: calc(100dvh - 70px);
+                overflow-y: auto;
+            }
+
+            .landing-section .container {
+                padding-right: 1rem;
+                padding-left: 1rem;
+            }
+
+            .landing-section#beranda .btn {
+                width: 100%;
+            }
+
+            .landing-section .row.g-5 {
+                --bs-gutter-y: 1.75rem;
+            }
+
+            .landing-section .row.g-3 {
+                --bs-gutter-y: 0.75rem;
+            }
+
+            .biduk-feature-card {
+                padding: 1rem;
+            }
+
+            .dropdown-menu {
+                min-width: min(240px, calc(100vw - 2rem));
+            }
+        }
     </style>
     @stack('styles')
 </head>
@@ -689,7 +790,7 @@
 
             // Bidirectional Scroll Reveal Observer (triggers on scroll down & up)
             const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
-            
+
             const revealObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {

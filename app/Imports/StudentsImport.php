@@ -38,11 +38,10 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
     private int $updatedCount = 0;
     private int $skippedCount = 0;
     private array $errors = [];
-    private SchoolClass $targetClass;
 
     public function __construct(
         private readonly int $academicYearId,
-        private readonly int $classId
+        private readonly ?int $classId
     ) {}
 
     public function startRow(): int
@@ -58,15 +57,15 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
     public function collection(Collection $rows): void
     {
         $user = Auth::user();
-        $this->targetClass = SchoolClass::query()
-            ->where('academic_year_id', $this->academicYearId)
-            ->findOrFail($this->classId);
+        $targetClass = $this->classId === null
+            ? null
+            : SchoolClass::query()
+                ->where('academic_year_id', $this->academicYearId)
+                ->findOrFail($this->classId);
 
-        if ($user?->isGuru()) {
-            app(TeacherClassAccess::class)->assertCanAccessClass($user, $this->targetClass);
+        if ($user?->isGuru() && $targetClass) {
+            app(TeacherClassAccess::class)->assertCanAccessClass($user, $targetClass);
         }
-
-        $targetClass = $this->targetClass;
 
         foreach ($rows as $rowIndex => $row) {
             $data = array_values($row->toArray());
@@ -90,18 +89,29 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
                      * memperbarui siswa yang sudah terdaftar pada kelas pilihannya.
                      */
                     if ($user && $user->isGuru() && $student) {
-                        $belongsToTeacherClass = $student->classes()
-                            ->where('classes.id', $targetClass->id)
-                            ->where(
-                                'classes.academic_year_id',
-                                $targetClass->academic_year_id
-                            )
-                            ->exists();
+                        $studentClasses = $student->classes()
+                            ->where('classes.academic_year_id', $this->academicYearId);
+
+                        if ($targetClass) {
+                            $studentClasses->where('classes.id', $targetClass->id);
+                        } else {
+                            $studentClasses->whereIn(
+                                'classes.id',
+                                app(TeacherClassAccess::class)->classIds($user)
+                            );
+                        }
+
+                        $belongsToTeacherClass = $studentClasses->exists();
 
                         if (!$belongsToTeacherClass) {
+                            $message = $targetClass
+                                ? 'Data siswa "' . $student->name .
+                                    '" sudah terdaftar di kelas lain atau tidak terdaftar pada kelas pilihan. Baris dilewati.'
+                                : 'Data siswa "' . $student->name .
+                                    '" tidak terdaftar pada kelas yang dapat Anda kelola di tahun ajaran ini. Baris dilewati.';
+
                             throw new RuntimeException(
-                                'Data siswa "' . $student->name .
-                                '" sudah terdaftar di kelas lain atau tidak terdaftar pada kelas pilihan. Baris dilewati.'
+                                $message
                             );
                         }
                     }
@@ -123,10 +133,12 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
                     }
 
                     $this->savePreviousEducation($student, $data);
-                    $this->saveHealth($student, $data, $targetClass->academic_year_id);
-                    $this->savePhysique($student, $data, $targetClass->academic_year_id);
+                    $this->saveHealth($student, $data, $this->academicYearId);
+                    $this->savePhysique($student, $data, $this->academicYearId);
 
-                    $this->syncClass($student, $targetClass);
+                    if ($targetClass) {
+                        $this->syncClass($student, $targetClass);
+                    }
                 });
             } catch (Throwable $e) {
                 $this->skippedCount++;
