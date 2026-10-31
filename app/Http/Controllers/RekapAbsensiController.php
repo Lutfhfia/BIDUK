@@ -9,6 +9,7 @@ use App\Models\Semester;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\TeacherClassAccess;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -168,6 +169,128 @@ class RekapAbsensiController extends Controller
             'classes',
             'selectedAcademicYearId'
         ));
+    }
+
+    /**
+     * Menampilkan rekap absensi sebagai PDF sesuai filter halaman.
+     * Seluruh hasil filter diambil, tanpa batas pagination 10 data.
+     */
+    public function exportPdf(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $allowedClassIds = app(TeacherClassAccess::class)->classIds($user)?->all();
+
+        if (
+            ! $user->isGuru()
+            && ! $user->isSuperAdmin()
+            && ! $user->isAdmin()
+            && ! $user->isKepalaSekolah()
+        ) {
+            abort(403, 'Anda tidak memiliki akses ke Rekap Absensi.');
+        }
+
+        // Gunakan filter tahun ajaran yang sama dengan halaman index.
+        $selectedAcademicYearId = $request->query->has('academic_year_id')
+            ? ($request->input('academic_year_id') ?: null)
+            : AcademicYear::getActive()?->id;
+
+        $selectedClassId = $request->input('class_id');
+        $search = trim((string) $request->input('search', ''));
+
+        $query = RekapAbsensi::with([
+            'student',
+            'schoolClass.academicYear',
+            'semester',
+        ])
+            // Guru hanya mendapatkan kelas yang menjadi tanggung jawabnya.
+            ->when($allowedClassIds !== null, function ($query) use ($allowedClassIds) {
+                $query->whereIn('class_id', $allowedClassIds);
+            })
+            ->when($selectedAcademicYearId, function ($query) use ($selectedAcademicYearId) {
+                $query->whereHas('schoolClass', function ($classQuery) use ($selectedAcademicYearId) {
+                    $classQuery->where('academic_year_id', $selectedAcademicYearId);
+                });
+            })
+            ->when($request->filled('class_id'), function ($query) use ($selectedClassId) {
+                $query->where('class_id', $selectedClassId);
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->whereHas('student', function ($studentQuery) use ($search) {
+                    $studentQuery->where(function ($studentQuery) use ($search) {
+                        $studentQuery->where('name', 'like', '%'.$search.'%')
+                            ->orWhere('nis', 'like', '%'.$search.'%')
+                            ->orWhere('nisn', 'like', '%'.$search.'%');
+                    });
+                });
+            })
+            ->whereHas('student', function ($studentQuery) {
+                $studentQuery->where('status', 'Aktif');
+            })
+            ->orderBy('class_id')
+            ->orderBy('student_id')
+            ->orderBy('semester_id');
+
+        // Ambil semua hasil yang cocok dengan filter, bukan hanya halaman aktif.
+        $records = $query->get();
+
+        // Gabungkan data Ganjil dan Genap untuk setiap pasangan siswa-kelas.
+        $attendanceGroups = $records
+            ->groupBy(fn ($record) => $record->student_id.'-'.$record->class_id)
+            ->map(function ($groupRecords) {
+                $semesterRecords = ['ganjil' => null, 'genap' => null];
+
+                foreach ($groupRecords as $record) {
+                    $semesterName = strtolower($record->semester?->name ?? '');
+
+                    if (str_contains($semesterName, 'ganjil')) {
+                        $semesterRecords['ganjil'] = $record;
+                    } elseif (str_contains($semesterName, 'genap')) {
+                        $semesterRecords['genap'] = $record;
+                    }
+                }
+
+                $actionRecord = $semesterRecords['ganjil']
+                    ?? $semesterRecords['genap']
+                    ?? $groupRecords->first();
+
+                return (object) [
+                    'student' => $actionRecord?->student,
+                    'schoolClass' => $actionRecord?->schoolClass,
+                    'ganjil' => $semesterRecords['ganjil'],
+                    'genap' => $semesterRecords['genap'],
+                ];
+            })
+            ->values();
+
+        $selectedAcademicYear = $selectedAcademicYearId
+            ? AcademicYear::find($selectedAcademicYearId)
+            : null;
+
+        // Label kelas hanya ditampilkan jika kelas tersebut memang termasuk
+        // cakupan akses pengguna dan sesuai tahun ajaran yang dipilih.
+        $selectedClass = $request->filled('class_id')
+            ? SchoolClass::query()
+                ->with('academicYear')
+                ->when($allowedClassIds !== null, function ($classQuery) use ($allowedClassIds) {
+                    $classQuery->whereIn('id', $allowedClassIds);
+                })
+                ->when($selectedAcademicYearId, function ($classQuery) use ($selectedAcademicYearId) {
+                    $classQuery->where('academic_year_id', $selectedAcademicYearId);
+                })
+                ->whereKey($selectedClassId)
+                ->first()
+            : null;
+
+        $pdf = Pdf::loadView('rekap-absensi.pdf', [
+            'rekapAbsensi' => $attendanceGroups,
+            'selectedAcademicYear' => $selectedAcademicYear,
+            'selectedClass' => $selectedClass,
+            'search' => $search,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('rekap-absensi.pdf');
     }
 
     /**

@@ -417,11 +417,16 @@ Route::get(
         [RekapAbsensiController::class, 'studentsByClass']
     )->name('rekap-absensi.students');
 
+    // Cetak Rekap Absensi PDF
+    Route::get(
+        'rekap-absensi/pdf',
+        [RekapAbsensiController::class, 'exportPdf']
+    )->name('rekap-absensi.pdf');
+
     Route::resource(
         'rekap-absensi',
         RekapAbsensiController::class
     );
-
     // =================================================
     // NILAI RAPOT
     // =================================================

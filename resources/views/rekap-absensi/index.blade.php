@@ -119,6 +119,13 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
+        <a
+    href="{{ route('rekap-absensi.pdf', request()->only(['academic_year_id', 'class_id', 'search'])) }}"
+    class="btn btn-biduk-outline btn-sm"
+    data-no-page-loader="true"
+>
+    <i class="bi bi-download me-1"></i>Unduh PDF
+</a>
             <a href="{{ route('rekap-absensi.create') }}" class="btn btn-biduk-primary btn-sm">
                 <i class="bi bi-plus-lg me-1"></i>Tambah Rekap Absensi
             </a>

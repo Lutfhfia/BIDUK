@@ -213,8 +213,8 @@
                 <a href="{{ route('achievement-reports.index') }}"
                    class="nav-link {{ request()->routeIs('achievement-reports.*') ? 'active' : '' }}">
 
-                    <i class="bi bi-trophy me-2"></i>
-                    <span>Rekap Prestasi</span>
+                   <i class="bi bi-trophy"></i>
+<span>Rekap Prestasi</span>
 
                 </a>
 

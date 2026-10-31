@@ -297,6 +297,8 @@
     }
 
     loader.dataset.initialized = 'true';
+    let skipBeforeUnload = false;
+let skipBeforeUnloadTimer = null;
 
     const logoImage = loader.querySelector('.biduk-school-logo');
     const fallbackIcon = loader.querySelector('.biduk-loader-fallback');
@@ -350,13 +352,27 @@
 
         const link = target.closest('a[href]');
 
-        if (
-            !link ||
-            link.hasAttribute('download') ||
-            link.dataset.noPageLoader === 'true'
-        ) {
-            return;
-        }
+        if (!link) {
+    return;
+}
+
+if (
+    link.hasAttribute('download') ||
+    link.dataset.noPageLoader === 'true'
+) {
+    skipBeforeUnload = true;
+
+    window.clearTimeout(skipBeforeUnloadTimer);
+
+    skipBeforeUnloadTimer = window.setTimeout(() => {
+        skipBeforeUnload = false;
+    }, 1200);
+
+    return;
+}
+
+skipBeforeUnload = false;
+window.clearTimeout(skipBeforeUnloadTimer);
 
         if (link.target && link.target.toLowerCase() !== '_self') {
             return;
@@ -423,7 +439,15 @@
      * Sembunyikan kembali loading ketika halaman siap
      * atau saat pengguna kembali ke halaman sebelumnya.
      */
-    window.addEventListener('beforeunload', showLoader);
+    window.addEventListener('beforeunload', function () {
+    if (skipBeforeUnload) {
+        skipBeforeUnload = false;
+        window.clearTimeout(skipBeforeUnloadTimer);
+        return;
+    }
+
+    showLoader();
+});
     window.addEventListener('pageshow', hideLoader);
     window.addEventListener('load', hideLoader);
 })();
