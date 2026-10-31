@@ -4,6 +4,52 @@
 
 @section('content')
 
+@push('styles')
+    <style>
+        .landing-profile-image {
+            width: 100%;
+            max-height: 480px;
+            object-fit: contain;
+        }
+
+        .landing-empty-state {
+            min-height: 220px;
+            padding: 2rem;
+            border: 1px dashed #bbf7d0;
+            border-radius: 1rem;
+            background: #f0fdf4;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .landing-empty-state i {
+            display: block;
+            margin-bottom: .75rem;
+            color: #15803d;
+            font-size: 2.5rem;
+        }
+
+        .landing-profile-copy {
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 575.98px) {
+            .landing-section#struktur-organisasi,
+            .landing-section#prestasi,
+            .landing-section#ekstrakurikuler {
+                padding-top: 3.5rem;
+                padding-bottom: 3.5rem;
+            }
+
+            .landing-empty-state {
+                min-height: 180px;
+                padding: 1.5rem 1rem;
+            }
+        }
+    </style>
+@endpush
+
 {{-- =========================================================
     HERO / BERANDA SECTION
 ========================================================= --}}
@@ -24,7 +70,7 @@
 
 <p class="hero-description" style="font-size: 1.075rem; color: #475569; line-height: 1.8; margin-bottom: 2rem; text-align: justify; text-justify: inter-word;">
 
-                    {{ $school->hero_description ?? ($school->description ? Str::limit($school->description, 210) : 'Sistem Informasi Buku Induk dan Pusat Informasi Resmi SD Negeri 204 Palembang dalam mendukung tata kelola pendidikan yang unggul, transparan, dan terpercaya.') }}
+                    {{ $school->hero_description ?? ($school->description ? Str::limit($school->description, 210) : 'Informasi sekolah akan segera diperbarui.') }}
                 </p>
 
                 <div class="d-flex align-items-center flex-wrap gap-3 mb-4">
@@ -40,19 +86,21 @@
 
                 {{-- Fast Facts Pill Row --}}
                 <div class="pt-3 border-top d-flex flex-wrap align-items-center gap-3 text-secondary" style="font-size: 0.875rem;">
-                    <div class="d-flex align-items-center gap-1.5">
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                        <span>NPSN: <strong>{{ $school->npsn ?? '10604338' }}</strong></span>
-                    </div>
-                    <span class="text-muted">•</span>
+                    @if($school->npsn)
+                        <div class="d-flex align-items-center gap-1.5">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <span>NPSN: <strong>{{ $school->npsn }}</strong></span>
+                        </div>
+                        <span class="text-muted">•</span>
+                    @endif
                     <div class="d-flex align-items-center gap-1.5">
                         <i class="bi bi-patch-check-fill text-success"></i>
-                        <span>Status <strong>Negeri</strong></span>
+                        <span>Portal <strong>Resmi</strong></span>
                     </div>
                     <span class="text-muted">•</span>
                     <div class="d-flex align-items-center gap-1.5">
                         <i class="bi bi-geo-alt-fill text-success"></i>
-                        <span>Kota Palembang</span>
+                        <span>{{ $school->address ? Str::limit($school->address, 55) : 'Alamat belum tersedia' }}</span>
                     </div>
                 </div>
             </div>
@@ -60,7 +108,12 @@
             {{-- Right Photo / Hero Media --}}
             <div class="col-lg-6 reveal-right">
                 @php
-                    $heroImage = $school->school_image_url ?? $school->cover_image_url ?? null;
+                    $heroImage = null;
+                    if ($school->school_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->school_image)) {
+                        $heroImage = $school->school_image_url;
+                    } elseif ($school->cover_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->cover_image)) {
+                        $heroImage = $school->cover_image_url;
+                    }
                 @endphp
 
                 @if($heroImage)
@@ -82,7 +135,7 @@
                         </div>
                         <h3 class="fw-bold text-dark mb-2">{{ $school->name ?? 'SD Negeri 204 Palembang' }}</h3>
                         <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
-                            {{ $school->address ?? 'Kota Palembang, Sumatera Selatan' }}
+                            {{ $school->address ?: 'Alamat belum tersedia.' }}
                         </p>
                         <div class="row g-2 text-center">
                             <div class="col-4">
@@ -187,7 +240,12 @@
             {{-- Foto Gedung / Profil Cover --}}
             <div class="col-lg-5 reveal-left">
                 @php
-                    $infoImage = $school->cover_image_url ?? $school->school_image_url ?? null;
+                    $infoImage = null;
+                    if ($school->cover_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->cover_image)) {
+                        $infoImage = $school->cover_image_url;
+                    } elseif ($school->school_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->school_image)) {
+                        $infoImage = $school->school_image_url;
+                    }
                 @endphp
 
                 @if($infoImage)
@@ -200,30 +258,21 @@
                 @else
                     <div class="p-5 rounded-4 border text-center" style="background: var(--biduk-primary-light); min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                         <i class="bi bi-building text-success" style="font-size: 3.5rem;"></i>
-                        <h5 class="fw-bold text-dark mt-3 mb-1">{{ $school->name ?? 'SDN 204 Palembang' }}</h5>
-                        <p class="text-muted small mb-0">{{ $school->address ?? 'Kota Palembang' }}</p>
+                        <h5 class="fw-bold text-dark mt-3 mb-1">{{ $school->name ?: 'Identitas sekolah' }}</h5>
+                        <p class="text-muted small mb-0">{{ $school->address ?: 'Foto sekolah belum tersedia.' }}</p>
                     </div>
                 @endif
             </div>
 
             {{-- Detail Profil & Data Kontak --}}
             <div class="col-lg-7 reveal-right">
-                <div class="d-inline-flex align-items-center gap-2 mb-2">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5">
-                        <i class="bi bi-check-circle-fill me-1"></i> Terakreditasi
-                    </span>
-                    <span class="badge bg-light text-dark border px-2.5 py-1.5">
-                        Jenjang SD
-                    </span>
-                </div>
-
                 <h3 class="fw-bold text-dark mb-3" style="font-size: 1.85rem;">
-                    {{ $school->name ?? 'SD Negeri 204 Palembang' }}
+                    {{ $school->name ?: 'Identitas sekolah' }}
                 </h3>
 
 
 <p class="text-secondary mb-4" style="text-align: justify; text-justify: inter-word; line-height: 1.8; font-size: 1rem;">
-    {{ $school->description ?? 'SD Negeri 204 Palembang merupakan satuan pendidikan dasar yang berkomitmen menyediakan layanan pendidikan berkualitas bagi peserta didik serta mendukung perkembangan akademik dan karakter siswa yang unggul, berakhlak mulia, dan berprestasi.' }}
+    {{ $school->description ?: 'Deskripsi sekolah belum tersedia.' }}
 </p>
 
 
@@ -237,7 +286,7 @@
                             </div>
                             <div class="overflow-hidden">
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">NPSN</small>
-                                <strong class="text-dark d-block">{{ $school->npsn ?? '10604338' }}</strong>
+                                <strong class="text-dark d-block">{{ $school->npsn ?: 'Belum tersedia' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -267,7 +316,7 @@
                             </div>
                             <div class="overflow-hidden">
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">Telepon</small>
-                                <strong class="text-dark d-block">{{ $school->phone ?? '-' }}</strong>
+                                <strong class="text-dark d-block">{{ $school->phone ?: 'Belum tersedia' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -281,7 +330,7 @@
                             </div>
                             <div class="overflow-hidden">
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">Email Resmi</small>
-                                <strong class="text-dark d-block text-truncate">{{ $school->email ?? '-' }}</strong>
+                                <strong class="text-dark d-block text-truncate">{{ $school->email ?: 'Belum tersedia' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -311,7 +360,7 @@
                             </div>
                             <div>
                                 <small class="text-muted d-block" style="font-size: 0.75rem;">Alamat Sekolah</small>
-                                <strong class="text-dark d-block" style="line-height: 1.55;">{{ $school->address ?? 'Kota Palembang, Sumatera Selatan' }}</strong>
+                                <strong class="text-dark d-block" style="line-height: 1.55;">{{ $school->address ?: 'Alamat belum tersedia.' }}</strong>
                             </div>
                         </div>
                     </div>
@@ -364,10 +413,10 @@
 
                     <div class="text-secondary fw-semibold"
                          style="line-height: 1.9; font-size: 1rem; white-space: pre-line; text-align: justify;">
-                        @if(!empty(trim($school->vision)))
+                        @if(filled($school->vision))
                             {{ $school->vision }}
                         @else
-                            "Terwujudnya peserta didik yang beriman dan bertakwa kepada Tuhan Yang Maha Esa, berakhlak mulia, cerdas, terampil, mandiri, dan berwawasan lingkungan."
+                            <span class="text-muted fw-normal">Data visi sekolah belum tersedia.</span>
                         @endif
                     </div>
 
@@ -397,13 +446,10 @@
 
                     <div class="text-secondary fw-semibold"
                          style="line-height: 1.9; font-size: 0.95rem; white-space: pre-line; text-align: justify;">
-                        @if(!empty(trim($school->mission)))
+                        @if(filled($school->mission))
                             {{ $school->mission }}
                         @else
-                            1. Menyelenggarakan proses pembelajaran yang aktif, inovatif, kreatif, efektif, dan menyenangkan.
-                            2. Menumbuhkan penghayatan terhadap ajaran agama serta budaya bangsa.
-                            3. Meningkatkan prestasi akademik dan non-akademik siswa secara berkelanjutan.
-                            4. Menciptakan lingkungan sekolah yang bersih, asri, aman, dan berkarakter.
+                            <span class="text-muted fw-normal">Data misi sekolah belum tersedia.</span>
                         @endif
                     </div>
 
@@ -414,6 +460,196 @@
     </div>
 </section>
 
+
+{{-- =========================================================
+    STRUKTUR ORGANISASI SECTION
+========================================================= --}}
+<section class="landing-section section-light" id="struktur-organisasi">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-badge">
+                <i class="bi bi-diagram-3"></i> Tata Kelola Sekolah
+            </span>
+            <h2 class="section-title">{{ $school->organization_title ?: 'Struktur Organisasi' }}</h2>
+            <p class="section-description">
+                Informasi struktur organisasi dan tata kelola sekolah yang dikelola melalui Dashboard Admin.
+            </p>
+        </div>
+
+        @php
+            $organizationImage = $school->organization_image
+                && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->organization_image)
+                    ? $school->organization_image_url
+                    : null;
+        @endphp
+
+        @if($organizationImage || filled($school->organization_description))
+            <div class="row align-items-center g-4">
+                @if($organizationImage)
+                    <div class="col-12 {{ filled($school->organization_description) ? 'col-lg-7' : '' }} reveal-left">
+                        <div class="biduk-feature-card p-3">
+                            <img src="{{ $organizationImage }}"
+                                 alt="{{ $school->organization_title ?: 'Struktur organisasi sekolah' }}"
+                                 class="landing-profile-image rounded-3"
+                                 loading="lazy">
+                        </div>
+                    </div>
+                @endif
+
+                @if(filled($school->organization_description))
+                    <div class="{{ $organizationImage ? 'col-12 col-lg-5' : 'col-12' }} reveal-right">
+                        <div class="biduk-feature-card h-100">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                                      style="width: 48px; height: 48px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
+                                    <i class="bi bi-diagram-3 fs-4"></i>
+                                </span>
+                                <h3 class="h5 fw-bold text-dark mb-0">
+                                    {{ $school->organization_title ?: 'Struktur Organisasi Sekolah' }}
+                                </h3>
+                            </div>
+                            <p class="landing-profile-copy text-secondary mb-0" style="line-height: 1.8;">
+                                {{ $school->organization_description }}
+                            </p>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @else
+            <div class="landing-empty-state d-flex flex-column align-items-center justify-content-center">
+                <i class="bi bi-diagram-3"></i>
+                <h3 class="h5 fw-bold text-dark">Data struktur organisasi belum tersedia</h3>
+                <p class="mb-0">Informasi akan ditampilkan setelah diperbarui melalui Profil Sekolah.</p>
+            </div>
+        @endif
+    </div>
+</section>
+
+
+{{-- =========================================================
+    PRESTASI SEKOLAH & SISWA SECTION
+========================================================= --}}
+<section class="landing-section" id="prestasi">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-badge">
+                <i class="bi bi-trophy"></i> Pencapaian
+            </span>
+            <h2 class="section-title">Prestasi Siswa & Sekolah</h2>
+            <p class="section-description">
+                Pencapaian dan penghargaan yang dikelola pada menu Profil Sekolah di Dashboard Admin.
+            </p>
+        </div>
+
+        @if($achievements->isNotEmpty())
+            <div class="row g-4">
+                @foreach($achievements as $index => $item)
+                    @php
+                        $achievementImage = $item->image
+                            && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->image);
+                    @endphp
+                    <div class="col-12 col-md-6 col-xl-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
+                        <article class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden">
+                            @if($achievementImage)
+                                <img src="{{ asset('storage/' . $item->image) }}"
+                                     alt="{{ $item->title }}"
+                                     class="w-100"
+                                     style="height: 220px; object-fit: cover;"
+                                     loading="lazy">
+                            @else
+                                <div class="d-flex align-items-center justify-content-center"
+                                     style="height: 150px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
+                                    <i class="bi bi-trophy-fill" style="font-size: 3rem;"></i>
+                                </div>
+                            @endif
+                            <div class="p-4 d-flex flex-column flex-grow-1">
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @if($item->year)
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-calendar3 me-1"></i>{{ $item->year }}
+                                        </span>
+                                    @endif
+                                    @if($item->level)
+                                        <span class="badge bg-light text-secondary border">
+                                            Tingkat {{ $item->level }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <h3 class="h5 fw-bold text-dark">{{ $item->title }}</h3>
+                                @if(filled($item->description))
+                                    <p class="landing-profile-copy text-secondary small mb-0">{{ $item->description }}</p>
+                                @endif
+                            </div>
+                        </article>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="landing-empty-state d-flex flex-column align-items-center justify-content-center">
+                <i class="bi bi-trophy"></i>
+                <h3 class="h5 fw-bold text-dark">Data prestasi belum tersedia</h3>
+                <p class="mb-0">Prestasi yang ditambahkan melalui Profil Sekolah akan tampil di sini.</p>
+            </div>
+        @endif
+    </div>
+</section>
+
+
+{{-- =========================================================
+    EKSTRAKURIKULER SECTION
+========================================================= --}}
+<section class="landing-section section-light" id="ekstrakurikuler">
+    <div class="container">
+        <div class="section-header reveal">
+            <span class="section-badge">
+                <i class="bi bi-people"></i> Minat & Bakat
+            </span>
+            <h2 class="section-title">Kegiatan Ekstrakurikuler</h2>
+            <p class="section-description">
+                Pilihan kegiatan pengembangan minat dan bakat siswa yang sedang diaktifkan untuk Landing Page.
+            </p>
+        </div>
+
+        @if($extracurriculars->isNotEmpty())
+            <div class="row g-4">
+                @foreach($extracurriculars as $index => $item)
+                    @php
+                        $extracurricularImage = $item->image
+                            && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->image);
+                    @endphp
+                    <div class="col-12 col-md-6 col-xl-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
+                        <article class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden">
+                            @if($extracurricularImage)
+                                <img src="{{ asset('storage/' . $item->image) }}"
+                                     alt="{{ $item->name }}"
+                                     class="w-100"
+                                     style="height: 220px; object-fit: cover;"
+                                     loading="lazy">
+                            @else
+                                <div class="d-flex align-items-center justify-content-center"
+                                     style="height: 150px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
+                                    <i class="{{ $item->icon ?: 'bi bi-people-fill' }}" style="font-size: 3rem;"></i>
+                                </div>
+                            @endif
+                            <div class="p-4">
+                                <h3 class="h5 fw-bold text-dark">{{ $item->name }}</h3>
+                                @if(filled($item->description))
+                                    <p class="landing-profile-copy text-secondary small mb-0">{{ $item->description }}</p>
+                                @endif
+                            </div>
+                        </article>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="landing-empty-state d-flex flex-column align-items-center justify-content-center">
+                <i class="bi bi-people"></i>
+                <h3 class="h5 fw-bold text-dark">Data ekstrakurikuler belum tersedia</h3>
+                <p class="mb-0">Kegiatan aktif yang ditambahkan melalui Profil Sekolah akan tampil di sini.</p>
+            </div>
+        @endif
+    </div>
+</section>
 
 
 {{-- =========================================================
@@ -436,11 +672,12 @@
                 @foreach($newsItems as $index => $item)
                     <div class="col-md-6 col-lg-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
                         <article class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden">
-                            @if($item->image && file_exists(public_path('storage/' . $item->image)))
+                            @if($item->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->image))
                                 <img src="{{ asset('storage/' . $item->image) }}"
                                      alt="{{ $item->title }}"
                                      class="w-100"
-                                     style="height: 200px; object-fit: cover;">
+                                     style="height: 200px; object-fit: cover;"
+                                     loading="lazy">
                             @else
                                 <div class="w-100 d-flex align-items-center justify-content-center"
                                      style="height: 190px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
@@ -489,11 +726,12 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body p-4">
-                                    @if($item->image && file_exists(public_path('storage/' . $item->image)))
+                                    @if($item->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->image))
                                         <img src="{{ asset('storage/' . $item->image) }}"
                                              alt="{{ $item->title }}"
                                              class="img-fluid rounded-3 mb-4 w-100"
-                                             style="max-height: 380px; object-fit: cover;">
+                                             style="max-height: 380px; object-fit: cover;"
+                                             loading="lazy">
                                     @endif
 
                                     @if($item->summary)
@@ -545,12 +783,17 @@
                 @foreach($galleries as $index => $item)
                     <div class="col-md-6 col-lg-4 reveal delay-{{ (($index % 3) + 1) * 100 }}">
                         <div class="biduk-feature-card d-flex flex-column h-100 p-0 overflow-hidden position-relative">
-                            @if($item->image && file_exists(public_path('storage/' . $item->image)))
+                            @php
+                                $galleryImageExists = $item->image
+                                    && \Illuminate\Support\Facades\Storage::disk('public')->exists($item->image);
+                            @endphp
+                            @if($galleryImageExists)
                                 <div class="position-relative overflow-hidden" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#galleryModal{{ $item->id }}">
                                     <img src="{{ asset('storage/' . $item->image) }}"
                                          alt="{{ $item->title }}"
                                          class="w-100"
-                                         style="height: 230px; object-fit: cover; transition: transform 0.4s ease;">
+                                         style="height: 230px; object-fit: cover; transition: transform 0.4s ease;"
+                                         loading="lazy">
                                     <div class="position-absolute top-0 end-0 m-3">
                                         <span class="badge bg-dark bg-opacity-75 p-2 rounded-circle">
                                             <i class="bi bi-zoom-in text-white"></i>
@@ -574,7 +817,7 @@
                     </div>
 
                     {{-- Modal Preview Galeri --}}
-                    @if($item->image)
+                    @if($galleryImageExists)
                         <div class="modal fade" id="galleryModal{{ $item->id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
                                 <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -583,7 +826,7 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
                                     <div class="modal-body p-3 text-center">
-                                        <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->title }}" class="img-fluid rounded-3 mb-2 w-100" style="max-height: 520px; object-fit: contain;">
+                                        <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->title }}" class="img-fluid rounded-3 mb-2 w-100" style="max-height: 520px; object-fit: contain;" loading="lazy">
                                         @if($item->description)
                                             <p class="text-secondary small mb-0 text-start px-2">{{ $item->description }}</p>
                                         @endif

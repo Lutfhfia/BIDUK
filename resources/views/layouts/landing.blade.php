@@ -568,7 +568,7 @@
             {{-- Brand Logo & Name --}}
             <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="#beranda">
                 <div class="brand-logo-wrap">
-                    @if($school->logo_url)
+                    @if($school->logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->logo))
                         <img src="{{ $school->logo_url }}" alt="Logo {{ $school->name }}">
                     @else
                         <i class="bi bi-book-half"></i>
@@ -667,7 +667,7 @@
                 <div class="col-lg-5">
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <div class="brand-logo-wrap" style="width: 42px; height: 42px;">
-                            @if($school->logo_url)
+                            @if($school->logo && \Illuminate\Support\Facades\Storage::disk('public')->exists($school->logo))
                                 <img src="{{ $school->logo_url }}" alt="Logo {{ $school->name }}">
                             @else
                                 <i class="bi bi-book-half fs-5"></i>
@@ -691,7 +691,8 @@
                         <li><a href="#informasi-sekolah"><i class="bi bi-chevron-right me-1"></i> Identitas Sekolah</a></li>
                         <li><a href="#visi-misi"><i class="bi bi-chevron-right me-1"></i> Visi & Misi</a></li>
                         <li><a href="#struktur-organisasi"><i class="bi bi-chevron-right me-1"></i> Struktur Organisasi</a></li>
-                        <li><a href="#prestasi"><i class="bi bi-chevron-right me-1"></i> Prestasi & Ekskul</a></li>
+                        <li><a href="#prestasi"><i class="bi bi-chevron-right me-1"></i> Prestasi Siswa & Sekolah</a></li>
+                        <li><a href="#ekstrakurikuler"><i class="bi bi-chevron-right me-1"></i> Ekstrakurikuler</a></li>
                     </ul>
                 </div>
 
@@ -701,7 +702,7 @@
                     <div class="d-flex flex-column gap-2 text-secondary" style="font-size: 0.88rem;">
                         <div class="d-flex align-items-start gap-2">
                             <i class="bi bi-geo-alt-fill text-success mt-1"></i>
-                            <span>{{ $school->address ?? 'Kota Palembang, Sumatera Selatan' }}</span>
+                            <span>{{ $school->address ?: 'Alamat belum tersedia.' }}</span>
                         </div>
                         @if($school->phone)
                             <div class="d-flex align-items-center gap-2">
