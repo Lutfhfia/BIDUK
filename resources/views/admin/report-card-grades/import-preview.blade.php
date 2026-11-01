@@ -7,7 +7,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div>
                 <h4 class="fw-bold mb-1">Preview Import Nilai Rapot</h4>
-                <p class="text-muted mb-0">Periksa metadata dan seluruh kolom nilai sebelum konfirmasi. Kolom kosong akan mengosongkan data tersimpan.</p>
+                <p class="text-muted mb-0">Periksa metadata dan nilai sebelum konfirmasi. Nilai yang terisi akan ditambahkan atau diperbarui; kolom kosong dilewati dan tidak mengubah data tersimpan.</p>
             </div>
             <a href="{{ route('report-card-grades.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i>Kembali
@@ -42,6 +42,7 @@
                 'Siswa valid' => 'valid_students',
                 'NISN tidak ditemukan' => 'students_not_found',
                 'Nilai valid' => 'valid_values',
+                'Kolom kosong (dilewati)' => 'empty_values',
                 'Nilai invalid' => 'invalid_values',
                 'Data baru' => 'new_records',
                 'Data diperbarui' => 'updated_records',
@@ -101,7 +102,7 @@
                                                         @if (isset($gradeValues[$field]) && $gradeValues[$field] !== '')
                                                             {{ $field === 'score' ? number_format((float) $gradeValues[$field], 2) : $gradeValues[$field] }}
                                                         @else
-                                                            <span class="text-warning-emphasis">Kosong — akan mengosongkan data tersimpan</span>
+                                                            <span class="text-warning-emphasis">Kosong — dilewati, data tersimpan tidak berubah</span>
                                                         @endif
                                                     </div>
                                                 @endforeach

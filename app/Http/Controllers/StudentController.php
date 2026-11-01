@@ -410,11 +410,14 @@ app(ActivityLogger::class)->log(
      */
     public function edit(Student $student): View
     {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+        $isTeacher = auth()->user()?->isGuru() ?? false;
 
-        $classes = $teacherClass
-            ? collect([$teacherClass])
+        if ($isTeacher) {
+            $this->ensureTeacherCanEditStudent($student);
+        }
+
+        $classes = $isTeacher
+            ? collect()
             : SchoolClass::currentYear()
                 ->active()
                 ->orderBy('grade_level')
@@ -439,11 +442,10 @@ app(ActivityLogger::class)->log(
                     ->orderBy('name')
                     ->get();
 
-        $currentClassId = $teacherClass?->id
-            ?? $student->currentClass()->first()?->id;
+        $currentClassId = $student->currentClass()->first()?->id;
 
         return view('students.edit', compact(
-            'student', 'classes', 'currentClassId', 'academicYears', 'semesters'
+            'student', 'classes', 'currentClassId', 'academicYears', 'semesters', 'isTeacher'
         ));
     }
 
@@ -452,14 +454,17 @@ app(ActivityLogger::class)->log(
      */
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
-        $teacherClass = $this->teacherClassOrNull();
-        $this->ensureTeacherCanAccessStudent($student, $teacherClass);
+        $isTeacher = $request->user()?->isGuru() ?? false;
+
+        if ($isTeacher) {
+            $this->ensureTeacherCanEditStudent($student);
+        }
 
         $data = $request->validated();
 
-        // Guru boleh mengelola siswa kelasnya, tetapi tidak memindahkannya ke kelas lain.
-        if ($teacherClass) {
-            $data['class_id'] = $teacherClass->id;
+        // Guru dapat mengubah data Buku Induk, tetapi tidak penempatan kelas siswa.
+        if ($isTeacher) {
+            unset($data['class_id']);
         }
 
         // Tetapkan 4 kode administratif sebagai template resmi sekolah
@@ -548,8 +553,9 @@ app(ActivityLogger::class)->log(
 
         // Update penempatan kelas jika berubah.
         $currentClassId = $student->currentClass()->first()?->id;
-        $shouldUpdateClass = $classId
-            && (!$teacherClass || (int) $currentClassId !== (int) $teacherClass->id);
+        $shouldUpdateClass = !$isTeacher
+            && $classId
+            && (int) $currentClassId !== (int) $classId;
 
         if ($shouldUpdateClass) {
             $activeYear = AcademicYear::getActive();
@@ -694,8 +700,7 @@ if (!empty($changedNewValues)) {
     }
 
     /**
-     * Menolak akses langsung ke detail, edit, update, atau hapus
-     * siswa yang bukan anggota aktif kelas wali Guru.
+     * Menolak akses untuk menghapus siswa yang bukan anggota aktif kelas wali.
      */
     private function ensureTeacherCanAccessStudent(
         Student $student,
@@ -716,6 +721,24 @@ if (!empty($changedNewValues)) {
             $allowed,
             403,
             'Kamu tidak memiliki akses ke data siswa di luar kelas wali.'
+        );
+    }
+
+    /**
+     * Allows a teacher to edit a student's record only when the student has
+     * an assignment in a class that was assigned to that teacher.
+     */
+    private function ensureTeacherCanEditStudent(Student $student): void
+    {
+        $classIds = app(TeacherClassAccess::class)->classIds(auth()->user());
+        $allowed = $classIds !== null
+            && $classIds->isNotEmpty()
+            && $student->classAssignments()->whereIn('class_id', $classIds)->exists();
+
+        abort_unless(
+            $allowed,
+            403,
+            'Anda tidak memiliki akses ke data siswa di luar kelas wali.'
         );
     }
 

@@ -867,6 +867,35 @@
          BAGIAN BAWAH
     ========================================================== --}}
 
+    <div class="section-title">C. EKSTRAKURIKULER</div>
+    <table class="report-table">
+        <colgroup>
+            <col style="width: 4%">
+            <col style="width: 30%">
+            <col style="width: 33%">
+            <col style="width: 33%">
+        </colgroup>
+        <thead>
+            <tr>
+                <th>NO.</th>
+                <th>KEGIATAN EKSTRAKURIKULER</th>
+                <th>KETERANGAN</th>
+                <th>KETERANGAN</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (range(1, 3) as $i)
+                @php $extracurricular = $extracurriculars->firstWhere('position', $i); @endphp
+                <tr>
+                    <td class="center">{{ $i }}</td>
+                    <td class="left">{{ $extracurricular?->activity ?? '' }}</td>
+                    <td class="left">{{ $extracurricular?->description ?? '' }}</td>
+                    <td class="left">{{ $extracurricular?->description_2 ?? '' }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
     <div class="bottom-heading" style="margin-top: 6px;">
         Nilai Sekolah = Nilai Rata-Rata + Nilai Ujian Sekolah
     </div>

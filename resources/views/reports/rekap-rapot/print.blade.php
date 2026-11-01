@@ -742,15 +742,16 @@
         <tbody>
 
             @foreach (range(1, 3) as $i)
+                @php $extracurricular = $extracurriculars->firstWhere('position', $i); @endphp
                 <tr>
 
                     <td class="center">{{ $i }}</td>
 
-                    <td></td>
+                    <td>{{ $extracurricular?->activity ?? '' }}</td>
 
-                    <td></td>
+                    <td>{{ $extracurricular?->description ?? '' }}</td>
 
-                    <td></td>
+                    <td>{{ $extracurricular?->description_2 ?? '' }}</td>
 
                 </tr>
             @endforeach

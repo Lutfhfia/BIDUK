@@ -2269,19 +2269,24 @@
 
                             <div class="col-md-4">
                                 <label for="class_id" class="form-label">Kelas</label>
-                                <select name="class_id" id="class_id"
-                                    class="form-select @error('class_id') is-invalid @enderror">
-                                    <option value="">Pilih Kelas...</option>
-                                    @foreach ($classes as $class)
-                                        <option value="{{ $class->id }}"
-                                            {{ old('class_id', $currentClassId) == $class->id ? 'selected' : '' }}>
-                                            {{ $class->name }} ({{ $class->academicYear->name ?? '' }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('class_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                @if ($isTeacher)
+                                    <input type="text" class="form-control" value="{{ $student->currentClassName ?? '-' }}" disabled>
+                                    <small class="text-muted">Penempatan kelas hanya dapat diubah oleh Admin sekolah.</small>
+                                @else
+                                    <select name="class_id" id="class_id"
+                                        class="form-select @error('class_id') is-invalid @enderror">
+                                        <option value="">Pilih Kelas...</option>
+                                        @foreach ($classes as $class)
+                                            <option value="{{ $class->id }}"
+                                                {{ old('class_id', $currentClassId) == $class->id ? 'selected' : '' }}>
+                                                {{ $class->name }} ({{ $class->academicYear->name ?? '' }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('class_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                @endif
                             </div>
 
                             <div class="col-md-4">

@@ -12,6 +12,7 @@ use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
 use App\Models\StudentClassHistory;
+use App\Models\StudentExtracurricular;
 use App\Models\StudentPromotion;
 use App\Models\Subject;
 use App\Services\FinalGradeService;
@@ -137,7 +138,14 @@ class ReportCardGradeController extends Controller
         }
 
         $classes = $classesQuery->get();
-        $importOptions = app(ReportCardGradeImportContext::class)->options($request->user());
+        $importContext = app(ReportCardGradeImportContext::class);
+        $importOptions = $importContext->options($request->user());
+        if ($selectedAcademicYearId) {
+            $selectedAcademicYear = AcademicYear::find($selectedAcademicYearId);
+            if ($selectedAcademicYear) {
+                $importContext->ensureAcademicYearSemesters($selectedAcademicYear);
+            }
+        }
 
         $selectedClass = null;
         $students = collect();
@@ -1008,6 +1016,12 @@ return $view;
             ->limit(3)
             ->get();
 
+        $extracurriculars = StudentExtracurricular::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYearId,
+        ])->orderBy('position')->get();
+
         $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
             ?? $class->homeroomTeacher;
         $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
@@ -1039,6 +1053,7 @@ return $view;
             'attendanceGenap',
             'promotion',
             'achievements',
+            'extracurriculars',
             'homeroomTeacher',
             'headmaster',
             'schoolProfile',
@@ -1109,21 +1124,12 @@ return $view;
          * ======================================================
          */
 
-        $semesters = Semester::where(
-            'academic_year_id',
-            $class->academic_year_id
-        )
+        app(ReportCardGradeImportContext::class)->ensureAcademicYearSemesters(
+            $class->academicYear()->firstOrFail()
+        );
+        $semesters = Semester::where('academic_year_id', $class->academic_year_id)
             ->orderBy('id')
             ->get();
-
-        if ($semesters->isEmpty() && AcademicYear::getActive()) {
-            $semesters = Semester::where(
-                'academic_year_id',
-                AcademicYear::getActive()->id
-            )
-                ->orderBy('id')
-                ->get();
-        }
 
         /*
          * Semester Ganjil.
@@ -1257,6 +1263,12 @@ return $view;
             ->limit(3)
             ->get();
 
+        $extracurriculars = StudentExtracurricular::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $class->academic_year_id,
+        ])->orderBy('position')->get();
+
         /*
          * Siapkan 3 baris untuk Blade.
          */
@@ -1296,6 +1308,7 @@ return $view;
                 'attendanceGanjil',
                 'attendanceGenap',
                 'achievementData',
+                'extracurriculars',
                 'promotion',
                 'returnUrl'
             )
@@ -1342,19 +1355,10 @@ return $view;
          * ======================================================
          */
 
-        $semesters = Semester::where(
-            'academic_year_id',
-            $class->academic_year_id
-        )
-            ->get();
-
-        if ($semesters->isEmpty() && AcademicYear::getActive()) {
-            $semesters = Semester::where(
-                'academic_year_id',
-                AcademicYear::getActive()->id
-            )
-                ->get();
-        }
+        app(ReportCardGradeImportContext::class)->ensureAcademicYearSemesters(
+            $class->academicYear()->firstOrFail()
+        );
+        $semesters = Semester::where('academic_year_id', $class->academic_year_id)->get();
 
         $semesterGanjil = $semesters->first(
             fn ($semester) =>
@@ -1429,6 +1433,21 @@ return $view;
             'extracurricular' => [
                 'nullable',
                 'array',
+            ],
+            'extracurricular.*.activity' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'extracurricular.*.description' => [
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+            'extracurricular.*.description_2' => [
+                'nullable',
+                'string',
+                'max:2000',
             ],
 
             /*
@@ -1549,7 +1568,8 @@ return $view;
             $student,
             $class,
             $semesterGanjil,
-            $semesterGenap
+            $semesterGenap,
+            $request
         ) {
 
             /*
@@ -1685,6 +1705,35 @@ return $view;
                             'skill_learning_outcome' => null,
                         ]
                     );
+                }
+            }
+
+            if ($request->has('extracurricular')) {
+                StudentExtracurricular::where([
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                    'academic_year_id' => $class->academic_year_id,
+                ])->delete();
+
+                foreach (range(1, 3) as $position) {
+                    $entry = $validated['extracurricular'][$position] ?? [];
+                    $activity = trim((string) ($entry['activity'] ?? ''));
+                    $description = trim((string) ($entry['description'] ?? ''));
+                    $description2 = trim((string) ($entry['description_2'] ?? ''));
+
+                    if ($activity === '' && $description === '' && $description2 === '') {
+                        continue;
+                    }
+
+                    StudentExtracurricular::create([
+                        'student_id' => $student->id,
+                        'class_id' => $class->id,
+                        'academic_year_id' => $class->academic_year_id,
+                        'position' => (int) $position,
+                        'activity' => $activity !== '' ? $activity : null,
+                        'description' => $description !== '' ? $description : null,
+                        'description_2' => $description2 !== '' ? $description2 : null,
+                    ]);
                 }
             }
 

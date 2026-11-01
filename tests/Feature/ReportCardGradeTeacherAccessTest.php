@@ -79,6 +79,63 @@ class ReportCardGradeTeacherAccessTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_report_card_extracurriculars_are_saved_shown_in_edit_and_printed(): void
+    {
+        [$year, $class, $student, , , $teacher] = $this->createTeacherClass(
+            '5A',
+            'extracurricular-report'
+        );
+
+        $this->actingAs($teacher)
+            ->put(route('report-card-grades.update', [$class, $student]), [
+                'extracurricular' => [
+                    1 => [
+                        'activity' => 'Pramuka',
+                        'description' => 'Aktif mengikuti latihan rutin.',
+                        'description_2' => 'Mengikuti kegiatan setiap Jumat.',
+                    ],
+                    2 => [
+                        'activity' => 'Tari',
+                        'description' => 'Tampil pada acara sekolah.',
+                    ],
+                    3 => [
+                        'activity' => '',
+                        'description' => '',
+                    ],
+                ],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('student_extracurriculars', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $year->id,
+            'position' => 1,
+            'activity' => 'Pramuka',
+            'description' => 'Aktif mengikuti latihan rutin.',
+            'description_2' => 'Mengikuti kegiatan setiap Jumat.',
+        ]);
+
+        $this->get(route('report-card-grades.edit', [$class, $student]))
+            ->assertOk()
+            ->assertSee('value="Pramuka"', false)
+            ->assertSee('value="Aktif mengikuti latihan rutin."', false)
+            ->assertSee('value="Mengikuti kegiatan setiap Jumat."', false)
+            ->assertSee('value="Tari"', false);
+
+        $this->get(route('report-card-grades.print', [
+            'class' => $class->id,
+            'student' => $student->id,
+            'academic_year_id' => $year->id,
+        ]))
+            ->assertOk()
+            ->assertSeeText('Pramuka')
+            ->assertSeeText('Aktif mengikuti latihan rutin.')
+            ->assertSeeText('Mengikuti kegiatan setiap Jumat.')
+            ->assertSeeText('Tari')
+            ->assertSeeText('Tampil pada acara sekolah.');
+    }
+
     public function test_teacher_can_manage_existing_grades_when_current_class_assignment_status_is_not_active(): void
     {
         [$year, $class, $student, $subject, $semester, $teacher] = $this->createTeacherClass(
@@ -109,6 +166,54 @@ class ReportCardGradeTeacherAccessTest extends TestCase
         $this->get(route('report-card-grades.edit', [$class, $student]))
             ->assertOk()
             ->assertSee('value="82.00"', false);
+    }
+
+    public function test_teacher_can_save_grades_to_both_semesters_of_an_inactive_year_without_existing_semester_rows(): void
+    {
+        [$year, $class, $student, $subject, , $teacher] = $this->createTeacherClass(
+            '5A',
+            'missing-year-semesters'
+        );
+        Semester::where('academic_year_id', $year->id)->delete();
+
+        $this->actingAs($teacher)
+            ->get(route('report-card-grades.edit', [$class, $student]))
+            ->assertOk();
+
+        $this->put(route('report-card-grades.update', [$class, $student]), [
+            'ganjil_scores' => [$subject->id => 81],
+            'genap_scores' => [$subject->id => 84],
+        ])->assertRedirect();
+
+        $ganjil = Semester::where('academic_year_id', $year->id)
+            ->where('name', 'Ganjil')
+            ->firstOrFail();
+        $genap = Semester::where('academic_year_id', $year->id)
+            ->where('name', 'Genap')
+            ->firstOrFail();
+
+        $this->assertDatabaseHas('report_card_grades', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'semester_id' => $ganjil->id,
+            'score' => 81,
+        ]);
+        $this->assertDatabaseHas('report_card_grades', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'semester_id' => $genap->id,
+            'score' => 84,
+        ]);
+
+        $this->get(route('report-card-grades.index', [
+            'academic_year_id' => $year->id,
+            'class_id' => $class->id,
+        ]))
+            ->assertOk()
+            ->assertSeeText('Sudah Diisi')
+            ->assertDontSeeText('Tidak tersedia');
     }
 
     public function test_teacher_defaults_to_the_latest_assigned_academic_year(): void
@@ -197,6 +302,85 @@ class ReportCardGradeTeacherAccessTest extends TestCase
             'student_id' => $student->id,
             'grade_level' => 1,
         ]);
+    }
+
+    public function test_teacher_can_edit_buku_induk_for_a_student_from_a_previous_class_they_taught(): void
+    {
+        [, $class, $student, , , $teacher] = $this->createTeacherClass(
+            '5A',
+            'historical-student-edit'
+        );
+        $editPermission = Permission::firstOrCreate(['name' => 'students.edit']);
+        $teacher->role->permissions()->syncWithoutDetaching([$editPermission->id]);
+
+        $this->actingAs($teacher)
+            ->get(route('students.edit', $student))
+            ->assertOk()
+            ->assertSeeText('Penempatan kelas hanya dapat diubah oleh Admin sekolah.');
+
+        $this->put(route('students.update', $student), [
+            'name' => 'Siswa Diperbarui',
+            'gender' => 'L',
+            'status' => 'Aktif',
+            'class_id' => $class->id,
+        ])->assertRedirect(route('students.index'));
+
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'name' => 'Siswa Diperbarui',
+        ]);
+        $this->assertDatabaseHas('class_student', [
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'status' => 'Lulus',
+        ]);
+    }
+
+    public function test_teacher_cannot_edit_buku_induk_for_a_student_outside_all_assigned_classes(): void
+    {
+        [, , , , , $teacher] = $this->createTeacherClass(
+            '5A',
+            'historical-outsider'
+        );
+        $editPermission = Permission::firstOrCreate(['name' => 'students.edit']);
+        $teacher->role->permissions()->syncWithoutDetaching([$editPermission->id]);
+
+        $otherYear = AcademicYear::create([
+            'name' => '2023/2024',
+            'start_date' => '2023-07-01',
+            'end_date' => '2024-06-30',
+            'status' => 'inactive',
+        ]);
+        $otherTeacher = User::create([
+            'name' => 'Guru Lain',
+            'username' => 'guru-outsider',
+            'email' => 'guru-outsider@example.test',
+            'password' => 'password',
+            'role_id' => $teacher->role_id,
+        ]);
+        $otherClass = SchoolClass::create([
+            'academic_year_id' => $otherYear->id,
+            'name' => '5B',
+            'grade_level' => 5,
+            'status' => 'Nonaktif',
+            'homeroom_teacher_user_id' => $otherTeacher->id,
+        ]);
+        $student = Student::create([
+            'nis' => 'NIS-OUTSIDER',
+            'nisn' => 'NISN-OUTSIDER',
+            'name' => 'Siswa Kelas Lain',
+            'gender' => 'L',
+            'status' => 'Aktif',
+        ]);
+        ClassStudent::create([
+            'class_id' => $otherClass->id,
+            'student_id' => $student->id,
+            'status' => 'Lulus',
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('students.edit', $student))
+            ->assertForbidden();
     }
 
     public function test_teacher_year_filter_shows_all_owned_classes_for_that_year_without_selecting_the_first_one(): void
@@ -306,6 +490,10 @@ class ReportCardGradeTeacherAccessTest extends TestCase
         $this->assertSame([$year->id], $options['academic_years']->pluck('id')->all());
         $this->assertSame($year->id, $options['default_academic_year_id']);
         $this->assertSame([$teacherClass->id], $options['classes']->pluck('id')->all());
+        $this->assertEqualsCanonicalizing(
+            ['Ganjil', 'Genap'],
+            $options['semesters']->pluck('name')->all()
+        );
         $this->assertSame($teacherClass->id, $context->validateSelection($teacher, [
             'academic_year_id' => $year->id,
             'class_id' => $teacherClass->id,

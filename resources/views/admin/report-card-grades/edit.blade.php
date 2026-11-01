@@ -790,6 +790,10 @@
                                     Keterangan
                                 </th>
 
+                                <th>
+                                    Keterangan
+                                </th>
+
                             </tr>
 
                         </thead>
@@ -812,6 +816,7 @@
                                             name="extracurricular[{{ $i }}][activity]"
                                             class="form-control"
                                             placeholder="Nama kegiatan"
+                                            value="{{ old("extracurricular.$i.activity", $extracurriculars->firstWhere('position', $i)?->activity) }}"
                                         >
 
                                     </td>
@@ -823,6 +828,19 @@
                                             name="extracurricular[{{ $i }}][description]"
                                             class="form-control"
                                             placeholder="Keterangan"
+                                            value="{{ old("extracurricular.$i.description", $extracurriculars->firstWhere('position', $i)?->description) }}"
+                                        >
+
+                                    </td>
+
+                                    <td>
+
+                                        <input
+                                            type="text"
+                                            name="extracurricular[{{ $i }}][description_2]"
+                                            class="form-control"
+                                            placeholder="Keterangan"
+                                            value="{{ old("extracurricular.$i.description_2", $extracurriculars->firstWhere('position', $i)?->description_2) }}"
                                         >
 
                                     </td>

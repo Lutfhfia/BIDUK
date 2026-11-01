@@ -213,6 +213,20 @@
             margin: 0.5rem 0 0;
         }
 
+        .sp-exkul-content,
+        .sp-exkul-text {
+            min-width: 0;
+        }
+
+        .sp-exkul-text {
+            flex: 1 1 0;
+        }
+
+        .sp-exkul-actions {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
         .sp-empty {
             padding: 3rem 1.5rem;
             border: 2px dashed #e5e7eb;
@@ -721,8 +735,8 @@
 
                     @forelse($extracurriculars as $item)
                         <div class="sp-item mb-3">
-                            <div class="sp-item-body d-flex flex-wrap justify-content-between align-items-start gap-3">
-                                <div class="d-flex align-items-start gap-3 flex-grow-1">
+                            <div class="sp-item-body d-flex flex-nowrap justify-content-between align-items-start gap-3">
+                                <div class="sp-exkul-content d-flex align-items-start gap-3 flex-grow-1">
                                     @if ($item->image)
                                         <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}"
                                             class="rounded-3 border flex-shrink-0"
@@ -734,7 +748,7 @@
                                         </div>
                                     @endif
 
-                                    <div>
+                                    <div class="sp-exkul-text">
                                         <div class="sp-item-title">{{ $item->name }}</div>
                                         <div class="sp-item-meta">
                                             @if ($item->is_active)
@@ -754,7 +768,7 @@
                                     </div>
                                 </div>
 
-                                <div class="d-flex gap-2">
+                                <div class="sp-exkul-actions d-flex gap-2">
                                     <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
                                         data-bs-target="#editEkskul{{ $item->id }}">
                                         <i class="bi bi-pencil-square me-1"></i> Edit

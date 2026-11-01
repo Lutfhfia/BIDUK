@@ -259,9 +259,11 @@ class ReportCardGradeImportService
                     ),
                 ])
                 ->all();
+            $emptyValues = 0;
             foreach ($columns as $column) {
                 $value = $this->cellValue($sheet, $column['column'], $rowNumber);
                 if (! $this->hasValue($value)) {
+                    $emptyValues++;
                     continue;
                 }
 
@@ -275,6 +277,11 @@ class ReportCardGradeImportService
                 }
 
                 $recordAttributes[$column['subject_id']][$column['attribute']] = $normalizedValue;
+            }
+
+            if ($emptyValues > 0) {
+                $result['summary']['empty_values'] += $emptyValues;
+                $rowWarnings[] = $emptyValues.' kolom nilai kosong akan dilewati; data tersimpan tidak berubah.';
             }
 
             $rowPreview = [
@@ -300,28 +307,36 @@ class ReportCardGradeImportService
 
             $result['summary']['valid_students']++;
             foreach ($recordAttributes as $subjectId => $attributes) {
+                $importAttributes = array_filter(
+                    $attributes,
+                    fn ($value) => $value !== null && $value !== ''
+                );
+                if ($importAttributes === []) {
+                    continue;
+                }
+
                 $identityKeys = [
                     'student_id' => $student->id,
                     'class_id' => $class->id,
                     'subject_id' => $subjectId,
                     'semester_id' => $semester->id,
                 ];
-                $hasValues = collect($attributes)->contains(
-                    fn ($value) => $value !== null && $value !== ''
-                );
                 $existingRecord = ReportCardGrade::where($identityKeys)->exists();
-                if (! $hasValues && ! $existingRecord) {
-                    continue;
-                }
 
-                $result['records'][] = $identityKeys + ['attributes' => $attributes];
+                $result['records'][] = $identityKeys + ['attributes' => $importAttributes];
                 $result['summary'][$existingRecord ? 'updated_records' : 'new_records']++;
             }
 
             $result['rows'][] = $rowPreview;
         }
 
-        $result['can_import'] = count($result['records']) > 0;
+        if ($result['summary']['valid_values'] === 0 && $result['summary']['read_rows'] > 0) {
+            $result['global_errors'][] = 'Tidak ada nilai valid untuk diimpor. Isi setidaknya satu nilai valid; kolom kosong akan dilewati dan tidak mengubah data tersimpan.';
+        }
+
+        $result['can_import'] = count($result['records']) > 0
+            && $result['summary']['valid_values'] > 0
+            && $result['global_errors'] === [];
 
         return $result;
     }
@@ -362,6 +377,7 @@ class ReportCardGradeImportService
                 'students_not_found' => 0,
                 'valid_students' => 0,
                 'valid_values' => 0,
+                'empty_values' => 0,
                 'invalid_values' => 0,
                 'new_records' => 0,
                 'updated_records' => 0,

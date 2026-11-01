@@ -64,6 +64,10 @@ class ReportCardGradeImportContext
             ? $activeAcademicYear?->id
             : $academicYears->first()?->id;
 
+        foreach ($academicYears as $academicYear) {
+            $this->ensureAcademicYearSemesters($academicYear);
+        }
+
         return [
             'can_import' => true,
             'is_teacher' => $isTeacher,
@@ -109,6 +113,7 @@ class ReportCardGradeImportContext
                     : 'Kelas yang dipilih tidak tersedia.',
             ]);
         }
+        $this->ensureAcademicYearSemesters($academicYear);
         $semester = Semester::query()
             ->where('academic_year_id', $academicYear->id)
             ->findOrFail($validated['semester_id']);
@@ -118,6 +123,23 @@ class ReportCardGradeImportContext
             'class' => $class,
             'semester' => $semester,
         ];
+    }
+
+    public function ensureAcademicYearSemesters(AcademicYear $academicYear): void
+    {
+        foreach (['Ganjil', 'Genap'] as $name) {
+            $semester = Semester::query()
+                ->where('academic_year_id', $academicYear->id)
+                ->whereRaw('LOWER(name) = ?', [strtolower($name)])
+                ->first();
+
+            if (! $semester) {
+                Semester::create([
+                    'academic_year_id' => $academicYear->id,
+                    'name' => $name,
+                ]);
+            }
+        }
     }
 
     private function canImport(User $user): bool

@@ -10,12 +10,10 @@ use Illuminate\Validation\Rule;
 class SubjectController extends Controller
 {
     /**
-     * Kategori yang diperbolehkan.
+     * Kategori yang diperbolehkan untuk mata pelajaran.
      */
     private const CATEGORIES = [
         'Intrakurikuler',
-        'Ekstrakurikuler',
-        'Kokurikuler',
     ];
 
     /**
@@ -89,7 +87,7 @@ class SubjectController extends Controller
             ->withQueryString();
 
         /*
-         * Kategori dibuat tetap agar hanya ada 3 pilihan.
+         * Mata pelajaran hanya menggunakan kategori intrakurikuler.
          */
         $categories = collect(self::CATEGORIES);
 
@@ -159,7 +157,7 @@ class SubjectController extends Controller
                 'Kategori mata pelajaran wajib dipilih.',
 
             'category.in' =>
-                'Kategori hanya boleh Intrakurikuler, Ekstrakurikuler, atau Kokurikuler.',
+                'Kategori mata pelajaran hanya boleh Intrakurikuler.',
 
             'status.required' =>
                 'Status mata pelajaran wajib dipilih.',
@@ -277,7 +275,7 @@ class SubjectController extends Controller
                 'Kategori mata pelajaran wajib dipilih.',
 
             'category.in' =>
-                'Kategori hanya boleh Intrakurikuler, Ekstrakurikuler, atau Kokurikuler.',
+                'Kategori mata pelajaran hanya boleh Intrakurikuler.',
 
             'status.required' =>
                 'Status mata pelajaran wajib dipilih.',

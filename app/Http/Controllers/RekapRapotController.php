@@ -11,6 +11,7 @@ use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentExtracurricular;
 use App\Models\StudentPromotion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
@@ -627,6 +628,14 @@ class RekapRapotController extends Controller
                 ->limit(3)
                 ->get();
 
+        $extracurriculars = $batchReportData !== null
+            ? $batchReportData['extracurriculars']->get($reportKey, collect())
+            : StudentExtracurricular::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYearId,
+            ])->orderBy('position')->get();
+
         $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
             ?? $class->homeroomTeacher;
         $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
@@ -712,6 +721,7 @@ class RekapRapotController extends Controller
             'attendanceGenap',
             'promotion',
             'achievements',
+            'extracurriculars',
             'homeroomTeacher',
             'headmaster',
             'schoolProfile',
@@ -734,6 +744,7 @@ class RekapRapotController extends Controller
             'attendance' => collect(),
             'promotions' => collect(),
             'achievements' => collect(),
+            'extracurriculars' => collect(),
             'final-grades' => collect(),
             'graduation-statuses' => collect(),
         ];
@@ -780,6 +791,12 @@ class RekapRapotController extends Controller
                 ->get()
                 ->groupBy($pairKey)
                 ->map(fn (Collection $achievements) => $achievements->take(3)->values()),
+            'extracurriculars' => StudentExtracurricular::whereIn('student_id', $studentIds)
+                ->whereIn('class_id', $classIds)
+                ->where('academic_year_id', $academicYearId)
+                ->orderBy('position')
+                ->get()
+                ->groupBy($pairKey),
             'final-grades' => collect(),
             'graduation-statuses' => collect(),
         ];

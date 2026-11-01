@@ -332,7 +332,7 @@
         loader.setAttribute('aria-hidden', 'true');
     };
 
-    const downloadFile = async function (url, suggestedFilename) {
+    const downloadFile = function (url) {
         if (downloadInProgress) {
             return;
         }
@@ -341,60 +341,24 @@
         navigationPending = false;
         const label = loader.querySelector('.biduk-loader-label');
         const originalLabel = label?.textContent ?? '';
-        if (label) label.textContent = 'Menyiapkan unduhan...';
+        if (label) label.textContent = 'Memulai unduhan...';
         showLoader();
 
         try {
-            const response = await fetch(url, {
-                credentials: 'same-origin',
-                headers: { Accept: '*/*' },
-            });
-
-            if (!response.ok) {
-                throw new Error('Unduhan gagal. Silakan coba lagi.');
-            }
-
-            const disposition = response.headers.get('Content-Disposition') || '';
-            const contentType = response.headers.get('Content-Type') || '';
-            if (
-                !disposition.toLowerCase().includes('attachment') &&
-                (contentType.includes('text/html') || contentType.includes('application/json'))
-            ) {
-                throw new Error('Server tidak mengembalikan file unduhan. Silakan coba lagi.');
-            }
-
-            const blob = await response.blob();
-            const encodedFilename = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
-            const plainFilename = disposition.match(/filename="?([^";]+)"?/i)?.[1];
-            let filename = suggestedFilename || plainFilename;
-
-            if (!filename && encodedFilename) {
-                try {
-                    filename = decodeURIComponent(encodedFilename);
-                } catch (_) {
-                    filename = encodedFilename;
-                }
-            }
-
-            filename ||= new URL(url, window.location.href).pathname.split('/').pop() || 'unduhan';
-
-            const objectUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = filename;
-            link.hidden = true;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+            window.location.assign(url);
         } catch (error) {
             window.alert(error instanceof Error ? error.message : 'Unduhan gagal. Silakan coba lagi.');
-        } finally {
             downloadInProgress = false;
-            navigationPending = false;
             if (label) label.textContent = originalLabel;
             hideLoader();
+            return;
         }
+
+        window.setTimeout(() => {
+            downloadInProgress = false;
+            if (label) label.textContent = originalLabel;
+            hideLoader();
+        }, 800);
     };
 
     window.bidukPageLoader = {
@@ -426,10 +390,7 @@
         const downloadLink = target.closest('a[data-biduk-download], a[download]');
         if (downloadLink) {
             event.preventDefault();
-            downloadFile(
-                downloadLink.href,
-                downloadLink.dataset.filename || downloadLink.getAttribute('download')
-            );
+            downloadFile(downloadLink.href);
             return;
         }
 

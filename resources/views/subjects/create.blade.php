@@ -124,23 +124,8 @@
                         </label>
 
                         <select name="category" class="form-select" required>
-    <option value="">Pilih Kategori</option>
-
-    <option value="Intrakurikuler"
-    @selected(old('category') === 'Intrakurikuler')>
-    Intrakurikuler
-</option>
-
-    <option value="Ekstrakurikuler"
-        @selected(old('category', $subject->category ?? '') === 'Ekstrakurikuler')>
-        Ekstrakurikuler
-    </option>
-
-    <option value="Kokurikuler"
-        @selected(old('category', $subject->category ?? '') === 'Kokurikuler')>
-        Kokurikuler
-    </option>
-</select>
+                            <option value="Intrakurikuler" selected>Intrakurikuler</option>
+                        </select>
 
                         @error('category')
                             <div class="invalid-feedback">

@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -53,7 +54,7 @@ class ReportCardGradeImportTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_repeat_import_updates_existing_grade_and_clears_omitted_values(): void
+    public function test_repeat_import_updates_filled_values_and_preserves_omitted_values(): void
     {
         [$year, $class, $student, $subject, $odd, $even] = $this->createRoster();
         $importer = app(ReportCardGradeImportService::class);
@@ -87,8 +88,8 @@ class ReportCardGradeImportTest extends TestCase
 
         $grade->refresh();
         $this->assertSame('90.00', $grade->score);
-        $this->assertNull($grade->knowledge_predicate);
-        $this->assertNull($grade->learning_outcome);
+        $this->assertSame('B', $grade->knowledge_predicate);
+        $this->assertSame('Memahami konsep matematika.', $grade->learning_outcome);
         $this->assertNull($grade->skill_score);
         $this->assertNull($grade->skill_predicate);
         $this->assertNull($grade->skill_learning_outcome);
@@ -742,7 +743,7 @@ class ReportCardGradeImportTest extends TestCase
 
         $this->assertSame(1, $preview['summary']['read_rows']);
         $this->assertSame(1, $preview['summary']['valid_students']);
-        $this->assertCount(1, $preview['rows'][0]['warnings']);
+        $this->assertCount(2, $preview['rows'][0]['warnings']);
         $this->assertSame($student->name, $preview['rows'][0]['matched_name']);
         $this->assertSame(1, $preview['summary']['new_records']);
     }
@@ -759,7 +760,7 @@ class ReportCardGradeImportTest extends TestCase
         $this->assertFalse($preview['can_import']);
     }
 
-    public function test_importing_blank_values_clears_stored_scores_and_keeps_semester_incomplete(): void
+    public function test_import_rejects_all_blank_values_and_preserves_existing_scores(): void
     {
         [$year, $class, $student, $subject, $odd] = $this->createRoster();
         ReportCardGrade::create([
@@ -777,16 +778,27 @@ class ReportCardGradeImportTest extends TestCase
         $this->assertSame(1, $preview['summary']['read_rows']);
         $this->assertSame(1, $preview['summary']['students_found']);
         $this->assertSame(0, $preview['summary']['valid_values']);
-        $this->assertTrue($preview['can_import']);
-        $this->assertSame([], $preview['global_errors']);
-        $this->assertSame(1, $importer->import($preview));
+        $this->assertGreaterThan(0, $preview['summary']['empty_values']);
+        $this->assertFalse($preview['can_import']);
+        $this->assertNotEmpty($preview['global_errors']);
+        $this->assertSame([], $preview['records']);
+        $this->assertStringContainsString(
+            'kolom nilai kosong akan dilewati',
+            implode(' ', $preview['rows'][0]['warnings'])
+        );
+        try {
+            $importer->import($preview);
+            $this->fail('An import with no valid values must be rejected.');
+        } catch (HttpException $exception) {
+            $this->assertSame(422, $exception->getStatusCode());
+        }
         $this->assertDatabaseHas('report_card_grades', [
             'student_id' => $student->id,
             'class_id' => $class->id,
             'subject_id' => $subject->id,
             'semester_id' => $odd->id,
-            'score' => null,
-            'skill_score' => null,
+            'score' => 76,
+            'skill_score' => 76,
         ]);
 
         $admin = User::create([
@@ -802,11 +814,11 @@ class ReportCardGradeImportTest extends TestCase
                 'class_id' => $class->id,
             ]))
             ->assertOk()
-            ->assertSeeText('Belum Diisi')
-            ->assertDontSeeText('Sudah Diisi');
+            ->assertSeeText('Sudah Diisi')
+            ->assertDontSeeText('Belum Diisi');
     }
 
-    public function test_importing_blank_subject_columns_clears_values_for_other_subjects(): void
+    public function test_importing_filled_subject_preserves_other_blank_subject_values(): void
     {
         [$year, $class, $student, $math, $odd] = $this->createRoster();
         $language = Subject::create([
@@ -831,8 +843,8 @@ class ReportCardGradeImportTest extends TestCase
 
         $this->assertDatabaseHas('report_card_grades', [
             'id' => $existingOtherGrade->id,
-            'score' => null,
-            'learning_outcome' => null,
+            'score' => 91,
+            'learning_outcome' => 'Nilai bahasa tetap.',
         ]);
         $this->assertDatabaseHas('report_card_grades', [
             'student_id' => $student->id,
@@ -1094,9 +1106,9 @@ class ReportCardGradeImportTest extends TestCase
             'score' => 80.5,
             'knowledge_predicate' => 'B',
             'learning_outcome' => 'Capaian pembelajaran teruji.',
-            'skill_score' => null,
-            'skill_predicate' => null,
-            'skill_learning_outcome' => null,
+            'skill_score' => 99,
+            'skill_predicate' => 'A',
+            'skill_learning_outcome' => 'Capaian keterampilan lama.',
         ]);
 
         $admin = User::create([
