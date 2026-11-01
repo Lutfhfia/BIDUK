@@ -551,20 +551,77 @@ class BukuIndukController extends Controller
             }
 
             /*
-             * Setiap siswa menghasilkan 2 blok .page langsung sebagai
-             * child dari body. Tidak ada wrapper <div> per siswa agar
-             * layout dan page-break Dompdf 100% konsisten dengan
-             * cetak individual.
+             * Masukkan dua elemen .page siswa sebagai sibling langsung di BODY.
+             * Jangan gunakan wrapper per siswa karena DomPDF dapat mengabaikan
+             * page-break pada elemen .page yang berada di dalam wrapper.
+             * Dengan struktur datar, setiap .page menjadi satu halaman A4.
              */
             $studentPages[] = $body;
         }
+
+        /*
+         * Paksa setiap .page (halaman 1 dan 2 dari setiap siswa) menjadi
+         * tepat satu halaman A4. Hanya halaman terakhir seluruh dokumen
+         * yang tidak membutuhkan page-break-after.
+         */
+        $batchPageCss = '
+            /* Kertas A4: margin kiri-kanan 11 mm, area konten 188 mm. */
+            @page {
+                size: A4 portrait;
+                margin: 0 11mm;
+            }
+
+            html,
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            body.pdf-export {
+                width: 188mm !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+
+            /*
+             * Setiap div.page mengikuti tinggi konten aslinya.
+             * Jangan pakai height/min-height 297mm atau page-break-inside:avoid
+             * pada blok setinggi satu halaman karena DomPDF dapat menggesernya
+             * ke halaman berikutnya dan menyisipkan halaman kosong.
+             */
+            .pdf-export > .page {
+                display: block !important;
+                box-sizing: border-box !important;
+                width: 188mm !important;
+                max-width: 188mm !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                margin: 0 auto !important;
+                padding: 6mm 0 !important;
+                page-break-before: auto !important;
+                page-break-after: always !important;
+                page-break-inside: auto !important;
+                overflow: visible !important;
+            }
+
+            /* Pertahankan posisi foto terhadap margin kanan 11 mm. */
+            .pdf-export > .page .photo-column {
+                right: 1mm !important;
+            }
+
+            .pdf-export > .page:last-child {
+                page-break-after: auto !important;
+            }
+        ';
 
         $combinedHtml = '<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <title>Buku Induk</title>
-    <style>' . $style . '</style>
+    <style>' . $style . $batchPageCss . '</style>
 </head>
 <body class="pdf-export">' . implode('', $studentPages) . '</body>
 </html>';

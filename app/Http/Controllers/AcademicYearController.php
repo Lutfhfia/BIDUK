@@ -7,6 +7,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Models\Semester;
 use Throwable;
 
 class AcademicYearController extends Controller
@@ -105,7 +106,17 @@ class AcademicYearController extends Controller
                         ]);
                 }
 
-                return AcademicYear::create($validated);
+                $academicYear = AcademicYear::create($validated);
+
+                // Buat kedua semester untuk tahun ajaran baru.
+                foreach (['Ganjil', 'Genap'] as $semesterName) {
+                    Semester::firstOrCreate([
+                        'academic_year_id' => $academicYear->id,
+                        'name' => $semesterName,
+                    ]);
+                }
+                
+                return $academicYear;
             });
 
             /*

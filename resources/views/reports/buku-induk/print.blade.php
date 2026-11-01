@@ -105,17 +105,35 @@
         .nomor-urut {
             border: 1px solid #000;
             text-align: center;
-            height: 36px;
+            height: 45px;
             font-size: 7.5pt;
+            vertical-align: top;
+            overflow: hidden;
         }
 
         .nomor-urut-title {
-            padding: 4px 2px 2px;
+            display: block;
+            width: 100%;
+            padding: 3px 1px 2px;
+            border-bottom: 1px solid #000;
             font-weight: bold;
+            line-height: 1.05;
+            text-align: center;
         }
 
         .nomor-urut-value {
-            height: 16px;
+            display: block;
+            width: 100%;
+            min-height: 16px;
+            height: auto;
+            padding: 2px 1px 0;
+            line-height: 1.15;
+            text-align: center;
+            font-size: 8pt;
+        }
+
+        .gender-option.is-crossed {
+            text-decoration: line-through;
         }
 
         /* =====================================================
@@ -195,7 +213,7 @@
         .parent-sub .parent-number,
         .development-sub .development-number {
             width: 26px;
-            padding-left: 12px;
+            padding-left: 10px;
             box-sizing: border-box;
         }
 
@@ -475,6 +493,14 @@
             height: 9px;
         }
 
+        .table-set-gap {
+            height: 2.5mm;
+        }
+
+        .table-set {
+            page-break-inside: avoid;
+        }
+
         /* =====================================================
            PRINT
         ===================================================== */
@@ -607,13 +633,42 @@
         }
 
         .pdf-export .nomor-urut {
-            width: 14% !important;
-            max-width: 14% !important;
+            width: 27mm !important;
+            max-width: 27mm !important;
+            height: 14mm !important;
+            padding: 1mm 0 0 !important;
             border: 1px solid #000 !important;
             text-align: center !important;
-            height: 36px !important;
+            vertical-align: top !important;
             font-size: 7.5pt !important;
             overflow: hidden !important;
+        }
+
+        .pdf-export .nomor-urut-title {
+            display: block !important;
+            width: 100% !important;
+            padding: 0 1mm 1mm !important;
+            margin: 0 !important;
+            border-bottom: 1px solid #000 !important;
+            line-height: 1.05 !important;
+            text-align: center !important;
+            font-weight: bold !important;
+        }
+
+        .pdf-export .nomor-urut-value {
+            display: block !important;
+            width: 100% !important;
+            min-height: 5mm !important;
+            height: auto !important;
+            padding: 1mm 1mm 0 !important;
+            margin: 0 !important;
+            line-height: 1.1 !important;
+            text-align: center !important;
+            font-size: 8pt !important;
+        }
+
+        .pdf-export .gender-option.is-crossed {
+            text-decoration: line-through !important;
         }
 
         .pdf-export .top-row {
@@ -938,12 +993,12 @@
         ===================================================== */
 
         .pdf-export .other-title {
-            margin-top: 5mm !important;
-            margin-bottom: 5mm !important;
+            margin-top: 3mm !important;
+            margin-bottom: 3mm !important;
         }
 
         .pdf-export .other-subtitle {
-            margin-bottom: 2.5mm !important;
+            margin-bottom: 1.5mm !important;
         }
 
         /* =====================================================
@@ -986,16 +1041,16 @@
         }
 
         .pdf-export .year-title {
-            height: 12mm !important;
-            line-height: 1.1 !important;
+            height: 9mm !important;
+            line-height: 1.05 !important;
         }
 
         .pdf-export .semester-row {
-            height: 10mm !important;
+            height: 7mm !important;
         }
 
         .pdf-export .body-row {
-            height: 10.5mm !important;
+            height: 8.5mm !important;
         }
 
         /* =====================================================
@@ -1034,21 +1089,30 @@
         }
 
         .pdf-export .condition-year {
-            height: 10mm !important;
-            line-height: 1.1 !important;
+            height: 8mm !important;
+            line-height: 1.05 !important;
         }
 
         .pdf-export .condition-subheader {
-            height: 6mm !important;
+            height: 5mm !important;
             line-height: 1 !important;
         }
 
         .pdf-export .condition-body {
-            height: 8mm !important;
+            height: 6.5mm !important;
         }
 
         .pdf-export .table-gap {
-            height: 3mm !important;
+            height: 1.5mm !important;
+        }
+
+        .pdf-export .table-set-gap {
+            height: 1.5mm !important;
+            page-break-inside: avoid !important;
+        }
+
+        .pdf-export .table-set {
+            page-break-inside: avoid !important;
         }
 
         /* =====================================================
@@ -1145,7 +1209,7 @@
             <div class="nomor-urut">
 
                 <div class="nomor-urut-title">
-                    NOMOR URUT
+                    NOMOR<br>URUT
                 </div>
 
                 <div class="nomor-urut-value">
@@ -1185,11 +1249,10 @@
                     <div class="data-label">Jenis kelamin</div>
                     <div class="data-colon">:</div>
                     <div class="data-value">
-                        @if (($student->gender ?? '') === 'L')
-                            Laki-laki
-                        @elseif (($student->gender ?? '') === 'P')
-                            Perempuan
-                        @endif
+                        <span class="gender-option {{ ($student->gender ?? '') === 'P' ? 'is-crossed' : '' }}">Laki-laki</span>
+                        /
+                        <span class="gender-option {{ ($student->gender ?? '') === 'L' ? 'is-crossed' : '' }}">Perempuan</span>
+                        *)
                     </div>
                 </div>
 
@@ -1241,7 +1304,7 @@
                     <div class="data-number">7.</div>
                     <div class="data-label">Jumlah saudara</div>
                     <div class="data-colon">:</div>
-                    <div class="data-value"></div>
+                    <div class="data-value no-line"></div>
                 </div>
 
 
@@ -1299,7 +1362,9 @@
                     <div class="data-number">10.</div>
                     <div class="data-label">Alamat saat diterima</div>
                     <div class="data-colon">:</div>
-                    <div class="data-value"></div>
+                    <div class="data-value">
+                        {{ $student->address ?? '' }}
+                    </div>
                 </div>
 
 
@@ -1439,7 +1504,7 @@
                 <div class="parent-number">1.</div>
                 <div class="parent-label">Nama Orang Tua Kandung</div>
                 <div class="parent-colon">:</div>
-                <div class="parent-value"></div>
+                <div class="parent-value no-line"></div>
             </div>
 
             <div class="parent-row parent-sub">
@@ -1465,7 +1530,7 @@
                 <div class="parent-number">2.</div>
                 <div class="parent-label">Pendidikan Terakhir</div>
                 <div class="parent-colon">:</div>
-                <div class="parent-value"></div>
+                <div class="parent-value no-line"></div>
             </div>
 
             <div class="parent-row parent-sub">
@@ -1491,7 +1556,7 @@
                 <div class="parent-number">3.</div>
                 <div class="parent-label">Pekerjaan Orang Tua</div>
                 <div class="parent-colon">:</div>
-                <div class="parent-value"></div>
+                <div class="parent-value no-line"></div>
             </div>
 
             <div class="parent-row parent-sub">
@@ -1517,7 +1582,7 @@
                 <div class="parent-number">4.</div>
                 <div class="parent-label">Wali Murid</div>
                 <div class="parent-colon">:</div>
-                <div class="parent-value"></div>
+                <div class="parent-value no-line"></div>
             </div>
 
             <div class="parent-row parent-sub">
@@ -1534,7 +1599,7 @@
                 <div class="parent-label">Hubungan Keluarga</div>
                 <div class="parent-colon">:</div>
                 <div class="parent-value">
-                    {{ $student->guardian_relationship ?? '' }}
+                    {{ $student->guardian_relation ?? $student->guardian_relationship ?? '' }}
                 </div>
             </div>
 
@@ -1574,7 +1639,9 @@
                 <div class="development-number">1.</div>
                 <div class="development-label">Pendidikan sebelumnya</div>
                 <div class="development-colon">:</div>
-                <div class="development-value"></div>
+                <div class="development-value">
+                    {{ $student->student_origin ?? '' }}
+                </div>
             </div>
 
 
@@ -1584,7 +1651,7 @@
                     Masuk menjadi peserta didik baru
                 </div>
                 <div class="development-colon">:</div>
-                <div class="development-value"></div>
+                <div class="development-value no-line"></div>
             </div>
 
 
@@ -1626,7 +1693,7 @@
                     Pindah dari sekolah lain
                 </div>
                 <div class="development-colon">:</div>
-                <div class="development-value"></div>
+                <div class="development-value no-line"></div>
             </div>
 
 
@@ -1705,28 +1772,28 @@
                     <div class="school-number">1.</div>
                     <div class="school-label">Tamat Belajar / Lulus</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value no-line"></div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">a.</div>
                     <div class="school-label">Tahun</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->graduation_year ?? '' }}</div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">b.</div>
                     <div class="school-label">Nomor Ijazah / STTB</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->graduation_certificate_number ?? '' }}</div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">c.</div>
                     <div class="school-label">Melanjutkan Ke Sekolah</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->continued_school ?? '' }}</div>
                 </div>
 
 
@@ -1734,7 +1801,7 @@
                     <div class="school-number">2.</div>
                     <div class="school-label">Pindah Sekolah</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value no-line"></div>
                 </div>
 
                 <div class="school-row school-sub">
@@ -1743,21 +1810,21 @@
                         Tingkat / Kelas yang ditinggalkan
                     </div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->transfer_left_grade ?? '' }}</div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">b.</div>
                     <div class="school-label">Ke Sekolah</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->transfer_to_school ?? '' }}</div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">c.</div>
                     <div class="school-label">Ke Tingkat</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->transfer_to_grade ?? '' }}</div>
                 </div>
 
 
@@ -1765,14 +1832,14 @@
                     <div class="school-number">3.</div>
                     <div class="school-label">Keluar Sekolah</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value no-line"></div>
                 </div>
 
                 <div class="school-row school-sub">
                     <div class="school-number">a.</div>
                     <div class="school-label">Alasan Keluar Sekolah</div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">{{ $student->leaving_reason ?? '' }}</div>
                 </div>
 
                 <div class="school-row school-sub">
@@ -1781,7 +1848,11 @@
                         Hari dan Tanggal Keluar Sekolah
                     </div>
                     <div class="school-colon">:</div>
-                    <div class="school-value"></div>
+                    <div class="school-value">
+                        @if ($student->leaving_date)
+                            {{ \Carbon\Carbon::parse($student->leaving_date)->translatedFormat('d F Y') }}
+                        @endif
+                    </div>
                 </div>
 
             </div>
@@ -1789,416 +1860,263 @@
         </div>
 
 
-        {{-- =================================================
-             E. LAIN-LAIN
-        ================================================== --}}
+@php
+    // Tampilkan nama tahun ajaran sesuai input:
+    // "2026" tetap "2026", sedangkan "2026/2027" tetap "2026/2027".
+    // Jika bagian setelah garis miring kosong (mis. "2026/"), tampilkan hanya "2026".
+    $formatAcademicYear = static function ($year) {
+        if (!$year) {
+            return '........ / ........';
+        }
 
-        <div class="other-title">
-            E. LAIN - LAIN
-        </div>
+        $name = trim((string) data_get($year, 'name', ''));
 
+        if ($name === '') {
+            return '........ / ........';
+        }
 
-        {{-- =================================================
-             1. TINGGI DAN BERAT BADAN
-        ================================================== --}}
+        if (str_contains($name, '/')) {
+            [$startYear, $endYear] = array_pad(
+                array_map('trim', explode('/', $name, 2)),
+                2,
+                ''
+            );
 
-        <div class="other-subtitle">
-            1. TINGGI DAN BERAT BADAN PESERTA DIDIK
-        </div>
+            if ($startYear !== '' && $endYear === '') {
+                return $startYear;
+            }
 
+            if ($startYear === '' && $endYear !== '') {
+                return $endYear;
+            }
 
-        {{-- TABEL 1 --}}
+            if ($startYear !== '' && $endYear !== '') {
+                return $startYear . '/' . $endYear;
+            }
+        }
 
-        <table class="health-table">
+        return $name;
+    };
 
-            <thead>
+    $reportAcademicYears = collect()
+        ->merge($student->classAssignments->map(fn ($assignment) => $assignment->schoolClass?->academicYear))
+        ->merge($student->physiques->map(fn ($physique) => $physique->academicYear))
+        ->merge($student->healths->map(fn ($health) => $health->academicYear))
+        ->filter()
+        ->unique('id')
+        ->sortBy(fn ($year) => $year->start_date ?? '')
+        ->values();
 
-                <tr>
+    // Dua tabel adalah satu rangkaian, masing-masing menampung 6 tahun ajaran.
+    // Tabel pertama memakai urutan tahun 1-6, tabel kedua melanjutkan tahun 7-12.
+    // Jangan gunakan slice(-6), karena itu membuat tabel kedua mengulang data yang sama.
+    $reportAcademicYears = $reportAcademicYears->take(12)->values();
 
-                    <th rowspan="2" class="no-column">
-                        No.
-                    </th>
+    // Data tinggi dan berat badan berdasarkan tahun ajaran dan semester.
+    $physiqueByYearSemester = [];
 
-                    <th rowspan="2" class="aspect-column">
-                        Aspek yang<br>
-                        dinilai
-                    </th>
+    foreach ($student->physiques as $physique) {
+        $semesterName = strtolower($physique->semester?->name ?? '');
 
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th colspan="2" class="year-column">
-                            <div class="year-title">
-                                Tahun<br>
-                                Pelajaran<br>
-                                ........ / ........
-                            </div>
-                        </th>
-                    @endfor
+        $semesterKey = str_contains($semesterName, 'ganjil')
+            ? 'ganjil'
+            : (str_contains($semesterName, 'genap') ? 'genap' : null);
 
-                </tr>
+        if ($semesterKey) {
+            $physiqueByYearSemester[$physique->academic_year_id][$semesterKey] ??= $physique;
+        }
+    }
 
+    // Data kesehatan berdasarkan tahun ajaran.
+    $healthByYear = [];
 
-                <tr class="semester-row">
+    foreach ($student->healths->groupBy('academic_year_id') as $yearId => $records) {
+        $healthByYear[$yearId] = $records->first(function ($record) {
+            return collect([
+                $record->hearing,
+                $record->vision,
+                $record->teeth,
+                $record->notes,
+            ])->contains(fn ($value) => filled($value));
+        }) ?? $records->first();
+    }
 
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="semester-cell">
-                            Semester<br>
-                            Ganjil
-                        </th>
+    // Format angka tinggi dan berat badan.
+    $formatMeasurement = static function ($value) {
+        if ($value === null || $value === '') {
+            return '........';
+        }
 
-                        <th class="semester-cell">
-                            Semester<br>
-                            Genap
-                        </th>
-                    @endfor
+        return rtrim(
+            rtrim(number_format((float) $value, 2, ',', '.'), '0'),
+            ','
+        );
+    };
+@endphp   
+{{-- =================================================
+     E. LAIN-LAIN
+================================================== --}}
 
-                </tr>
+<div class="other-title">
+    E. LAIN - LAIN
+</div>
 
-            </thead>
+{{-- 1. TINGGI DAN BERAT BADAN --}}
+<div class="other-subtitle">
+    1. TINGGI DAN BERAT BADAN PESERTA DIDIK
+</div>
 
+@for ($measurementCopy = 0; $measurementCopy < 2; $measurementCopy++)
+    <div class="table-set">
+<table class="health-table">
+    <thead>
+        <tr>
+            <th rowspan="2" class="no-column">No.</th>
+            <th rowspan="2" class="aspect-column">
+                Aspek yang<br>dinilai
+            </th>
 
-            <tbody>
+            @for ($i = 0; $i < 6; $i++)
+                @php $year = $reportAcademicYears->get(($measurementCopy * 6) + $i); @endphp
+                <th colspan="2" class="year-column">
+                    <div class="year-title">
+                        Tahun<br>Pelajaran<br>
+                        {{ $formatAcademicYear($year) }}
+                    </div>
+                </th>
+            @endfor
+        </tr>
 
-                <tr class="body-row">
+        <tr class="semester-row">
+            @for ($i = 0; $i < 6; $i++)
+                <th class="semester-cell">
+                    Semester<br>Ganjil
+                </th>
+                <th class="semester-cell">
+                    Semester<br>Genap
+                </th>
+            @endfor
+        </tr>
+    </thead>
 
-                    <td>1.</td>
+    <tbody>
+        @foreach ([
+            ['label' => 'Tinggi Badan', 'field' => 'height', 'unit' => 'Cm'],
+            ['label' => 'Berat Badan', 'field' => 'weight', 'unit' => 'Kg'],
+        ] as $aspect)
+            <tr class="body-row">
+                <td>{{ $loop->iteration }}.</td>
+                <td>{{ $aspect['label'] }}</td>
 
-                    <td>
-                        Tinggi<br>
-                        Badan
+                @for ($i = 0; $i < 6; $i++)
+                    @php
+                        $yearIndex = ($measurementCopy * 6) + $i;
+                        $year = $reportAcademicYears->get($yearIndex);
+
+                        $ganjil = $year
+                            ? ($physiqueByYearSemester[$year->id]['ganjil'] ?? null)
+                            : null;
+
+                        $genap = $year
+                            ? ($physiqueByYearSemester[$year->id]['genap'] ?? null)
+                            : null;
+                    @endphp
+
+                    <td class="body-value">
+                        {{ $formatMeasurement(data_get($ganjil, $aspect['field'])) }}
+                        {{ $aspect['unit'] }}
                     </td>
 
-                    @for ($i = 1; $i <= 12; $i++)
-                        <td class="body-value">
-                            ........ Cm
-                        </td>
-                    @endfor
+                    <td class="body-value">
+                        {{ $formatMeasurement(data_get($genap, $aspect['field'])) }}
+                        {{ $aspect['unit'] }}
+                    </td>
+                @endfor
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+    </div>
 
-                </tr>
+    @if ($measurementCopy === 0)
+        <div class="table-set-gap"></div>
+    @endif
+@endfor
 
+<div class="table-gap"></div>
 
-                <tr class="body-row">
+{{-- 2. KONDISI KESEHATAN --}}
+<div class="other-subtitle">
+    2. KONDISI KESEHATAN PESERTA DIDIK
+</div>
 
-                    <td>2.</td>
+@for ($healthCopy = 0; $healthCopy < 2; $healthCopy++)
+    <div class="table-set">
+<table class="condition-table">
+    <thead>
+        <tr>
+            <th rowspan="2" class="no-column">No.</th>
+            <th rowspan="2" class="aspect-column">
+                Aspek<br>Kesehatan
+            </th>
+
+            @for ($i = 0; $i < 6; $i++)
+                @php $year = $reportAcademicYears->get(($healthCopy * 6) + $i); @endphp
+                <th class="year-column">
+                    <div class="condition-year">
+                        Tahun<br>Pelajaran<br>
+                        {{ $formatAcademicYear($year) }}
+                    </div>
+                </th>
+            @endfor
+        </tr>
+
+        <tr>
+            @for ($i = 0; $i < 6; $i++)
+                <th class="condition-subheader">Keterangan</th>
+            @endfor
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach ([
+            ['label' => 'Pendengaran', 'field' => 'hearing'],
+            ['label' => 'Penglihatan', 'field' => 'vision'],
+            ['label' => 'Gigi', 'field' => 'teeth'],
+            ['label' => '................', 'field' => 'notes'],
+        ] as $aspect)
+            <tr class="condition-body">
+                <td>{{ $loop->iteration }}.</td>
+                <td>{{ $aspect['label'] }}</td>
+
+                @for ($i = 0; $i < 6; $i++)
+                    @php
+                        $yearIndex = ($healthCopy * 6) + $i;
+                        $year = $reportAcademicYears->get($yearIndex);
+                        $health = $year
+                            ? ($healthByYear[$year->id] ?? null)
+                            : null;
+                    @endphp
 
                     <td>
-                        Berat<br>
-                        Badan
+                        {{ data_get($health, $aspect['field']) ?: '........' }}
                     </td>
+                @endfor
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+    </div>
 
-                    @for ($i = 1; $i <= 12; $i++)
-                        <td class="body-value">
-                            ........ Kg
-                        </td>
-                    @endfor
+    @if ($healthCopy === 0)
+        <div class="table-set-gap"></div>
+    @endif
+@endfor
 
-                </tr>
 
-            </tbody>
 
-        </table>
 
 
-        <div class="table-gap"></div>
-
-
-        {{-- TABEL 2 --}}
-
-        <table class="health-table">
-
-            <thead>
-
-                <tr>
-
-                    <th rowspan="2" class="no-column">
-                        No.
-                    </th>
-
-                    <th rowspan="2" class="aspect-column">
-                        Aspek yang<br>
-                        dinilai
-                    </th>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th colspan="2" class="year-column">
-                            <div class="year-title">
-                                Tahun<br>
-                                Pelajaran<br>
-                                ........ / ........
-                            </div>
-                        </th>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="semester-row">
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="semester-cell">
-                            Semester<br>
-                            Ganjil
-                        </th>
-
-                        <th class="semester-cell">
-                            Semester<br>
-                            Genap
-                        </th>
-                    @endfor
-
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-                <tr class="body-row">
-
-                    <td>1.</td>
-
-                    <td>
-                        Tinggi<br>
-                        Badan
-                    </td>
-
-                    @for ($i = 1; $i <= 12; $i++)
-                        <td class="body-value">
-                            ........ Cm
-                        </td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="body-row">
-
-                    <td>2.</td>
-
-                    <td>
-                        Berat<br>
-                        Badan
-                    </td>
-
-                    @for ($i = 1; $i <= 12; $i++)
-                        <td class="body-value">
-                            ........ Kg
-                        </td>
-                    @endfor
-
-                </tr>
-
-            </tbody>
-
-        </table>
-
-
-        <div class="table-gap"></div>
-
-
-        {{-- =================================================
-             2. KONDISI KESEHATAN
-        ================================================== --}}
-
-        <div class="other-subtitle">
-            2. KONDISI KESEHATAN PESERTA DIDIK
-        </div>
-
-
-        {{-- TABEL KESEHATAN 1 --}}
-
-        <table class="condition-table">
-
-            <thead>
-
-                <tr>
-
-                    <th rowspan="2" class="no-column">
-                        No.
-                    </th>
-
-                    <th rowspan="2" class="aspect-column">
-                        Aspek<br>
-                        Kesehatan
-                    </th>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="year-column">
-                            <div class="condition-year">
-                                Tahun<br>
-                                Pelajaran<br>
-                                ........ / ........
-                            </div>
-                        </th>
-                    @endfor
-
-                </tr>
-
-                <tr>
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="condition-subheader">Keterangan</th>
-                    @endfor
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-                <tr class="condition-body">
-
-                    <td>1.</td>
-
-                    <td>Pendengaran</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>2.</td>
-
-                    <td>Penglihatan</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>3.</td>
-
-                    <td>Gigi</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>4.</td>
-
-                    <td>................</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-            </tbody>
-
-        </table>
-
-
-        <div class="table-gap"></div>
-
-
-        {{-- TABEL KESEHATAN 2 --}}
-
-        <table class="condition-table">
-
-            <thead>
-
-                <tr>
-
-                    <th rowspan="2" class="no-column">
-                        No.
-                    </th>
-
-                    <th rowspan="2" class="aspect-column">
-                        Aspek<br>
-                        Kesehatan
-                    </th>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="year-column">
-
-                            <div class="condition-year">
-                                Tahun<br>
-                                Pelajaran<br>
-                                ........ / ........
-                            </div>
-
-                        </th>
-                    @endfor
-
-                </tr>
-
-                <tr>
-                    @for ($i = 1; $i <= 6; $i++)
-                        <th class="condition-subheader">Keterangan</th>
-                    @endfor
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-                <tr class="condition-body">
-
-                    <td>1.</td>
-
-                    <td>Pendengaran</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>2.</td>
-
-                    <td>Penglihatan</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>3.</td>
-
-                    <td>Gigi</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-
-                <tr class="condition-body">
-
-                    <td>4.</td>
-
-                    <td>................</td>
-
-                    @for ($i = 1; $i <= 6; $i++)
-                        <td></td>
-                    @endfor
-
-                </tr>
-
-            </tbody>
-
-        </table>
 
     </div>
 

@@ -161,8 +161,19 @@ class StudentController extends Controller
                 ->orderBy('name')
                 ->get();
 
-        $academicYears = AcademicYear::orderBy('name')->get();
-        $semesters = Semester::with('academicYear')
+                $academicYears = AcademicYear::orderBy('name')->get();
+
+                // Pastikan tahun ajaran lama juga memiliki kedua semester.
+                foreach ($academicYears as $academicYear) {
+                    foreach (['Ganjil', 'Genap'] as $semesterName) {
+                        Semester::firstOrCreate([
+                            'academic_year_id' => $academicYear->id,
+                            'name' => $semesterName,
+                        ]);
+                    }
+                }
+                
+                $semesters = Semester::with('academicYear')
             ->orderBy('academic_year_id')
             ->orderBy('name')
             ->get();
@@ -410,11 +421,23 @@ app(ActivityLogger::class)->log(
                 ->orderBy('name')
                 ->get();
 
-        $academicYears = AcademicYear::orderBy('name')->get();
-        $semesters = Semester::with('academicYear')
-            ->orderBy('academic_year_id')
-            ->orderBy('name')
-            ->get();
+                $academicYears = AcademicYear::orderBy('name')->get();
+
+                // Pastikan setiap tahun ajaran memiliki Semester Ganjil dan Genap.
+                foreach ($academicYears as $academicYear) {
+                    foreach (['Ganjil', 'Genap'] as $semesterName) {
+                        Semester::firstOrCreate([
+                            'academic_year_id' => $academicYear->id,
+                            'name' => $semesterName,
+                        ]);
+                    }
+                }
+                
+                // Ambil seluruh data semester untuk ditampilkan pada form.
+                $semesters = Semester::with('academicYear')
+                    ->orderBy('academic_year_id')
+                    ->orderBy('name')
+                    ->get();
 
         $currentClassId = $teacherClass?->id
             ?? $student->currentClass()->first()?->id;

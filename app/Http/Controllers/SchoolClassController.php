@@ -478,6 +478,7 @@ $subjects = Subject::active()
         $teacherUser = $keepLegacyEmployeeAssignment
             ? null
             : $this->resolveActiveTeacherUser($teacherSelection, $class);
+            $isTeacher = $request->user()->isGuru();
 
         /*
          * Simpan subject_ids secara terpisah.

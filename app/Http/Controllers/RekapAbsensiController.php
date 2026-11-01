@@ -689,14 +689,16 @@ class RekapAbsensiController extends Controller
         $semesterIds = collect($semesters)->filter()->map(
             fn (Semester $semester) => $semester->id
         );
-        $records = RekapAbsensi::query()
-            ->where('student_id', $rekapAbsensi->student_id)
-            ->where('class_id', $rekapAbsensi->class_id)
-            ->where(function ($query) use ($semesterIds, $rekapAbsensi) {
-                $query->whereIn('semester_id', $semesterIds)
-                    ->orWhereKey($rekapAbsensi->id);
-            })
-            ->get();
+       
+$records = RekapAbsensi::query()
+->where('student_id', $rekapAbsensi->student_id)
+->where('class_id', $rekapAbsensi->class_id)
+->where(function ($query) use ($semesterIds, $rekapAbsensi) {
+    $query->whereIn('semester_id', $semesterIds)
+        ->orWhere('id', $rekapAbsensi->id);
+})
+->get();
+
 
         if ($records->isEmpty()) {
             $records = collect([$rekapAbsensi]);
