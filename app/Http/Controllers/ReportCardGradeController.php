@@ -168,13 +168,25 @@ class ReportCardGradeController extends Controller
 
                     $this->ensureTeacherCanAccessClass($selectedClass, $teacherClasses);
 
-                    $studentsQuery = $selectedClass->students();
-                    if (
-                        $selectedClass->status === 'Aktif'
-                        && $selectedClass->academicYear?->status === 'active'
-                    ) {
-                        $studentsQuery->wherePivot('status', 'Aktif');
-                    }
+                    $isCurrentClass = $selectedClass->status === 'Aktif'
+                        && $selectedClass->academicYear?->status === 'active';
+                    $studentsQuery = Student::query()
+                        ->where(function ($query) use ($selectedClass, $isCurrentClass) {
+                            $query->whereHas('classes', function ($classQuery) use (
+                                $selectedClass,
+                                $isCurrentClass
+                            ) {
+                                $classQuery->where('classes.id', $selectedClass->id);
+                                if ($isCurrentClass) {
+                                    $classQuery->where('class_student.status', 'Aktif');
+                                }
+                            });
+
+                            if ($isCurrentClass) {
+                                $query->orWhereHas('reportCardGrades', fn ($gradeQuery) => $gradeQuery
+                                    ->where('class_id', $selectedClass->id));
+                            }
+                        });
 
                     if ($search) {
                         $studentsQuery->where(function ($q) use ($search) {
@@ -417,6 +429,10 @@ class ReportCardGradeController extends Controller
             'classAssignments.schoolClass.academicYear',
             'reportCardGrades'
         ]);
+        $gradeClassIds = $student->reportCardGrades
+            ->pluck('class_id')
+            ->map(fn ($classId) => (int) $classId)
+            ->unique();
 
         $classAssignments = $student->classAssignments()
             ->with('schoolClass.academicYear')
@@ -493,6 +509,13 @@ class ReportCardGradeController extends Controller
                     : null;
             } else {
                 $class = $levelAssignment?->schoolClass;
+                if (!$class) {
+                    $class = $historyClasses->first(
+                        fn (SchoolClass $historyClass) => $gradeClassIds->contains(
+                            (int) $historyClass->id
+                        )
+                    );
+                }
             }
 
             if (!$class) {
@@ -1990,8 +2013,16 @@ class ReportCardGradeController extends Controller
             $studentsQuery->wherePivot('status', 'Aktif');
         }
 
-        $isStudentInClass = $studentsQuery
-            ->exists();
+        $isStudentInClass = $studentsQuery->exists();
+        if (
+            ! $isStudentInClass
+            && $isCurrentClass
+            && $student->reportCardGrades()
+                ->where('class_id', $class->id)
+                ->exists()
+        ) {
+            $isStudentInClass = true;
+        }
 
         abort_unless(
             $isStudentInClass,

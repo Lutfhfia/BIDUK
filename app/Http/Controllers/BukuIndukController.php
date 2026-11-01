@@ -6,21 +6,38 @@ use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\User;
 use App\Services\TeacherClassAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class BukuIndukController extends Controller
 {
+    private array $reportLookupCache = [];
+    private array $teacherClassIdCache = [];
+
+    private const BOOK_REPORT_RELATIONS = [
+        'classAssignments.schoolClass.academicYear',
+        'classAssignments.schoolClass.homeroomTeacher',
+        'classAssignments.schoolClass.homeroomTeacherUser.employee',
+        'previousEducation',
+        'physiques.academicYear',
+        'physiques.semester',
+        'healths.academicYear',
+        'healths.semester',
+    ];
+
     /**
      * Halaman utama Cetak Buku Induk.
      */
     public function index(Request $request): View|RedirectResponse
     {
-        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $this->resetReportCaches();
+        $teacherClassIds = $this->teacherClassIds($request->user());
         $academicYears = AcademicYear::orderByDesc('start_date')->get();
 
         $selectedAcademicYear = $request->input(
@@ -164,7 +181,8 @@ class BukuIndukController extends Controller
      */
     public function batch(Request $request): View
     {
-        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $this->resetReportCaches();
+        $teacherClassIds = $this->teacherClassIds($request->user());
         $selectedAcademicYear = $request->input(
             'academic_year_id',
             AcademicYear::getActive()?->id
@@ -243,10 +261,11 @@ class BukuIndukController extends Controller
      */
     public function previewBatch(Request $request): View
     {
+        $this->resetReportCaches();
         @ini_set('memory_limit', '512M');
         @set_time_limit(300);
 
-        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $teacherClassIds = $this->teacherClassIds($request->user());
         $academicYearId = $request->input(
             'academic_year_id',
             AcademicYear::getActive()?->id
@@ -282,6 +301,7 @@ class BukuIndukController extends Controller
         }
 
         $studentsQuery = Student::query()
+            ->with(self::BOOK_REPORT_RELATIONS)
             ->when($studentStatus !== '', function ($query) use ($studentStatus) {
                 $query->where(
                     'status',
@@ -352,6 +372,7 @@ class BukuIndukController extends Controller
      */
     public function print(Request $request, Student $student)
     {
+        $this->resetReportCaches();
         $reportData = $this->reportData($request, $student);
         $classOrderNumbers = [];
         $this->applyClassOrderNumber(
@@ -391,10 +412,11 @@ class BukuIndukController extends Controller
      */
     public function batchPdf(Request $request)
     {
+        $this->resetReportCaches();
         @ini_set('memory_limit', '512M');
         @set_time_limit(300);
 
-        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $teacherClassIds = $this->teacherClassIds($request->user());
         $studentIds = $request->input('student_ids', []);
 
         if (is_array($studentIds) && count($studentIds)) {
@@ -406,7 +428,9 @@ class BukuIndukController extends Controller
                 ? null
                 : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
 
-            $studentsQuery = Student::query()->whereIn('id', $studentIds);
+            $studentsQuery = Student::query()
+                ->with(self::BOOK_REPORT_RELATIONS)
+                ->whereIn('id', $studentIds);
             if ($teacherClassIds !== null) {
                 $studentsQuery->whereHas(
                     'classAssignments',
@@ -445,6 +469,7 @@ class BukuIndukController extends Controller
             }
 
             $studentsQuery = Student::query()
+                ->with(self::BOOK_REPORT_RELATIONS)
                 ->when($studentStatus !== '', function ($query) use ($studentStatus) {
                     $query->where(
                         'status',
@@ -638,6 +663,7 @@ class BukuIndukController extends Controller
      */
     public function downloadAll(Request $request)
     {
+        $this->resetReportCaches();
         $studentIds = $request->input('student_ids', []);
 
         abort_unless(
@@ -654,8 +680,9 @@ class BukuIndukController extends Controller
             ? null
             : ($request->filled('class_id') ? (int) $request->input('class_id') : null);
 
-        $studentsQuery = Student::whereIn('id', $studentIds);
-        $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+        $studentsQuery = Student::with(self::BOOK_REPORT_RELATIONS)
+            ->whereIn('id', $studentIds);
+        $teacherClassIds = $this->teacherClassIds($request->user());
         if ($teacherClassIds !== null) {
             $studentsQuery->whereHas(
                 'classAssignments',
@@ -761,36 +788,24 @@ class BukuIndukController extends Controller
         Request $request,
         Student $student
     ): array {
-        $student->load([
-            'classes.academicYear',
-            'classes.homeroomTeacher',
-            'classes.homeroomTeacherUser.employee',
-            'classAssignments.schoolClass.academicYear',
-            'classAssignments.schoolClass.homeroomTeacher',
-            'classAssignments.schoolClass.homeroomTeacherUser.employee',
-            'previousEducation',
-            'physiques.academicYear',
-            'physiques.semester',
-            'healths.academicYear',
-            'healths.semester',
-        ]);
+        $student->load(self::BOOK_REPORT_RELATIONS);
 
-        $academicYear = null;
-
-        if ($request->filled('academic_year_id')) {
-            $academicYear = AcademicYear::find(
-                $request->academic_year_id
-            );
+        $academicYearKey = $request->filled('academic_year_id')
+            ? 'year:' . $request->input('academic_year_id')
+            : 'year:active';
+        if (!array_key_exists($academicYearKey, $this->reportLookupCache)) {
+            $academicYear = $request->filled('academic_year_id')
+                ? AcademicYear::find($request->input('academic_year_id'))
+                : null;
+            $this->reportLookupCache[$academicYearKey] = $academicYear
+                ?? AcademicYear::getActive();
         }
-
-        if (!$academicYear) {
-            $academicYear = AcademicYear::getActive();
-        }
+        $academicYear = $this->reportLookupCache[$academicYearKey];
+        $teacherClassIds = $this->teacherClassIds($request->user());
 
         $class = null;
 
         if ($request->filled('class_id') && $request->input('print_type') !== 'all') {
-            $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
             if ($teacherClassIds !== null) {
                 abort_unless(
                     $teacherClassIds->contains((int) $request->input('class_id')),
@@ -799,16 +814,16 @@ class BukuIndukController extends Controller
                 );
             }
 
-            $class = SchoolClass::with([
-                'academicYear',
-                'homeroomTeacher',
-                'homeroomTeacherUser.employee',
-            ])->where(
-                'academic_year_id',
-                $academicYear?->id
-            )->find(
-                $request->class_id
-            );
+            $classCacheKey = 'class:' . $academicYear?->id . ':' . $request->input('class_id');
+            if (!array_key_exists($classCacheKey, $this->reportLookupCache)) {
+                $this->reportLookupCache[$classCacheKey] = SchoolClass::with([
+                    'academicYear',
+                    'homeroomTeacher',
+                    'homeroomTeacherUser.employee',
+                ])->where('academic_year_id', $academicYear?->id)
+                    ->find($request->input('class_id'));
+            }
+            $class = $this->reportLookupCache[$classCacheKey];
         }
 
         if (!$class) {
@@ -821,22 +836,20 @@ class BukuIndukController extends Controller
         }
 
         if (!$class) {
-            $class = $student->classes()
-                ->with([
-                    'academicYear',
-                    'homeroomTeacher',
-                    'homeroomTeacherUser.employee',
-                ])
-                ->wherePivot('status', 'Aktif')
-                ->latest('class_student.created_at')
-                ->first();
+            $class = $student->classAssignments
+                ->filter(fn ($assignment) => $assignment->status === 'Aktif')
+                ->sortByDesc('created_at')
+                ->first()
+                ?->schoolClass;
         }
 
         if ($request->user()?->isGuru()) {
             abort_unless($class, 403, 'Tidak ada kelas yang dapat diakses untuk laporan siswa ini.');
-            app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
             abort_unless(
-                $student->classAssignments()->where('class_id', $class->id)->exists(),
+                $teacherClassIds?->contains((int) $class->id)
+                    && $student->classAssignments->contains(
+                        fn ($assignment) => (int) $assignment->class_id === (int) $class->id
+                    ),
                 403,
                 'Anda tidak memiliki akses ke data siswa tersebut.'
             );
@@ -845,12 +858,14 @@ class BukuIndukController extends Controller
         $semester = null;
 
         if ($request->filled('semester_id')) {
-            $semester = Semester::where(
-                'academic_year_id',
-                $academicYear?->id
-            )->find(
-                $request->semester_id
-            );
+            $semesterCacheKey = 'semester:' . $academicYear?->id . ':' . $request->input('semester_id');
+            if (!array_key_exists($semesterCacheKey, $this->reportLookupCache)) {
+                $this->reportLookupCache[$semesterCacheKey] = Semester::where(
+                    'academic_year_id',
+                    $academicYear?->id
+                )->find($request->input('semester_id'));
+            }
+            $semester = $this->reportLookupCache[$semesterCacheKey];
         }
 
         return compact(
@@ -866,6 +881,26 @@ class BukuIndukController extends Controller
      * lalu nama siswa. Subquery mengikuti kelas yang aktif pada tahun ajaran
      * yang dipilih sehingga urutan cetak semua kelas menjadi konsisten.
      */
+    private function teacherClassIds(?User $user): ?Collection
+    {
+        if (!$user || !$user->isGuru()) {
+            return null;
+        }
+
+        if (!array_key_exists($user->id, $this->teacherClassIdCache)) {
+            $this->teacherClassIdCache[$user->id] = app(TeacherClassAccess::class)
+                ->classIds($user);
+        }
+
+        return $this->teacherClassIdCache[$user->id];
+    }
+
+    private function resetReportCaches(): void
+    {
+        $this->reportLookupCache = [];
+        $this->teacherClassIdCache = [];
+    }
+
     private function applyStudentClassOrdering(
         $query,
         ?int $academicYearId,

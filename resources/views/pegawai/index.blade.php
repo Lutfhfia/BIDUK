@@ -362,6 +362,7 @@
             <a
                 class="dropdown-item"
                 href="{{ route('pegawai.export.excel') }}"
+                data-biduk-download
             >
                 <i class="bi bi-file-earmark-excel text-success me-2"></i>
                 Export Excel
@@ -372,6 +373,7 @@
             <a
                 class="dropdown-item"
                 href="{{ route('pegawai.export.pdf') }}"
+                data-biduk-download
             >
                 <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
                 Export PDF
@@ -947,6 +949,7 @@
                     <a
                         href="{{ route('pegawai.import.template') }}"
                         class="btn btn-outline-success employee-action-btn"
+                        data-biduk-download
                     >
 
                         <i class="bi bi-download me-2"></i>

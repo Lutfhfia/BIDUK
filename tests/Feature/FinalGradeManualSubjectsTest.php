@@ -22,6 +22,40 @@ class FinalGradeManualSubjectsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_graduated_student_can_still_open_and_update_class_six_final_grade(): void
+    {
+        $user = User::create([
+            'name' => 'Admin Nilai',
+            'username' => 'admin-graduated-final-grade',
+            'email' => 'admin-graduated-final-grade@example.test',
+            'password' => 'password',
+            'role_id' => Role::create(['name' => 'Super Admin'])->id,
+            'status' => 'Aktif',
+        ]);
+        $year = $this->createYear('2025/2026', '2025-07-01', '2026-06-30', 'active');
+        $class = $this->createClass($year, '6A', 6);
+        $student = Student::create([
+            'nis' => 'FINAL-GRADE-GRADUATED-01',
+            'nisn' => 'FINAL-GRADE-GRADUATED-NISN-01',
+            'name' => 'Siswa Lulus',
+            'gender' => 'P',
+            'status' => 'Aktif',
+        ]);
+        ClassStudent::create([
+            'class_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => 'Lulus',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('final-grades.edit', [$class, $student]))
+            ->assertOk();
+
+        $this->put(route('final-grades.update', [$class, $student]), [
+            'certificate_number' => 'IJZ-TEST-001',
+        ])->assertRedirect(route('final-grades.edit', [$class, $student]));
+    }
+
     public function test_final_grade_uses_only_eight_subjects_and_preserves_existing_data(): void
     {
         $permissions = collect(['grades.edit', 'grades.view'])->map(
@@ -123,6 +157,11 @@ class FinalGradeManualSubjectsTest extends TestCase
         $this->assertCount(8, $mapping);
         $this->assertNotContains('Baca Tulis Alquran', $mapping->pluck('ijazah_name')->all());
         $this->assertNotContains('Bahasa Daerah Palembang', $mapping->pluck('ijazah_name')->all());
+        $schoolScores = app(FinalGradeService::class)->calculateSchoolScores(
+            $student,
+            [$schoolSubject->id]
+        );
+        $this->assertSame(85.0, $schoolScores[$schoolSubject->id]['score']);
 
         $this->actingAs($user)
             ->get(route('final-grades.edit', [$gradeSixClass, $student]))

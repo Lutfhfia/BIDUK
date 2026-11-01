@@ -79,6 +79,38 @@ class ReportCardGradeTeacherAccessTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_teacher_can_manage_existing_grades_when_current_class_assignment_status_is_not_active(): void
+    {
+        [$year, $class, $student, $subject, $semester, $teacher] = $this->createTeacherClass(
+            '5A',
+            'grade-status-incomplete'
+        );
+        $year->update(['status' => 'active']);
+        $class->update(['status' => 'Aktif']);
+        ClassStudent::where('class_id', $class->id)
+            ->where('student_id', $student->id)
+            ->update(['status' => 'Pindah']);
+        ReportCardGrade::create([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'semester_id' => $semester->id,
+            'score' => 82,
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('report-card-grades.index', [
+                'academic_year_id' => $year->id,
+                'class_id' => $class->id,
+            ]))
+            ->assertOk()
+            ->assertSeeText($student->name);
+
+        $this->get(route('report-card-grades.edit', [$class, $student]))
+            ->assertOk()
+            ->assertSee('value="82.00"', false);
+    }
+
     public function test_teacher_defaults_to_the_latest_assigned_academic_year(): void
     {
         [$oldYear, $oldClass, $oldStudent, $subject, , $teacher] = $this->createTeacherClass();

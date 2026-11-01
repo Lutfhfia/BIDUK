@@ -586,9 +586,13 @@
                 <div class="ar-card-heading"><i class="bi bi-trophy me-2"></i>Data Prestasi Peserta Didik</div>
                 <small class="text-muted">Total data: <strong>{{ $achievements->count() }}</strong> prestasi</small>
             </div>
-            <button type="button" onclick="window.print()" class="btn btn-ar-reset">
-                <i class="bi bi-printer"></i>Cetak
-            </button>
+            <a
+                href="{{ route('achievement-reports.pdf', request()->query()) }}"
+                class="btn btn-ar-reset"
+                data-biduk-download
+            >
+                <i class="bi bi-file-earmark-pdf"></i>Unduh PDF
+            </a>
         </div>
 
         <div class="card-body">

@@ -25,7 +25,7 @@
             <div class="d-flex gap-2">
                 @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
                     <a href="{{ route('final-grades.print', [$class->id, $student->id]) }}" class="btn btn-outline-danger"
-                        target="_blank">
+                        data-biduk-download>
                         <i class="bi bi-printer me-1"></i>
                         Cetak PDF
                     </a>
@@ -535,7 +535,7 @@
                     Kembali
                 </a>
 
-                <button type="submit" class="btn btn-primary btn-lg">
+                <button type="submit" class="btn btn-success btn-lg">
                     <i class="bi bi-check-circle me-1"></i>
                     Simpan Nilai Akhir
                 </button>

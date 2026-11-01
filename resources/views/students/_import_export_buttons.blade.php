@@ -4,7 +4,7 @@
     Import Excel
 </a>
 
-<a href="{{ route('students.export.excel') }}" class="btn btn-outline-primary">
+<a href="{{ route('students.export.excel') }}" class="btn btn-outline-primary" data-biduk-download>
     <i class="bi bi-file-earmark-excel me-1"></i>
     Export Excel
 </a>

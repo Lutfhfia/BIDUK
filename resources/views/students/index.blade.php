@@ -340,13 +340,13 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end student-export-menu" aria-labelledby="studentExportDropdown">
                         <li>
-                            <a class="dropdown-item" href="{{ route('students.export.excel') }}">
+                            <a class="dropdown-item" href="{{ route('students.export.excel') }}" data-biduk-download>
                                 <i class="bi bi-file-earmark-excel text-success"></i>
                                 Export Excel
                             </a>
                         </li>
                         <li>
-                        <a class="dropdown-item" href="{{ route('students.export.pdf', request()->only([
+                        <a class="dropdown-item" data-biduk-download href="{{ route('students.export.pdf', request()->only([
     'search',
     'academic_year_id',
     'class_id',

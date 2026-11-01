@@ -6,6 +6,7 @@ use App\Models\Achievement;
 use App\Models\AcademicYear;
 use App\Models\SchoolClass;
 use App\Services\TeacherClassAccess;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class AchievementReportController extends Controller
@@ -149,5 +150,16 @@ class AchievementReportController extends Controller
             'selectedAcademicYearId',
             'selectedClassId'
         ));
+    }
+
+    public function download(Request $request)
+    {
+        $reportData = $this->index($request)->getData();
+        $html = view('reports.achievement-reports.print', $reportData)->render();
+        $filename = 'rekap-prestasi-' . now()->format('Y-m-d-His') . '.pdf';
+
+        return Pdf::loadHTML($html)
+            ->setPaper('a4', 'landscape')
+            ->download($filename);
     }
 }

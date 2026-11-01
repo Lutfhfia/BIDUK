@@ -48,11 +48,10 @@ class FinalGradeController extends Controller
         }
 
         /*
-         * Validasi: siswa harus terdaftar aktif di kelas.
+         * Validasi: siswa harus pernah terdaftar di kelas.
          */
         $isStudentInClass = $class->students()
             ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
             ->exists();
 
         if (!$isStudentInClass) {
@@ -80,15 +79,17 @@ class FinalGradeController extends Controller
         $schoolScores = [];
         $missingData  = [];
 
+        $schoolScoreResults = $this->service->calculateSchoolScores(
+            $student,
+            $ijazahMapping->pluck('subject_id')->filter()
+        );
+
         foreach ($ijazahMapping as $item) {
             if (!$item['subject_id']) {
                 continue;
             }
 
-            $result = $this->service->calculateSchoolScore(
-                $student,
-                $item['subject_id']
-            );
+            $result = $schoolScoreResults[$item['subject_id']];
 
             $schoolScores[$item['subject_id']] = $result['score'];
             if (!empty($result['missing'])) {
@@ -177,7 +178,6 @@ class FinalGradeController extends Controller
          */
         $isStudentInClass = $class->students()
             ->where('students.id', $student->id)
-            ->wherePivot('status', 'Aktif')
             ->exists();
 
         if (!$isStudentInClass) {

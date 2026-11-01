@@ -38,6 +38,22 @@ class AchievementReportYearFilterTest extends TestCase
         );
     }
 
+    public function test_report_can_be_downloaded_as_a_pdf(): void
+    {
+        $year = $this->createAcademicYear('2025/2026', 'active');
+        $this->createAchievement($year, 'Juara Lomba');
+
+        $response = app(AchievementReportController::class)->download(
+            Request::create('/achievement-reports/cetak', 'GET')
+        );
+
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString(
+            'rekap-prestasi-',
+            $response->headers->get('Content-Disposition')
+        );
+    }
+
     private function createAcademicYear(string $name, string $status): AcademicYear
     {
         $startYear = (int) substr($name, 0, 4);

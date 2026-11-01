@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Achievement;
 use App\Models\Employee;
+use App\Models\FinalGrade;
 use App\Models\RekapAbsensi;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
@@ -17,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use App\Models\GraduationStatus;
 use App\Services\FinalGradeService;
@@ -25,11 +27,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RekapRapotController extends Controller
 {
+    private array $reportLookupCache = [];
+
     /**
      * Halaman utama Rekap Rapot.
      */
     public function index(Request $request): View|JsonResponse
     {
+        $this->reportLookupCache = [];
         $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
         $teacherAcademicYearIds = $teacherClassIds === null
             ? null
@@ -312,6 +317,7 @@ class RekapRapotController extends Controller
      */
     public function print(Request $request, Student $student): Response|View
     {
+        $this->reportLookupCache = [];
         $academicYearId = (int) $request->input(
             'academic_year_id',
             $this->resolveAcademicYearIdForStudent($student)
@@ -370,6 +376,7 @@ class RekapRapotController extends Controller
      */
     public function batch(Request $request): Response|View
     {
+        $this->reportLookupCache = [];
         $academicYearId = (int) $request->input(
             'academic_year_id',
             AcademicYear::getActive()?->id
@@ -394,6 +401,19 @@ class RekapRapotController extends Controller
         }
 
         $studentsQuery = Student::query()
+            ->with(['classes' => function ($query) use ($academicYearId, $classId, $teacherClassIds) {
+                $query->where('academic_year_id', $academicYearId)
+                    ->when($classId !== null, fn ($classQuery) => $classQuery->whereKey($classId))
+                    ->when(
+                        $teacherClassIds !== null,
+                        fn ($classQuery) => $classQuery->whereIn('classes.id', $teacherClassIds)
+                    )
+                    ->with([
+                        'academicYear',
+                        'homeroomTeacher',
+                        'homeroomTeacherUser.employee',
+                    ]);
+            }])
             ->whereHas('classes', function ($query) use ($academicYearId, $classId) {
                 $query->where('classes.academic_year_id', $academicYearId)
                     ->when($classId !== null, fn ($q) => $q->where('classes.id', $classId));
@@ -413,13 +433,29 @@ class RekapRapotController extends Controller
 
         $students = $studentsQuery->orderBy('name')->get();
 
-        $reports = $students->map(function ($student) use ($academicYearId, $semesterMode, $classId) {
-            $class = $this->resolveStudentClass($student, $academicYearId, $classId);
+        $reportContexts = $students->map(function (Student $student) use (
+            $academicYearId,
+            $classId,
+            $teacherClassIds
+        ) {
+            $class = $this->resolveStudentClass(
+                $student,
+                $academicYearId,
+                $classId,
+                $teacherClassIds
+            );
 
-            return $class
-                ? $this->buildReport($student, $class, $academicYearId, $semesterMode)
-                : null;
-        })->filter();
+            return $class ? compact('student', 'class') : null;
+        })->filter()->values();
+
+        $this->preloadBatchReportData($reportContexts, $academicYearId);
+
+        $reports = $reportContexts->map(fn (array $context) => $this->buildReport(
+            $context['student'],
+            $context['class'],
+            $academicYearId,
+            $semesterMode
+        ));
 
         // Urutkan hasil cetak berdasarkan tingkat kelas, nama kelas,
         // lalu nama siswa. orderBy('name') pada query siswa saja tidak
@@ -492,11 +528,22 @@ class RekapRapotController extends Controller
         string $semesterMode = 'both'
     ): array {
         $semesterMode = $this->normalizeSemesterMode($semesterMode);
-        $academicYear = AcademicYear::find($academicYearId) ?? $class->academicYear;
+        $academicYear = $class->academicYear;
+        if (!$academicYear) {
+            $yearCacheKey = 'academic-year:' . $academicYearId;
+            if (!array_key_exists($yearCacheKey, $this->reportLookupCache)) {
+                $this->reportLookupCache[$yearCacheKey] = AcademicYear::find($academicYearId);
+            }
+            $academicYear = $this->reportLookupCache[$yearCacheKey];
+        }
 
-        $semesters = Semester::where('academic_year_id', $academicYearId)
-            ->orderBy('id')
-            ->get();
+        $semesterCacheKey = 'semesters:' . $academicYearId;
+        if (!array_key_exists($semesterCacheKey, $this->reportLookupCache)) {
+            $this->reportLookupCache[$semesterCacheKey] = Semester::where('academic_year_id', $academicYearId)
+                ->orderBy('id')
+                ->get();
+        }
+        $semesters = $this->reportLookupCache[$semesterCacheKey];
 
         $semesterGanjil = $semesters->first(
             fn ($semester) => strtolower($semester->name) === 'ganjil'
@@ -511,66 +558,95 @@ class RekapRapotController extends Controller
             $semesterGenap?->id,
         ])->filter()->values();
 
-        $grades = ReportCardGrade::with('subject')
-            ->where('student_id', $student->id)
-            ->where('class_id', $class->id)
-            ->whereIn('semester_id', $semesterIds)
-            ->get()
-            ->groupBy('semester_id');
+        $batchReportData = $this->reportLookupCache['batch-report-data'] ?? null;
+        $reportKey = $student->id.':'.$class->id;
+        $grades = $batchReportData !== null
+            ? $batchReportData['grades']->get($reportKey, collect())
+            : ReportCardGrade::with('subject')
+                ->where('student_id', $student->id)
+                ->where('class_id', $class->id)
+                ->whereIn('semester_id', $semesterIds)
+                ->get()
+                ->groupBy('semester_id');
 
         // Urutan harus sama dengan halaman input Nilai Rapot.
-        $subjects = $class->subjects()
-            ->where('subjects.status', 'Aktif')
-            ->orderBy('subjects.code')
-            ->orderBy('subjects.id')
-            ->get();
+        $subjectsCacheKey = 'subjects:' . $class->id;
+        if (!array_key_exists($subjectsCacheKey, $this->reportLookupCache)) {
+            $this->reportLookupCache[$subjectsCacheKey] = $class->subjects()
+                ->where('subjects.status', 'Aktif')
+                ->orderBy('subjects.code')
+                ->orderBy('subjects.id')
+                ->get();
+        }
+        $subjects = $this->reportLookupCache[$subjectsCacheKey];
 
-        $attendanceGanjil = $semesterGanjil
-            ? RekapAbsensi::where([
-                'student_id' => $student->id,
-                'class_id' => $class->id,
-                'semester_id' => $semesterGanjil->id,
-            ])->first()
-            : null;
+        $attendanceGanjil = null;
+        if ($semesterGanjil) {
+            $attendanceGanjil = $batchReportData !== null
+                ? $batchReportData['attendance']->get(
+                    $student->id.':'.$class->id.':'.$semesterGanjil->id
+                )
+                : RekapAbsensi::where([
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                    'semester_id' => $semesterGanjil->id,
+                ])->first();
+        }
 
-        $attendanceGenap = $semesterGenap
-            ? RekapAbsensi::where([
-                'student_id' => $student->id,
-                'class_id' => $class->id,
-                'semester_id' => $semesterGenap->id,
-            ])->first()
-            : null;
+        $attendanceGenap = null;
+        if ($semesterGenap) {
+            $attendanceGenap = $batchReportData !== null
+                ? $batchReportData['attendance']->get(
+                    $student->id.':'.$class->id.':'.$semesterGenap->id
+                )
+                : RekapAbsensi::where([
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                    'semester_id' => $semesterGenap->id,
+                ])->first();
+        }
 
         // Data keputusan kenaikan disimpan per siswa, kelas, dan tahun ajaran.
-        $promotion = StudentPromotion::where([
-            'student_id' => $student->id,
-            'class_id' => $class->id,
-            'academic_year_id' => $academicYearId,
-        ])->first();
+        $promotionKey = $student->id.':'.$class->id.':'.$academicYearId;
+        $promotion = $batchReportData !== null
+            ? $batchReportData['promotions']->get($promotionKey)
+            : StudentPromotion::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYearId,
+            ])->first();
 
-        $achievements = Achievement::where([
-            'student_id' => $student->id,
-            'class_id' => $class->id,
-            'academic_year_id' => $academicYearId,
-        ])
-            ->orderBy('id')
-            ->limit(3)
-            ->get();
+        $achievements = $batchReportData !== null
+            ? $batchReportData['achievements']->get($reportKey, collect())
+            : Achievement::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYearId,
+            ])
+                ->orderBy('id')
+                ->limit(3)
+                ->get();
 
         $homeroomTeacher = $class->homeroomTeacherUser?->loadMissing('employee')
             ?? $class->homeroomTeacher;
         $homeroomTeacher = $homeroomTeacher?->employee ?? $homeroomTeacher;
 
-        $headmaster = Employee::query()
-            ->where('status', 'Aktif')
-            ->where(function ($query) {
-                $query->where('position', 'like', '%Kepala Sekolah%')
-                    ->orWhere('position', 'like', '%Kepala%');
-            })
-            ->orderBy('id')
-            ->first();
+        if (!array_key_exists('headmaster', $this->reportLookupCache)) {
+            $this->reportLookupCache['headmaster'] = Employee::query()
+                ->where('status', 'Aktif')
+                ->where(function ($query) {
+                    $query->where('position', 'like', '%Kepala Sekolah%')
+                        ->orWhere('position', 'like', '%Kepala%');
+                })
+                ->orderBy('id')
+                ->first();
+        }
+        $headmaster = $this->reportLookupCache['headmaster'];
 
-        $schoolProfile = $this->schoolProfile();
+        if (!array_key_exists('school-profile', $this->reportLookupCache)) {
+            $this->reportLookupCache['school-profile'] = $this->schoolProfile();
+        }
+        $schoolProfile = $this->reportLookupCache['school-profile'];
         $gradeLevel = (int) $class->grade_level;
         $isFinalClass = $gradeLevel === 6;
 
@@ -586,35 +662,41 @@ class RekapRapotController extends Controller
             $finalGradeService = app(FinalGradeService::class);
 
             // Daftar mata pelajaran dan nilai akhir yang sudah tersimpan.
-            $ijazahMapping = $finalGradeService->getIjazahSubjectMapping();
+            if (!array_key_exists('ijazah-mapping', $this->reportLookupCache)) {
+                $this->reportLookupCache['ijazah-mapping'] = $finalGradeService->getIjazahSubjectMapping();
+            }
+            $ijazahMapping = $this->reportLookupCache['ijazah-mapping'];
 
-            $finalGrades = $finalGradeService->getStoredGrades(
-                $student->id,
-                $class->id,
-                $academicYearId
-            );
+            $finalGrades = $batchReportData !== null
+                ? $batchReportData['final-grades']->get($reportKey, collect())
+                : $finalGradeService->getStoredGrades(
+                    $student->id,
+                    $class->id,
+                    $academicYearId
+                );
 
             // Ambil rata-rata rapor dari perhitungan yang sudah digunakan
             // oleh fitur Nilai Akhir/Ijazah.
            // Nilai rata-rata rapor mengikuti mata pelajaran aktif
 // yang tersedia pada kelas di fitur Mata Pelajaran.
-foreach ($subjects as $subject) {
-    $reportResult = $finalGradeService->calculateSchoolScore(
-        $student,
-        (int) $subject->id
-    );
-
+            $schoolScoreResults = $finalGradeService->calculateSchoolScores(
+                $student,
+                $subjects->pluck('id')
+            );
+            foreach ($subjects as $subject) {
+                $reportResult = $schoolScoreResults[$subject->id];
     $reportAverageScores[$subject->id] = $reportResult['score'];
-}
+            }
 
             // Ambil status kelulusan siswa pada kelas dan tahun ajaran ini.
-            $graduationStatus = GraduationStatus::where([
-                'student_id' => $student->id,
-                'class_id' => $class->id,
-                'academic_year_id' => $academicYearId,
-            ])->first();
+            $graduationStatus = $batchReportData !== null
+                ? $batchReportData['graduation-statuses']->get($promotionKey)
+                : GraduationStatus::where([
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                    'academic_year_id' => $academicYearId,
+                ])->first();
         }
-
 
         return compact(
             'student',
@@ -642,6 +724,88 @@ foreach ($subjects as $subject) {
     }
 
     /**
+     * Load per-student report data in a few batch queries instead of querying
+     * every grade, attendance record, promotion, and achievement individually.
+     */
+    private function preloadBatchReportData(Collection $contexts, int $academicYearId): void
+    {
+        $this->reportLookupCache['batch-report-data'] = [
+            'grades' => collect(),
+            'attendance' => collect(),
+            'promotions' => collect(),
+            'achievements' => collect(),
+            'final-grades' => collect(),
+            'graduation-statuses' => collect(),
+        ];
+
+        if ($contexts->isEmpty()) {
+            return;
+        }
+
+        $classIds = $contexts->pluck('class.id')->unique()->values();
+        $studentIds = $contexts->pluck('student.id')->unique()->values();
+        $finalClassContexts = $contexts->filter(
+            fn (array $context) => (int) $context['class']->grade_level === 6
+        );
+        $semesters = $this->reportLookupCache['semesters:'.$academicYearId]
+            ?? Semester::where('academic_year_id', $academicYearId)->orderBy('id')->get();
+        $semesterIds = $semesters->pluck('id');
+        $pairKey = fn ($record) => $record->student_id.':'.$record->class_id;
+        $tripletKey = fn ($record) => $record->student_id.':'.$record->class_id.':'.$record->academic_year_id;
+
+        $this->reportLookupCache['semesters:'.$academicYearId] = $semesters;
+
+        $batchData = [
+            'grades' => ReportCardGrade::with('subject')
+                ->whereIn('student_id', $studentIds)
+                ->whereIn('class_id', $classIds)
+                ->whereIn('semester_id', $semesterIds)
+                ->get()
+                ->groupBy($pairKey)
+                ->map(fn (Collection $grades) => $grades->groupBy('semester_id')),
+            'attendance' => RekapAbsensi::whereIn('student_id', $studentIds)
+                ->whereIn('class_id', $classIds)
+                ->whereIn('semester_id', $semesterIds)
+                ->get()
+                ->keyBy(fn (RekapAbsensi $record) => $record->student_id.':'.$record->class_id.':'.$record->semester_id),
+            'promotions' => StudentPromotion::whereIn('student_id', $studentIds)
+                ->whereIn('class_id', $classIds)
+                ->where('academic_year_id', $academicYearId)
+                ->get()
+                ->keyBy($tripletKey),
+            'achievements' => Achievement::whereIn('student_id', $studentIds)
+                ->whereIn('class_id', $classIds)
+                ->where('academic_year_id', $academicYearId)
+                ->orderBy('id')
+                ->get()
+                ->groupBy($pairKey)
+                ->map(fn (Collection $achievements) => $achievements->take(3)->values()),
+            'final-grades' => collect(),
+            'graduation-statuses' => collect(),
+        ];
+
+        if ($finalClassContexts->isNotEmpty()) {
+            $finalStudentIds = $finalClassContexts->pluck('student.id')->unique()->values();
+            $finalClassIds = $finalClassContexts->pluck('class.id')->unique()->values();
+
+            $batchData['final-grades'] = FinalGrade::whereIn('student_id', $finalStudentIds)
+                ->whereIn('class_id', $finalClassIds)
+                ->where('academic_year_id', $academicYearId)
+                ->get()
+                ->groupBy($pairKey)
+                ->map(fn (Collection $grades) => $grades->keyBy('subject_id'));
+
+            $batchData['graduation-statuses'] = GraduationStatus::whereIn('student_id', $finalStudentIds)
+                ->whereIn('class_id', $finalClassIds)
+                ->where('academic_year_id', $academicYearId)
+                ->get()
+                ->keyBy($tripletKey);
+        }
+
+        $this->reportLookupCache['batch-report-data'] = $batchData;
+    }
+
+    /**
      * Menormalisasi pilihan tampilan semester untuk cetak rapor.
      */
     private function normalizeSemesterMode(mixed $value): string
@@ -659,15 +823,36 @@ foreach ($subjects as $subject) {
     private function resolveStudentClass(
         Student $student,
         int $academicYearId,
-        mixed $classId = null
+        mixed $classId = null,
+        ?Collection $allowedClassIds = null
     ): ?SchoolClass {
+        if ($student->relationLoaded('classes')) {
+            return $student->classes
+                ->filter(fn (SchoolClass $class) => (int) $class->academic_year_id === $academicYearId
+                    && ($classId === null || (int) $class->id === (int) $classId)
+                    && ($allowedClassIds === null || $allowedClassIds->contains((int) $class->id)))
+                ->sortBy([
+                    ['grade_level', 'asc'],
+                    ['name', 'asc'],
+                ])
+                ->first();
+        }
+
         return SchoolClass::query()
             ->where('academic_year_id', $academicYearId)
             ->when($classId !== null, fn ($query) => $query->whereKey($classId))
+            ->when(
+                $allowedClassIds !== null,
+                fn ($query) => $query->whereIn('id', $allowedClassIds)
+            )
             ->whereHas('classStudents', function ($query) use ($student) {
                 $query->where('student_id', $student->id);
             })
-            ->with('academicYear')
+            ->with([
+                'academicYear',
+                'homeroomTeacher',
+                'homeroomTeacherUser.employee',
+            ])
             ->orderBy('grade_level')
             ->orderBy('name')
             ->first();

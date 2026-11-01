@@ -73,6 +73,18 @@
         outline: 3px solid rgba(26, 122, 76, .25);
         outline-offset: 2px;
     }
+    .preview-wrapper { position: relative; }
+    .rr-preview-loading {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, .92);
+        color: #1a7a4c;
+        text-align: center;
+    }
 
 </style>
 @include('reports._shared-ui-styles')
@@ -391,8 +403,7 @@
                             <a
                                 class="btn btn-sm btn-danger"
                                 id="rrExportPreviewPdf"
-                                target="_blank"
-                                rel="noopener"
+                                data-biduk-download
                                 @if($previewStudentClass)
                                     href="{{ route('rekap-rapot.print', array_merge($commonParams, ['student' => $previewStudent->id, 'class_id' => $previewStudentClass->id, 'pdf' => 1])) }}"
                                 @endif
@@ -407,6 +418,12 @@
                         <p class="text-muted mb-0">Pilih jenis cetak dan parameternya, lalu klik <strong>Preview Laporan</strong> untuk menampilkan dokumen.</p>
                     </div>
                     <div class="preview-wrapper {{ $previewStudentClass ? '' : 'd-none' }}" id="rrPreviewWrapper">
+                        <div class="rr-preview-loading {{ $previewStudentClass ? '' : 'd-none' }}" id="rrPreviewLoading">
+                            <div>
+                                <span class="spinner-border text-success mb-2" role="status" aria-hidden="true"></span>
+                                <div class="small fw-semibold">Menyiapkan preview rapor...</div>
+                            </div>
+                        </div>
                         <iframe
                             class="preview-frame"
                             id="rrPreviewFrame"
@@ -467,11 +484,19 @@
 
         // Preview panel elements
         const previewFrame = document.getElementById('rrPreviewFrame');
+        const previewLoading = document.getElementById('rrPreviewLoading');
         const previewWrapper = document.getElementById('rrPreviewWrapper');
         const previewPlaceholder = document.getElementById('rrPreviewPlaceholder');
         const previewToolbar = document.getElementById('rrPreviewToolbar');
         const previewStudentName = document.getElementById('rrPreviewStudentName');
         const exportPreviewPdf = document.getElementById('rrExportPreviewPdf');
+
+        previewFrame?.addEventListener('load', function () {
+            previewLoading?.classList.add('d-none');
+        });
+        if (previewFrame?.contentDocument?.readyState === 'complete') {
+            previewLoading?.classList.add('d-none');
+        }
         const previewPageCount = document.getElementById('rrPreviewPageCount');
 
         const form = document.getElementById('rekap-rapot-filter-form');
@@ -850,6 +875,7 @@
             const formData = new FormData(form);
 
             previewPageCount.textContent = 'Menghitung halaman...';
+            previewLoading?.classList.remove('d-none');
             previewFrame.src = previewUrl;
             previewFrame.title = 'Preview rapor ' + studentNameVal;
             previewStudentName.textContent = studentNameVal;

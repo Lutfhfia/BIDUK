@@ -298,7 +298,9 @@
 
     loader.dataset.initialized = 'true';
     let skipBeforeUnload = false;
-let skipBeforeUnloadTimer = null;
+    let skipBeforeUnloadTimer = null;
+    let navigationPending = false;
+    let downloadInProgress = false;
 
     const logoImage = loader.querySelector('.biduk-school-logo');
     const fallbackIcon = loader.querySelector('.biduk-loader-fallback');
@@ -330,6 +332,77 @@ let skipBeforeUnloadTimer = null;
         loader.setAttribute('aria-hidden', 'true');
     };
 
+    const downloadFile = async function (url, suggestedFilename) {
+        if (downloadInProgress) {
+            return;
+        }
+
+        downloadInProgress = true;
+        navigationPending = false;
+        const label = loader.querySelector('.biduk-loader-label');
+        const originalLabel = label?.textContent ?? '';
+        if (label) label.textContent = 'Menyiapkan unduhan...';
+        showLoader();
+
+        try {
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: { Accept: '*/*' },
+            });
+
+            if (!response.ok) {
+                throw new Error('Unduhan gagal. Silakan coba lagi.');
+            }
+
+            const disposition = response.headers.get('Content-Disposition') || '';
+            const contentType = response.headers.get('Content-Type') || '';
+            if (
+                !disposition.toLowerCase().includes('attachment') &&
+                (contentType.includes('text/html') || contentType.includes('application/json'))
+            ) {
+                throw new Error('Server tidak mengembalikan file unduhan. Silakan coba lagi.');
+            }
+
+            const blob = await response.blob();
+            const encodedFilename = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+            const plainFilename = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+            let filename = suggestedFilename || plainFilename;
+
+            if (!filename && encodedFilename) {
+                try {
+                    filename = decodeURIComponent(encodedFilename);
+                } catch (_) {
+                    filename = encodedFilename;
+                }
+            }
+
+            filename ||= new URL(url, window.location.href).pathname.split('/').pop() || 'unduhan';
+
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = filename;
+            link.hidden = true;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+        } catch (error) {
+            window.alert(error instanceof Error ? error.message : 'Unduhan gagal. Silakan coba lagi.');
+        } finally {
+            downloadInProgress = false;
+            navigationPending = false;
+            if (label) label.textContent = originalLabel;
+            hideLoader();
+        }
+    };
+
+    window.bidukPageLoader = {
+        show: showLoader,
+        hide: hideLoader,
+        download: downloadFile,
+    };
+
     /*
      * Loading saat membuka tautan internal.
      */
@@ -350,16 +423,23 @@ let skipBeforeUnloadTimer = null;
             return;
         }
 
+        const downloadLink = target.closest('a[data-biduk-download], a[download]');
+        if (downloadLink) {
+            event.preventDefault();
+            downloadFile(
+                downloadLink.href,
+                downloadLink.dataset.filename || downloadLink.getAttribute('download')
+            );
+            return;
+        }
+
         const link = target.closest('a[href]');
 
         if (!link) {
     return;
 }
 
-if (
-    link.hasAttribute('download') ||
-    link.dataset.noPageLoader === 'true'
-) {
+if (link.dataset.noPageLoader === 'true') {
     skipBeforeUnload = true;
 
     window.clearTimeout(skipBeforeUnloadTimer);
@@ -414,6 +494,7 @@ window.clearTimeout(skipBeforeUnloadTimer);
             return;
         }
 
+        navigationPending = true;
         showLoader();
     }, true);
 
@@ -431,6 +512,7 @@ window.clearTimeout(skipBeforeUnloadTimer);
         }
 
         if (!event.defaultPrevented && form.checkValidity()) {
+            navigationPending = true;
             showLoader();
         }
     });
@@ -446,9 +528,27 @@ window.clearTimeout(skipBeforeUnloadTimer);
         return;
     }
 
+    if (downloadInProgress) {
+        return;
+    }
+
+    navigationPending = true;
     showLoader();
 });
-    window.addEventListener('pageshow', hideLoader);
+    window.addEventListener('pageshow', function () {
+        navigationPending = false;
+        hideLoader();
+    });
     window.addEventListener('load', hideLoader);
+    document.addEventListener('visibilitychange', function () {
+        if (
+            document.visibilityState === 'visible' &&
+            navigationPending &&
+            document.readyState === 'complete'
+        ) {
+            navigationPending = false;
+            hideLoader();
+        }
+    });
 })();
 </script>

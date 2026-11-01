@@ -122,7 +122,7 @@
         <a
     href="{{ route('rekap-absensi.pdf', request()->only(['academic_year_id', 'class_id', 'search'])) }}"
     class="btn btn-biduk-outline btn-sm"
-    data-no-page-loader="true"
+    data-biduk-download
 >
     <i class="bi bi-download me-1"></i>Unduh PDF
 </a>

@@ -205,6 +205,39 @@ class ReportCardGradeImportTest extends TestCase
             ->assertDontSeeText('Belum Diisi');
     }
 
+    public function test_history_finds_report_card_grades_without_a_class_assignment(): void
+    {
+        [$year, $class, $student, $subject, $odd] = $this->createRoster(5);
+        ClassStudent::where('class_id', $class->id)
+            ->where('student_id', $student->id)
+            ->delete();
+        ReportCardGrade::create([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'subject_id' => $subject->id,
+            'semester_id' => $odd->id,
+            'score' => 86,
+        ]);
+        $user = User::create([
+            'name' => 'Admin Riwayat',
+            'username' => 'admin-grade-history',
+            'email' => 'admin-grade-history@example.test',
+            'password' => 'password',
+            'role_id' => Role::create(['name' => 'Super Admin'])->id,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('report-card-grades.history', $student))
+            ->assertOk()
+            ->assertSeeText('Nilai Tersedia');
+
+        $this->assertSame(
+            $class->id,
+            $response->viewData('gradeLevelsData')[5]['class']->id
+        );
+        $this->assertSame($year->id, $response->viewData('gradeLevelsData')[5]['academic_year']->id);
+    }
+
     public function test_template_predicate_dropdown_values_are_imported_into_report_card_grades(): void
     {
         [$year, $class, $student, $subject, $odd] = $this->createRoster();

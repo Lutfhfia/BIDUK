@@ -93,7 +93,7 @@
                             <button id="import-submit" type="submit" class="btn btn-biduk-primary px-4 py-2">
                                 <i class="bi bi-upload me-1"></i> Mulai Import
                             </button>
-                            <a href="{{ route('students.import.template') }}" class="btn btn-outline-primary px-3 py-2">
+                            <a href="{{ route('students.import.template') }}" class="btn btn-outline-primary px-3 py-2" data-biduk-download>
     <i class="bi bi-download me-1"></i> Download Format Template
 </a>
                         </div>

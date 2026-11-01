@@ -542,6 +542,7 @@
                                         id="download-import-template"
                                         href="{{ route('report-card-grades.import.template') }}"
                                         class="btn btn-outline-success"
+                                        data-biduk-download
                                     >
                                         <i class="bi bi-download me-1"></i>Download Template Import
                                     </a>

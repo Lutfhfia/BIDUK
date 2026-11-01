@@ -991,7 +991,9 @@
                     const parameters = reportParameters();
                     parameters.set('pdf', '1');
                     parameters.delete('student_id');
-                    window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
+                    window.bidukPageLoader.download(
+                        '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString()
+                    );
                     return;
                 }
 
@@ -1000,7 +1002,9 @@
                     parameters.set('pdf', '1');
                     parameters.delete('class_id');
                     parameters.delete('student_id');
-                    window.location.href = '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString();
+                    window.bidukPageLoader.download(
+                        '{{ route('buku-induk.batch-pdf') }}?' + parameters.toString()
+                    );
                     return;
                 }
 
@@ -1012,7 +1016,9 @@
 
                 const parameters = reportParameters();
                 parameters.set('pdf', '1');
-                window.location.href = '{{ url('/laporan/buku-induk/cetak') }}/' + studentId + '?' + parameters.toString();
+                window.bidukPageLoader.download(
+                    '{{ url('/laporan/buku-induk/cetak') }}/' + studentId + '?' + parameters.toString()
+                );
             }
 
             previewPdfButton?.addEventListener('click', downloadCurrentDocument);

@@ -141,6 +141,12 @@ Route::middleware('auth')->group(function () {
     // =================================================
 
     Route::get(
+        '/achievement-reports/cetak',
+        [AchievementReportController::class, 'download']
+    )->middleware('permission:achievements.view')
+        ->name('achievement-reports.pdf');
+
+    Route::get(
         '/achievement-reports',
         [AchievementReportController::class, 'index']
     )->middleware('permission:achievements.view')
