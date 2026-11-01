@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicYear;
 use App\Models\Achievement;
 use App\Models\Employee;
+use App\Models\GraduationStatus;
 use App\Models\RekapAbsensi;
 use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
@@ -13,6 +14,7 @@ use App\Models\Student;
 use App\Models\StudentClassHistory;
 use App\Models\StudentPromotion;
 use App\Models\Subject;
+use App\Services\FinalGradeService;
 use App\Services\ReportCardGradeImportContext;
 use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -794,16 +796,124 @@ class ReportCardGradeController extends Controller
 
         $semesterMode = $request->input('semester', 'both');
 
-        $reportData = $this->buildReportData($student, $class, $academicYearId, $semesterMode);
-        $view = view('reports.rekap-rapot.print', $reportData);
+        $reportData = $this->buildReportData(
+    $student,
+    $class,
+    $academicYearId,
+    $semesterMode
+);
+
+$isFinalClass = (int) $class->grade_level === 6;
+
+if ($isFinalClass) {
+    $finalGradeService = app(\App\Services\FinalGradeService::class);
+
+    // Data mata pelajaran Ijazah.
+    $reportData['ijazahMapping'] =
+        $finalGradeService->getIjazahSubjectMapping();
+
+    // Nilai Ijazah yang sudah tersimpan.
+    $reportData['finalGrades'] =
+        $finalGradeService->getStoredGrades(
+            $student->id,
+            $class->id,
+            $academicYearId
+        );
+
+    // Rata-rata rapor Kelas 5 dan Kelas 6.
+    $reportData['reportAverageScores'] = [];
+
+    foreach ($reportData['subjects'] as $subject) {
+        $result = $finalGradeService->calculateSchoolScore(
+            $student,
+            (int) $subject->id
+        );
+
+        $reportData['reportAverageScores'][$subject->id] =
+            $result['score'] ?? null;
+    }
+
+    // Status kelulusan.
+    $reportData['graduationStatus'] =
+        \App\Models\GraduationStatus::where([
+            'student_id' => $student->id,
+            'class_id' => $class->id,
+            'academic_year_id' => $academicYearId,
+        ])->first();
+
+    $view = view(
+        'reports.rekap-rapot.kelas-6',
+        $reportData
+    );
+} else {
+    $view = view(
+        'reports.rekap-rapot.print',
+        $reportData
+    );
+}
+
+if ($request->boolean('pdf')) {
+    $filename = 'rapot-' . ($student->nis ?: $student->id)
+        . '-kelas-' . $class->grade_level . '.pdf';
+
+    $pdf = Pdf::loadHTML($view->render())
+        ->setOption('defaultMediaType', 'print');
+
+    if ($isFinalClass) {
+        $pdf->setPaper([0, 0, 609.45, 935.43], 'portrait');
+    } else {
+        $pdf->setPaper('a4', 'portrait');
+    }
+
+    return $pdf->download($filename);
+}
+
+return $view;
+        if ($isFinalClass) {
+            $finalGradeService = app(FinalGradeService::class);
+
+            $reportData['ijazahMapping'] = $finalGradeService->getIjazahSubjectMapping();
+            $reportData['finalGrades'] = $finalGradeService->getStoredGrades(
+                $student->id,
+                $class->id,
+                $academicYearId
+            );
+
+            // Rata-rata rapor Kelas 5 Ganjil/Genap dan Kelas 6 Ganjil/Genap.
+            $reportData['reportAverageScores'] = [];
+            foreach ($reportData['subjects'] as $subject) {
+                $scoreResult = $finalGradeService->calculateSchoolScore(
+                    $student,
+                    (int) $subject->id
+                );
+                $reportData['reportAverageScores'][$subject->id] = $scoreResult['score'] ?? null;
+            }
+
+            $reportData['graduationStatus'] = GraduationStatus::where([
+                'student_id' => $student->id,
+                'class_id' => $class->id,
+                'academic_year_id' => $academicYearId,
+            ])->first();
+
+            $view = view('reports.rekap-rapot.kelas-6', $reportData);
+        } else {
+            $view = view('reports.rekap-rapot.print', $reportData);
+        }
 
         if ($request->boolean('pdf')) {
             $filename = 'rapot-' . ($student->nis ?: $student->id) . '-kelas-' . $class->grade_level . '.pdf';
+            $pdf = Pdf::loadHTML($view->render())
+                ->setOption('defaultMediaType', 'print');
 
-            return Pdf::loadHTML($view->render())
-                ->setOption('defaultMediaType', 'print')
-                ->setPaper('a4', 'portrait')
-                ->download($filename);
+            // Ukuran landscape hanya untuk formulir khusus Kelas 6.
+            // Kelas 1-5 tetap memakai ukuran A4 portrait seperti sebelumnya.
+            if ($isFinalClass) {
+                $pdf->setPaper([0, 0, 935.43, 609.45]); // F4 landscape
+            } else {
+                $pdf->setPaper('a4', 'portrait');
+            }
+
+            return $pdf->download($filename);
         }
 
         return $view;

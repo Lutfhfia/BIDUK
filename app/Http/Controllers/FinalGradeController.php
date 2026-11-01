@@ -81,7 +81,8 @@ class FinalGradeController extends Controller
 
         $schoolScoreResults = $this->service->calculateSchoolScores(
             $student,
-            $ijazahMapping->pluck('subject_id')->filter()
+            $ijazahMapping->pluck('subject_id')->filter(),
+            $class
         );
 
         foreach ($ijazahMapping as $item) {
@@ -107,20 +108,14 @@ class FinalGradeController extends Controller
         ])->first();
 
         /*
-         * Absensi kumulatif (mengambil dari kelas 6 genap jika ada).
+         * Absensi Ijazah adalah total Kelas 6 Semester Ganjil + Genap.
+         * Bila satu semester belum tersedia, total sementara tetap dihitung
+         * dari data yang ada dan daftar semester yang kurang dikirim ke view.
          */
-        $semesterGenap = Semester::where('academic_year_id', $class->academic_year_id)
-            ->whereRaw('LOWER(name) = ?', ['genap'])
-            ->first();
-
-        $attendance = null;
-        if ($semesterGenap) {
-            $attendance = RekapAbsensi::where([
-                'student_id'  => $student->id,
-                'class_id'    => $class->id,
-                'semester_id' => $semesterGenap->id,
-            ])->first();
-        }
+        $attendanceSummary = $this->getGradeSixAttendanceSummary($student, $class);
+        $attendance = $attendanceSummary['attendance'];
+        $attendanceIsComplete = $attendanceSummary['attendanceIsComplete'];
+        $attendanceMissingSemesters = $attendanceSummary['attendanceMissingSemesters'];
 
         /*
          * Wali kelas.
@@ -151,6 +146,8 @@ class FinalGradeController extends Controller
             'missingData',
             'graduationStatus',
             'attendance',
+            'attendanceIsComplete',
+            'attendanceMissingSemesters',
             'homeroomTeacher',
             'headmaster',
             'returnUrl'
@@ -305,20 +302,13 @@ class FinalGradeController extends Controller
         ])->first();
 
         /*
-         * Absensi.
+         * Absensi pada PDF Ijazah menggunakan total Kelas 6 Ganjil + Genap,
+         * sama seperti halaman input Nilai Akhir/Ijazah.
          */
-        $semesterGenap = Semester::where('academic_year_id', $class->academic_year_id)
-            ->whereRaw('LOWER(name) = ?', ['genap'])
-            ->first();
-
-        $attendance = null;
-        if ($semesterGenap) {
-            $attendance = RekapAbsensi::where([
-                'student_id'  => $student->id,
-                'class_id'    => $class->id,
-                'semester_id' => $semesterGenap->id,
-            ])->first();
-        }
+        $attendanceSummary = $this->getGradeSixAttendanceSummary($student, $class);
+        $attendance = $attendanceSummary['attendance'];
+        $attendanceIsComplete = $attendanceSummary['attendanceIsComplete'];
+        $attendanceMissingSemesters = $attendanceSummary['attendanceMissingSemesters'];
 
         /*
          * Rata-rata.
@@ -359,6 +349,8 @@ class FinalGradeController extends Controller
             'storedGrades',
             'graduationStatus',
             'attendance',
+            'attendanceIsComplete',
+            'attendanceMissingSemesters',
             'avgSchoolScore',
             'avgFinalScore',
             'homeroomTeacher',
@@ -377,4 +369,72 @@ class FinalGradeController extends Controller
             ->setPaper('a4', 'portrait')
             ->download($filename);
     }
+
+    /**
+     * Mengambil dan menjumlahkan rekap absensi Kelas 6 untuk dua semester.
+     *
+     * @return array{
+     *   attendance: object|null,
+     *   attendanceIsComplete: bool,
+     *   attendanceMissingSemesters: array<int, string>
+     * }
+     */
+    private function getGradeSixAttendanceSummary(Student $student, SchoolClass $class): array
+    {
+        $semesters = Semester::query()
+            ->where('academic_year_id', $class->academic_year_id)
+            ->orderBy('id')
+            ->get();
+
+        $semesterByName = [];
+        foreach ($semesters as $semester) {
+            $normalizedName = mb_strtolower(trim($semester->name));
+
+            if (str_contains($normalizedName, 'ganjil') && !isset($semesterByName['ganjil'])) {
+                $semesterByName['ganjil'] = $semester;
+            } elseif (str_contains($normalizedName, 'genap') && !isset($semesterByName['genap'])) {
+                $semesterByName['genap'] = $semester;
+            }
+        }
+
+        $totals = [
+            'sakit' => 0,
+            'izin' => 0,
+            'tanpa_keterangan' => 0,
+        ];
+        $availableSemesters = [];
+        $missingSemesters = [];
+
+        foreach (['ganjil' => 'Semester Ganjil', 'genap' => 'Semester Genap'] as $key => $label) {
+            $semester = $semesterByName[$key] ?? null;
+
+            if (!$semester) {
+                $missingSemesters[] = $label . ' belum tersedia pada tahun ajaran Kelas 6';
+                continue;
+            }
+
+            $record = RekapAbsensi::query()
+                ->where('student_id', $student->id)
+                ->where('class_id', $class->id)
+                ->where('semester_id', $semester->id)
+                ->first();
+
+            if (!$record) {
+                $missingSemesters[] = $label . ' belum memiliki rekap absensi';
+                continue;
+            }
+
+            $availableSemesters[] = $label;
+            $totals['sakit'] += (int) ($record->sakit ?? 0);
+            $totals['izin'] += (int) ($record->izin ?? 0);
+            $totals['tanpa_keterangan'] += (int) ($record->tanpa_keterangan ?? 0);
+        }
+
+        return [
+            'attendance' => $availableSemesters !== [] ? (object) $totals : null,
+            'attendanceIsComplete' => count($availableSemesters) === 2 && $missingSemesters === [],
+            'attendanceMissingSemesters' => $missingSemesters,
+        ];
+    }
+
 }

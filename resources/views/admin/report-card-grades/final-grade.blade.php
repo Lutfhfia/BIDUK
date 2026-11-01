@@ -24,8 +24,10 @@
 
             <div class="d-flex gap-2">
                 @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('grades.view'))
-                    <a href="{{ route('final-grades.print', [$class->id, $student->id]) }}" class="btn btn-outline-danger"
-                        data-biduk-download>
+                <a href="{{ route('final-grades.print', [$class->id, $student->id]) }}"
+    class="btn btn-outline-danger"
+    data-biduk-download
+    data-no-page-loader="true">
                         <i class="bi bi-printer me-1"></i>
                         Cetak PDF
                     </a>
@@ -381,20 +383,31 @@
                     <h5 class="fw-bold mb-0">
                         C. Ketidakhadiran
                     </h5>
+                    <small class="text-muted">Total absensi Kelas 6 Semester Ganjil + Genap.</small>
                 </div>
 
                 <div class="card-body">
+                    @if (!empty($attendanceMissingSemesters))
+                        <div class="alert alert-warning small mb-3">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            @if ($attendance)
+                                Data absensi yang tampil masih merupakan total sementara. Lengkapi rekap untuk:
+                            @else
+                                Data absensi Kelas 6 belum tersedia. Lengkapi rekap untuk:
+                            @endif
+                            <ul class="mb-0 mt-1">
+                                @foreach ($attendanceMissingSemesters as $missingSemester)
+                                    <li>{{ $missingSemester }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label small text-muted">Sakit</label>
                             <input type="text" class="form-control"
                                 value="{{ $attendance ? $attendance->sakit . ' hari' : 'Data belum tersedia' }}" readonly>
-                            @if (!$attendance)
-                                <small class="text-warning">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                    Rekap absensi belum diisi
-                                </small>
-                            @endif
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small text-muted">Izin</label>
@@ -408,6 +421,17 @@
                                 readonly>
                         </div>
                     </div>
+
+                    @if ($attendance && $attendanceIsComplete)
+                        <small class="text-success d-block mt-2">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Total absensi Semester Ganjil dan Genap Kelas 6 sudah lengkap.
+                        </small>
+                    @elseif ($attendance)
+                        <small class="text-muted d-block mt-2">
+                            Angka di atas hanya menjumlahkan semester yang sudah memiliki rekap.
+                        </small>
+                    @endif
                 </div>
 
             </div>

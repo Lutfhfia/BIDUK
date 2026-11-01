@@ -8,6 +8,7 @@ use App\Models\ReportCardGrade;
 use App\Models\SchoolClass;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentClassHistory;
 use App\Models\Subject;
 use Illuminate\Support\Collection;
 
@@ -153,78 +154,178 @@ class FinalGradeService
      * @param iterable<int> $subjectIds
      * @return array<int, array{score: float|null, count: int, missing: array}>
      */
-    public function calculateSchoolScores(Student $student, iterable $subjectIds): array
-    {
-        $subjectIds = collect($subjectIds)->map(fn ($id) => (int) $id)->unique()->values();
+    public function calculateSchoolScores(
+        Student $student,
+        iterable $subjectIds,
+        ?SchoolClass $classForLevelSix = null
+    ): array {
+        $subjectIds = collect($subjectIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
         $results = $subjectIds->mapWithKeys(fn (int $id) => [$id => [
             'score' => null,
             'count' => 0,
             'missing' => [],
         ]])->all();
 
-        $classAssignments = ClassStudent::where('student_id', $student->id)
+        if ($subjectIds->isEmpty()) {
+            return $results;
+        }
+
+        // Penempatan melalui class_student, diurutkan dari tahun terbaru.
+        $classAssignments = ClassStudent::query()
+            ->where('student_id', $student->id)
             ->with(['schoolClass.academicYear.semesters'])
+            ->orderByDesc('created_at')
             ->get();
 
-        $targetClasses = [];
-        $targetSemesters = [];
-        $missingBySubject = array_fill_keys($subjectIds->all(), []);
+        // Riwayat kelas manual dapat menyimpan kelas lampau tanpa pivot class_student.
+        $manualHistories = StudentClassHistory::query()
+            ->where('student_id', $student->id)
+            ->get()
+            ->keyBy('grade_level');
+
+        // Ambil kelas 5/6 yang memang memiliki record nilai rapor siswa.
+        $gradedClassIds = ReportCardGrade::query()
+            ->where('student_id', $student->id)
+            ->select('class_id')
+            ->distinct()
+            ->pluck('class_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $gradedClasses = $gradedClassIds->isEmpty()
+            ? collect()
+            : SchoolClass::query()
+                ->with(['academicYear.semesters'])
+                ->whereIn('id', $gradedClassIds)
+                ->whereIn('grade_level', [5, 6])
+                ->get();
+
         $targetLevels = [5, 6];
         $semesterNames = ['ganjil', 'genap'];
+        $missingBySubject = array_fill_keys($subjectIds->all(), []);
+        $classesByLevel = [];
+        $semestersByLevel = [];
+        $targetClassIds = [];
+        $targetSemesterIds = [];
 
         foreach ($targetLevels as $level) {
-            $assignment = $classAssignments->first(function ($cs) use ($level) {
-                return $cs->schoolClass
-                    && (int) $cs->schoolClass->grade_level === $level;
-            });
+            $classModel = null;
 
-            if (!$assignment || !$assignment->schoolClass) {
-                foreach ($missingBySubject as $subjectId => $_) {
-                    foreach ($semesterNames as $semName) {
-                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semName}";
+            // Kelas 6 mengikuti kelas yang sedang dibuka pada halaman Ijazah.
+            if (
+                $level === 6
+                && $classForLevelSix
+                && (int) $classForLevelSix->grade_level === 6
+            ) {
+                $classModel = $classForLevelSix->loadMissing(['academicYear.semesters']);
+            }
+
+            // Jika riwayat manual tersedia, cocokkan dengan rombel dan tahun ajarannya.
+            if (!$classModel) {
+                $manualHistory = $manualHistories->get($level);
+
+                if ($manualHistory) {
+                    $classModel = SchoolClass::query()
+                        ->with(['academicYear.semesters'])
+                        ->where('grade_level', $level)
+                        ->whereRaw('LOWER(name) = ?', [mb_strtolower(trim($manualHistory->rombel))])
+                        ->whereHas('academicYear', function ($query) use ($manualHistory) {
+                            $query->where('name', trim($manualHistory->academic_year));
+                        })
+                        ->first();
+                }
+            }
+
+            // Berikutnya prioritaskan kelas yang mempunyai nilai rapor tersimpan.
+            if (!$classModel) {
+                $classModel = $gradedClasses
+                    ->where('grade_level', $level)
+                    ->sortByDesc(function (SchoolClass $candidate) {
+                        $startDate = $candidate->academicYear?->start_date;
+                        $yearOrder = $startDate ? (strtotime((string) $startDate) ?: 0) : 0;
+
+                        return sprintf('%010d-%010d', $yearOrder, (int) $candidate->id);
+                    })
+                    ->first();
+            }
+
+            // Fallback terakhir: kelas yang tercatat di penempatan siswa.
+            if (!$classModel) {
+                $assignment = $classAssignments
+                    ->filter(fn ($item) => $item->schoolClass
+                        && (int) $item->schoolClass->grade_level === $level)
+                    ->sortByDesc(function ($item) {
+                        $startDate = $item->schoolClass?->academicYear?->start_date;
+                        $yearOrder = $startDate ? (strtotime((string) $startDate) ?: 0) : 0;
+                        $createdOrder = $item->created_at?->timestamp ?? 0;
+
+                        return sprintf(
+                            '%010d-%010d-%010d',
+                            $yearOrder,
+                            $createdOrder,
+                            (int) $item->id
+                        );
+                    })
+                    ->first();
+
+                $classModel = $assignment?->schoolClass;
+            }
+
+            if (!$classModel) {
+                foreach ($subjectIds as $subjectId) {
+                    foreach ($semesterNames as $semesterName) {
+                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semesterName}";
                     }
                 }
                 continue;
             }
 
-            $classModel    = $assignment->schoolClass;
-            $academicYear  = $classModel->academicYear;
+            $classesByLevel[$level] = $classModel;
+            $academicYear = $classModel->academicYear;
 
             if (!$academicYear) {
-                foreach ($missingBySubject as $subjectId => $_) {
-                    foreach ($semesterNames as $semName) {
-                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semName} (tahun ajaran tidak ditemukan)";
+                foreach ($subjectIds as $subjectId) {
+                    foreach ($semesterNames as $semesterName) {
+                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semesterName} (tahun ajaran tidak ditemukan)";
                     }
                 }
                 continue;
             }
 
-            $semesters = $academicYear->semesters;
+            $semesters = $academicYear->semesters ?? collect();
+            $targetClassIds[] = (int) $classModel->id;
 
-            foreach ($semesterNames as $semName) {
+            foreach ($semesterNames as $semesterName) {
                 $semester = $semesters->first(
-                    fn(Semester $s) => strtolower($s->name) === $semName
+                    fn (Semester $item) => mb_strtolower(trim($item->name)) === $semesterName
                 );
 
                 if (!$semester) {
-                    foreach ($missingBySubject as $subjectId => $_) {
-                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semName} (semester tidak ditemukan)";
+                    foreach ($subjectIds as $subjectId) {
+                        $missingBySubject[$subjectId][] = "Kelas {$level} {$semesterName} (semester tidak ditemukan)";
                     }
                     continue;
                 }
 
-                $targetClasses[] = $classModel->id;
-                $targetSemesters[] = $semester->id;
+                $semestersByLevel[$level][$semesterName] = $semester;
+                $targetSemesterIds[] = (int) $semester->id;
             }
         }
 
         $grades = collect();
-        if ($subjectIds->isNotEmpty() && $targetClasses && $targetSemesters) {
+        if ($targetClassIds && $targetSemesterIds) {
             $grades = ReportCardGrade::query()
                 ->where('student_id', $student->id)
-                ->whereIn('class_id', array_unique($targetClasses))
+                ->whereIn('class_id', array_values(array_unique($targetClassIds)))
                 ->whereIn('subject_id', $subjectIds)
-                ->whereIn('semester_id', array_unique($targetSemesters))
+                ->whereIn('semester_id', array_values(array_unique($targetSemesterIds)))
                 ->get()
                 ->keyBy(fn (ReportCardGrade $grade) => implode(':', [
                     $grade->class_id,
@@ -234,22 +335,13 @@ class FinalGradeService
         }
 
         foreach ($targetLevels as $level) {
-            $assignment = $classAssignments->first(
-                fn ($cs) => $cs->schoolClass
-                    && (int) $cs->schoolClass->grade_level === $level
-            );
-            $classModel = $assignment?->schoolClass;
-            $academicYear = $classModel?->academicYear;
-            $semesters = $academicYear?->semesters ?? collect();
-
-            if (!$classModel || !$academicYear) {
+            $classModel = $classesByLevel[$level] ?? null;
+            if (!$classModel || !$classModel->academicYear) {
                 continue;
             }
 
-            foreach ($semesterNames as $semName) {
-                $semester = $semesters->first(
-                    fn (Semester $item) => strtolower($item->name) === $semName
-                );
+            foreach ($semesterNames as $semesterName) {
+                $semester = $semestersByLevel[$level][$semesterName] ?? null;
                 if (!$semester) {
                     continue;
                 }
@@ -261,8 +353,8 @@ class FinalGradeService
                         $semester->id,
                     ]));
 
-                    if (!$grade || $grade->score === null) {
-                        $missingBySubject[$subjectId][] = "Kelas {$level} " . ucfirst($semName);
+                    if (!$grade || $grade->score === null || trim((string) $grade->score) === '') {
+                        $missingBySubject[$subjectId][] = "Kelas {$level} " . ucfirst($semesterName);
                         continue;
                     }
 
@@ -275,10 +367,13 @@ class FinalGradeService
 
         foreach ($results as $subjectId => &$result) {
             if ($result['count'] > 0) {
+                // Rata-rata parsial tetap terlihat, tetapi missing tetap menjadi peringatan.
                 $result['score'] /= $result['count'];
             }
-            $result['missing'] = $missingBySubject[$subjectId];
+
+            $result['missing'] = array_values(array_unique($missingBySubject[$subjectId]));
         }
+        unset($result);
 
         return $results;
     }
@@ -328,7 +423,8 @@ class FinalGradeService
         $results = [];
         $schoolScoreResults = $this->calculateSchoolScores(
             $student,
-            $mapping->pluck('subject_id')->filter()
+            $mapping->pluck('subject_id')->filter(),
+            $class
         );
 
         foreach ($mapping as $item) {

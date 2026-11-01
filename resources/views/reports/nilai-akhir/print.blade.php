@@ -346,7 +346,7 @@
                                 <tr>
                                     <td>Tanggal Penetapan</td>
                                     <td>:</td>
-                                    <td>{{ $graduationStatus->graduation_date->translatedFormat('d F Y') }}</td>
+                                    <td>{{ \Illuminate\Support\Carbon::parse($graduationStatus->graduation_date)->translatedFormat('d F Y') }}</td>
                                 </tr>
                             @endif
                             @if ($graduationStatus && $graduationStatus->certificate_number)
