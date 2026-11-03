@@ -106,6 +106,14 @@
 
 @section('content')
 
+    @php
+        $user = auth()->user();
+        $canCreateAttendance = $user->isSuperAdmin() || $user->hasPermission('attendance.create');
+        $canEditAttendance = $user->isSuperAdmin() || $user->hasPermission('attendance.edit');
+        $canDeleteAttendance = $user->isSuperAdmin() || $user->hasPermission('attendance.delete');
+        $canExportAttendance = $user->isSuperAdmin() || $user->hasPermission('attendance.export');
+    @endphp
+
     {{-- Header Halaman --}}
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3 fade-in-up">
         <div>
@@ -119,16 +127,20 @@
         </div>
 
         <div class="d-flex gap-2 flex-wrap">
-        <a
-    href="{{ route('rekap-absensi.pdf', request()->only(['academic_year_id', 'class_id', 'search'])) }}"
-    class="btn btn-biduk-outline btn-sm"
-    data-biduk-download
->
-    <i class="bi bi-download me-1"></i>Unduh PDF
-</a>
-            <a href="{{ route('rekap-absensi.create') }}" class="btn btn-biduk-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i>Tambah Rekap Absensi
+            @if ($canExportAttendance)
+            <a
+                href="{{ route('rekap-absensi.pdf', request()->only(['academic_year_id', 'class_id', 'search'])) }}"
+                class="btn btn-biduk-outline btn-sm"
+                data-biduk-download
+            >
+                <i class="bi bi-download me-1"></i>Unduh PDF
             </a>
+            @endif
+            @if ($canCreateAttendance)
+                <a href="{{ route('rekap-absensi.create') }}" class="btn btn-biduk-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Tambah Rekap Absensi
+                </a>
+            @endif
         </div>
     </div>
 
@@ -423,7 +435,7 @@
                                                 </li>
 
 
-                                                @if (auth()->user()->isSuperAdmin() || auth()->user()->isGuru())
+                                                @if ($canEditAttendance)
                                                     <li>
                                                         <a
                                                             class="dropdown-item"
@@ -434,10 +446,11 @@
                                                         </a>
                                                     </li>
 
+                                                @endif
+                                                @if ($canDeleteAttendance)
                                                     <li>
                                                         <hr class="dropdown-divider">
                                                     </li>
-
                                                     <li>
                                                         <form
                                                             action="{{ route('rekap-absensi.destroy', $rekap->actionRecord) }}"
@@ -513,13 +526,15 @@
                         Belum ada data rekap absensi siswa yang tersedia.
                     </p>
 
-                    <a
-                        href="{{ route('rekap-absensi.create') }}"
-                        class="btn btn-biduk-primary btn-sm empty-state-action"
-                    >
-                        <i class="bi bi-plus-lg me-1"></i>
-                        Tambah Rekap Absensi
-                    </a>
+                    @if ($canCreateAttendance)
+                        <a
+                            href="{{ route('rekap-absensi.create') }}"
+                            class="btn btn-biduk-primary btn-sm empty-state-action"
+                        >
+                            <i class="bi bi-plus-lg me-1"></i>
+                            Tambah Rekap Absensi
+                        </a>
+                    @endif
 
                 </div>
 

@@ -155,7 +155,7 @@ class PermissionSeeder extends Seeder
 
             [
                 'name' => 'grades.view',
-                'description' => 'Lihat Nilai Rapor',
+                'description' => 'Lihat Nilai Rapor dan Ijazah serta unduh PDF Ijazah',
             ],
             [
                 'name' => 'grades.create',

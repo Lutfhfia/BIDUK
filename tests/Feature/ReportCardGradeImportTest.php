@@ -815,7 +815,7 @@ class ReportCardGradeImportTest extends TestCase
             ]))
             ->assertOk()
             ->assertSeeText('Sudah Diisi')
-            ->assertDontSeeText('Belum Diisi');
+            ->assertSeeText('Belum Diisi');
     }
 
     public function test_importing_filled_subject_preserves_other_blank_subject_values(): void
@@ -1163,7 +1163,7 @@ class ReportCardGradeImportTest extends TestCase
         $this->assertStringContainsString('<th>NILAI AKHIR</th>', $html);
         $this->assertStringContainsString('Capaian pembelajaran teruji.', $html);
         $this->assertStringNotContainsString('Keterampilan', $html);
-        $this->assertStringContainsString('>80.00</td>', $html);
+        $this->assertStringContainsString('>80,00</td>', $html);
     }
 
     private function createRoster(int $gradeLevel = 1): array

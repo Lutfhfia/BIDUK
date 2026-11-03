@@ -333,6 +333,15 @@ class RekapRapotController extends Controller
             ? (int) $classIdInput
             : null;
 
+        if ($request->boolean('pdf')) {
+            abort_unless(
+                $request->user()?->isSuperAdmin()
+                    || $request->user()?->hasPermission('report_cards.export'),
+                403,
+                'Anda tidak memiliki izin untuk mengunduh rekap rapor.'
+            );
+        }
+
         $class = $this->resolveStudentClass($student, $academicYearId, $classId);
 
         abort_unless($class, 404, 'Kelas siswa tidak ditemukan untuk tahun ajaran yang dipilih.');
@@ -392,6 +401,15 @@ class RekapRapotController extends Controller
         $classId = $isAllClasses ? null : (int) $classIdInput;
         $studentStatus = (string) $request->input('status', 'Aktif');
         $teacherClassIds = app(TeacherClassAccess::class)->classIds($request->user());
+
+        if ($request->boolean('pdf', true)) {
+            abort_unless(
+                $request->user()?->isSuperAdmin()
+                    || $request->user()?->hasPermission('report_cards.export'),
+                403,
+                'Anda tidak memiliki izin untuk mengunduh rekap rapor.'
+            );
+        }
 
         if ($teacherClassIds !== null && $classId !== null) {
             abort_unless(

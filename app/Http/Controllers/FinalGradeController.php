@@ -38,6 +38,23 @@ class FinalGradeController extends Controller
      */
     public function edit(Request $request, SchoolClass $class, Student $student)
     {
+        return $this->renderFinalGrade($request, $class, $student, true);
+    }
+
+    /**
+     * Menampilkan nilai akhir/ijazah tanpa hak untuk mengubah data.
+     */
+    public function show(Request $request, SchoolClass $class, Student $student)
+    {
+        return $this->renderFinalGrade($request, $class, $student, false);
+    }
+
+    private function renderFinalGrade(
+        Request $request,
+        SchoolClass $class,
+        Student $student,
+        bool $canEditGrades
+    ) {
         app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
 
         /*
@@ -150,7 +167,8 @@ class FinalGradeController extends Controller
             'attendanceMissingSemesters',
             'homeroomTeacher',
             'headmaster',
-            'returnUrl'
+            'returnUrl',
+            'canEditGrades'
         ));
     }
 

@@ -620,26 +620,28 @@
                                             </a>
 
 
-                                            {{-- Keluarkan dari kelas --}}
-                                            <form
-                                                action="{{ route('classes.students.remove', [$class, $student]) }}"
-                                                method="POST"
-                                                class="d-inline"
-                                                onsubmit="return confirm('Yakin ingin mengeluarkan siswa ini dari kelas {{ $class->name }}?')">
+                                            @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.edit'))
+                                                {{-- Keluarkan dari kelas --}}
+                                                <form
+                                                    action="{{ route('classes.students.remove', [$class, $student]) }}"
+                                                    method="POST"
+                                                    class="d-inline"
+                                                    onsubmit="return confirm('Yakin ingin mengeluarkan siswa ini dari kelas {{ $class->name }}?')">
 
-                                                @csrf
-                                                @method('DELETE')
+                                                    @csrf
+                                                    @method('DELETE')
 
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    title="Keluarkan dari Kelas">
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Keluarkan dari Kelas">
 
-                                                    <i class="bi bi-person-dash"></i>
+                                                        <i class="bi bi-person-dash"></i>
 
-                                                </button>
+                                                    </button>
 
-                                            </form>
+                                                </form>
+                                            @endif
 
                                         </div>
 

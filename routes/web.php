@@ -421,18 +421,24 @@ Route::get(
     Route::get(
         'rekap-absensi/students/{class}',
         [RekapAbsensiController::class, 'studentsByClass']
-    )->name('rekap-absensi.students');
+    )->middleware('permission:attendance.view')
+        ->name('rekap-absensi.students');
 
     // Cetak Rekap Absensi PDF
     Route::get(
         'rekap-absensi/pdf',
         [RekapAbsensiController::class, 'exportPdf']
-    )->name('rekap-absensi.pdf');
+    )->middleware('permission:attendance.export')
+        ->name('rekap-absensi.pdf');
 
     Route::resource(
         'rekap-absensi',
         RekapAbsensiController::class
-    );
+    )
+        ->middlewareFor(['index', 'show'], 'permission:attendance.view')
+        ->middlewareFor(['create', 'store'], 'permission:attendance.create')
+        ->middlewareFor(['edit', 'update'], 'permission:attendance.edit')
+        ->middlewareFor('destroy', 'permission:attendance.delete');
     // =================================================
     // NILAI RAPOT
     // =================================================
@@ -513,6 +519,12 @@ Route::get(
         [FinalGradeController::class, 'edit']
     )->middleware('permission:grades.edit')
         ->name('final-grades.edit');
+
+    Route::get(
+        'report-card-grades/{class}/{student}/nilai-akhir/lihat',
+        [FinalGradeController::class, 'show']
+    )->middleware('permission:grades.view')
+        ->name('final-grades.show');
 
     Route::put(
         'report-card-grades/{class}/{student}/nilai-akhir',
@@ -760,4 +772,3 @@ Route::get('/struktur-organisasi/download', function () {
         'struktur-organisasi-sdn-204-palembang.' . $extension
     );
 })->name('landing.organization.download');
-

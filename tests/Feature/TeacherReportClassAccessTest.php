@@ -461,6 +461,7 @@ $this->assertTrue(
             'achievements.view',
             'student_records.view',
             'report_cards.view',
+            'attendance.view',
             'grades.view',
             'grades.edit',
             'students.view',

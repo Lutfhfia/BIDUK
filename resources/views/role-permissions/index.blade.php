@@ -144,7 +144,7 @@
         'subjects.edit' => 'Ubah Mata Pelajaran',
         'subjects.delete' => 'Hapus Mata Pelajaran',
 
-        'grades.view' => 'Lihat Nilai Rapot',
+        'grades.view' => 'Lihat Nilai Rapot dan Ijazah (termasuk unduh PDF ijazah)',
         'grades.create' => 'Tambah Nilai Rapot',
         'grades.edit' => 'Ubah Nilai Rapot',
         'grades.delete' => 'Hapus Nilai Rapot',

@@ -45,6 +45,7 @@
         html {
             scroll-behavior: smooth;
             scroll-padding-top: 85px;
+            overflow-x: clip;
         }
 
         body {
@@ -329,6 +330,11 @@
             font-size: 1.05rem;
             font-weight: 700;
             margin-bottom: 1.35rem;
+        }
+
+        .footer-contact-value {
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
 
         .footer-links {
@@ -786,7 +792,7 @@
                         @if($school->email)
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-envelope-fill text-success"></i>
-                                <span>{{ $school->email }}</span>
+                                <span class="footer-contact-value">{{ $school->email }}</span>
                             </div>
                         @endif
                         @if($school->npsn)

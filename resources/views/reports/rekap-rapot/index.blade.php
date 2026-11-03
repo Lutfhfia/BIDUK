@@ -98,6 +98,8 @@
     ];
 
     $selectedPrintType = request('print_type', 'individual');
+    $canExportReportCards = auth()->user()?->isSuperAdmin()
+        || auth()->user()?->hasPermission('report_cards.export');
 
     $previewStudent = is_numeric(request('preview_student_id'))
         ? $students->firstWhere('id', (int) request('preview_student_id'))
@@ -400,16 +402,18 @@
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge text-bg-light border text-dark" id="rrPreviewPageCount">Menghitung halaman...</span>
-                            <a
-                                class="btn btn-sm btn-danger"
-                                id="rrExportPreviewPdf"
-                                data-biduk-download
-                                @if($previewStudentClass)
-                                    href="{{ route('rekap-rapot.print', array_merge($commonParams, ['student' => $previewStudent->id, 'class_id' => $previewStudentClass->id, 'pdf' => 1])) }}"
-                                @endif
-                            >
-                                <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
-                            </a>
+                            @if ($canExportReportCards)
+                                <a
+                                    class="btn btn-sm btn-danger"
+                                    id="rrExportPreviewPdf"
+                                    data-biduk-download
+                                    @if($previewStudentClass)
+                                        href="{{ route('rekap-rapot.print', array_merge($commonParams, ['student' => $previewStudent->id, 'class_id' => $previewStudentClass->id, 'pdf' => 1])) }}"
+                                    @endif
+                                >
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Export PDF
+                                </a>
+                            @endif
                         </div>
                     </div>
                     <div id="rrPreviewPlaceholder" class="preview-placeholder {{ $previewStudentClass ? 'd-none' : '' }}">
@@ -865,7 +869,7 @@
            SHOW STUDENT PREVIEW IN IFRAME
         ========================================================== */
         function showStudentPreview(data) {
-            if (!previewFrame || !previewWrapper || !previewPlaceholder || !previewToolbar || !previewStudentName || !exportPreviewPdf) {
+            if (!previewFrame || !previewWrapper || !previewPlaceholder || !previewToolbar || !previewStudentName) {
                 return;
             }
 
@@ -879,7 +883,9 @@
             previewFrame.src = previewUrl;
             previewFrame.title = 'Preview rapor ' + studentNameVal;
             previewStudentName.textContent = studentNameVal;
-            exportPreviewPdf.href = pdfUrl;
+            if (exportPreviewPdf) {
+                exportPreviewPdf.href = pdfUrl;
+            }
             previewWrapper.classList.remove('d-none');
             previewPlaceholder.classList.add('d-none');
             previewToolbar.classList.remove('d-none');

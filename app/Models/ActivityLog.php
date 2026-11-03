@@ -8,6 +8,29 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
+    private const MODULE_LABELS = [
+        'academic_years' => 'Tahun Ajaran',
+        'attendance' => 'Absensi',
+        'authentication' => 'Autentikasi',
+        'classes' => 'Kelas',
+        'employees' => 'Pegawai',
+        'report_card_grades' => 'Nilai Rapor',
+        'school_profile' => 'Profil Sekolah',
+        'student_class_histories' => 'Riwayat Kelas Siswa',
+        'students' => 'Siswa',
+        'subjects' => 'Mata Pelajaran',
+        'users' => 'Pengguna',
+    ];
+
+    private const ACTION_LABELS = [
+        'created' => 'Ditambahkan',
+        'updated' => 'Diperbarui',
+        'deleted' => 'Dihapus',
+        'login' => 'Login',
+        'logout' => 'Keluar',
+        'students_added' => 'Siswa Ditambahkan',
+    ];
+
     protected $fillable = [
         'user_id',
         'action',
@@ -27,6 +50,18 @@ class ActivityLog extends Model
             'old_values' => 'array',
             'new_values' => 'array',
         ];
+    }
+
+    public function getModuleLabelAttribute(): string
+    {
+        return self::MODULE_LABELS[$this->module]
+            ?? ucwords(str_replace('_', ' ', $this->module ?? ''));
+    }
+
+    public function getActionLabelAttribute(): string
+    {
+        return self::ACTION_LABELS[$this->action]
+            ?? ucfirst(str_replace('_', ' ', $this->action ?? ''));
     }
 
     /**

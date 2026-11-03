@@ -1043,6 +1043,21 @@
                                                         </button>
                                                     @endif
 
+                                                    @if ($targetClass && !$canEditGrades && $canViewGrades && (int) $targetClass->grade_level === 6)
+                                                        <a
+                                                            href="{{ route('final-grades.show', [
+                                                                'class' => $targetClass->id,
+                                                                'student' => $student->id,
+                                                                'return_url' => request()->fullUrl(),
+                                                            ]) }}"
+                                                            class="btn btn-sm btn-outline-info"
+                                                            title="Lihat Nilai Akhir / Ijazah"
+                                                        >
+                                                            <i class="bi bi-award me-1"></i>
+                                                            Lihat Ijazah
+                                                        </a>
+                                                    @endif
+
                                                     {{-- Tombol Riwayat Nilai Rapot Siswa --}}
                                                             @if ($canViewGrades)
                                                             <a

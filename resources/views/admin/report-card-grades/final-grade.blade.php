@@ -18,7 +18,9 @@
                 </h4>
 
                 <p class="text-muted mb-0">
-                    Kelola nilai akhir dan data ijazah peserta didik kelas 6.
+                    {{ $canEditGrades
+                        ? 'Kelola nilai akhir dan data ijazah peserta didik kelas 6.'
+                        : 'Lihat nilai akhir dan data ijazah peserta didik kelas 6.' }}
                 </p>
             </div>
 
@@ -114,15 +116,20 @@
         {{-- =====================================================
         FORM
     ====================================================== --}}
-        <form method="POST"
-            action="{{ route('final-grades.update', [
-                'class' => $class->id,
-                'student' => $student->id,
-            ]) }}">
-            @csrf
-            @method('PUT')
+        @if ($canEditGrades)
+            <form method="POST"
+                action="{{ route('final-grades.update', [
+                    'class' => $class->id,
+                    'student' => $student->id,
+                ]) }}">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="return_url" value="{{ $returnUrl ?? '' }}">
+        @else
+            <div>
+        @endif
 
-            <input type="hidden" name="return_url" value="{{ $returnUrl ?? '' }}">
+            <fieldset class="border-0 p-0 m-0" @disabled(!$canEditGrades)>
 
 
             {{-- =================================================
@@ -547,6 +554,8 @@
             {{-- =================================================
             TOMBOL SIMPAN
         ================================================== --}}
+            </fieldset>
+
             <div class="d-flex justify-content-between mb-5">
 
                 <a href="{{ $returnUrl ??
@@ -559,14 +568,20 @@
                     Kembali
                 </a>
 
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="bi bi-check-circle me-1"></i>
-                    Simpan Nilai Akhir
-                </button>
+                @if ($canEditGrades)
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Simpan Nilai Akhir
+                    </button>
+                @endif
 
             </div>
 
-        </form>
+        @if ($canEditGrades)
+            </form>
+        @else
+            </div>
+        @endif
 
     </div>
 

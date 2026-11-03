@@ -88,7 +88,7 @@
 
                 <div>
                     <span class="badge {{ $badgeClass }}">
-                        {{ ucfirst($activityLog->action) }}
+                        {{ $activityLog->action_label }}
                     </span>
                 </div>
             </div>
@@ -100,7 +100,7 @@
                 </label>
 
                 <div class="fw-semibold">
-                    {{ ucwords(str_replace('_', ' ', $activityLog->module ?? '-')) }}
+                    {{ $activityLog->module_label ?: '-' }}
                 </div>
             </div>
 

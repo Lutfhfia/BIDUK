@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\ClassStudent;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -12,6 +15,64 @@ use Tests\TestCase;
 class SchoolClassTeacherAssignmentTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_view_only_headmaster_cannot_remove_a_student_from_a_class(): void
+    {
+        $role = Role::create(['name' => 'Kepala Sekolah']);
+        $role->permissions()->attach(Permission::create([
+            'name' => 'classes.view',
+            'description' => 'Lihat Data Kelas',
+        ])->id);
+        $headmaster = User::create([
+            'name' => 'Kepala Sekolah Lihat Kelas',
+            'username' => 'kepala-view-kelas',
+            'email' => 'kepala-view-kelas@example.test',
+            'password' => 'password',
+            'role_id' => $role->id,
+            'status' => 'Aktif',
+        ]);
+        $year = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $class = SchoolClass::create([
+            'academic_year_id' => $year->id,
+            'name' => '1A',
+            'grade_level' => 1,
+            'capacity' => 30,
+            'status' => 'Aktif',
+        ]);
+        $student = Student::create([
+            'nis' => 'VIEW-ONLY-CLASS',
+            'nisn' => 'VIEW-ONLY-CLASS-NISN',
+            'name' => 'Siswa Tetap di Kelas',
+            'gender' => 'L',
+            'status' => 'Aktif',
+        ]);
+        ClassStudent::create([
+            'class_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => 'Aktif',
+        ]);
+
+        $this->actingAs($headmaster)
+            ->get(route('classes.show', $class))
+            ->assertOk()
+            ->assertSeeText($student->name)
+            ->assertDontSee('bi-person-dash', false)
+            ->assertDontSeeText('Tambah Siswa');
+
+        $this->delete(route('classes.students.remove', [$class, $student]))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('class_student', [
+            'class_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => 'Aktif',
+        ]);
+    }
 
     public function test_active_teacher_user_without_employee_profile_can_be_assigned_as_homeroom_teacher(): void
     {

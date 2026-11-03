@@ -435,7 +435,7 @@
                         @foreach($modules as $module)
                             <option value="{{ $module }}"
                                 @selected(request('module') == $module)>
-                                {{ ucwords(str_replace('_', ' ', $module)) }}
+                                {{ \App\Models\ActivityLog::make(['module' => $module])->module_label }}
                             </option>
                         @endforeach
 
@@ -457,7 +457,7 @@
                         @foreach($actions as $action)
                             <option value="{{ $action }}"
                                 @selected(request('action') == $action)>
-                                {{ ucfirst($action) }}
+                                {{ \App\Models\ActivityLog::make(['action' => $action])->action_label }}
                             </option>
                         @endforeach
 
@@ -599,13 +599,13 @@
                                     @endphp
 
                                     <span class="badge {{ $badgeClass }} al-action-badge">
-    {{ ucfirst($log->action) }}
+                                        {{ $log->action_label }}
 </span>
 
                                 </td>
 
                                 <td>
-                                    {{ ucwords(str_replace('_', ' ', $log->module)) }}
+                                    {{ $log->module_label }}
                                 </td>
 
                                 <td>
