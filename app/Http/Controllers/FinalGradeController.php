@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
-use App\Models\Employee;
 use App\Models\FinalGrade;
 use App\Models\GraduationStatus;
 use App\Models\RekapAbsensi;
@@ -11,6 +10,7 @@ use App\Models\SchoolClass;
 use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\User;
 use App\Services\FinalGradeService;
 use App\Services\TeacherClassAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -127,7 +127,7 @@ class FinalGradeController extends Controller
         /*
          * Kepala sekolah.
          */
-        $headmaster = Employee::where('position', 'like', '%Kepala Sekolah%')->first();
+        $headmaster = $this->getHeadmaster();
 
         $returnUrl = $request->input('return_url')
             ?: session('report_card_grades_index_url')
@@ -332,10 +332,10 @@ class FinalGradeController extends Controller
             file_get_contents(public_path('images/nilai-akhir-kop.png'))
         );
 
-        $kepalaSekolah = Employee::where('position', 'like', '%Kepala Sekolah%')->first();
-        if ($kepalaSekolah) {
-            $headmaster    = $kepalaSekolah->name;
-            $headmasterNip = $kepalaSekolah->nip;
+        $headmasterUser = $this->getHeadmaster();
+        if ($headmasterUser) {
+            $headmaster = $headmasterUser->name;
+            $headmasterNip = $headmasterUser->employee?->nip;
         }
 
         /*
@@ -368,6 +368,16 @@ class FinalGradeController extends Controller
         return Pdf::loadHTML($view->render())
             ->setPaper('a4', 'portrait')
             ->download($filename);
+    }
+
+    private function getHeadmaster(): ?User
+    {
+        return User::query()
+            ->with('employee')
+            ->where('status', 'Aktif')
+            ->whereHas('role', fn ($query) => $query->where('name', 'Kepala Sekolah'))
+            ->orderBy('id')
+            ->first();
     }
 
     /**

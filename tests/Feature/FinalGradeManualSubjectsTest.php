@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AcademicYear;
 use App\Models\ClassStudent;
+use App\Models\Employee;
 use App\Models\FinalGrade;
 use App\Models\GraduationStatus;
 use App\Models\Permission;
@@ -54,6 +55,60 @@ class FinalGradeManualSubjectsTest extends TestCase
         $this->put(route('final-grades.update', [$class, $student]), [
             'certificate_number' => 'IJZ-TEST-001',
         ])->assertRedirect(route('final-grades.edit', [$class, $student]));
+    }
+
+    public function test_final_grade_uses_active_headmaster_user_and_linked_employee_identity(): void
+    {
+        $admin = User::create([
+            'name' => 'Super Admin',
+            'username' => 'admin-headmaster-identity',
+            'email' => 'admin-headmaster-identity@example.test',
+            'password' => 'password',
+            'role_id' => Role::create(['name' => 'Super Admin'])->id,
+            'status' => 'Aktif',
+        ]);
+        Employee::create([
+            'name' => 'Kepala Sekolah Lama',
+            'nip' => '11111',
+            'gender' => 'L',
+            'position' => 'Kepala Sekolah',
+            'status' => 'Aktif',
+        ]);
+        $headmasterEmployee = Employee::create([
+            'name' => 'Kepala Sekolah Baru',
+            'nip' => '22222',
+            'gender' => 'L',
+            'position' => 'Guru',
+            'status' => 'Aktif',
+        ]);
+        User::create([
+            'employee_id' => $headmasterEmployee->id,
+            'name' => $headmasterEmployee->name,
+            'username' => $headmasterEmployee->nip,
+            'password' => 'password',
+            'role_id' => Role::create(['name' => 'Kepala Sekolah'])->id,
+            'status' => 'Aktif',
+        ]);
+        $year = $this->createYear('2025/2026', '2025-07-01', '2026-06-30', 'active');
+        $class = $this->createClass($year, '6A', 6);
+        $student = Student::create([
+            'nis' => 'FINAL-GRADE-HEADMASTER-01',
+            'nisn' => 'FINAL-GRADE-HEADMASTER-NISN-01',
+            'name' => 'Siswa Uji Kepala Sekolah',
+            'gender' => 'L',
+            'status' => 'Aktif',
+        ]);
+        ClassStudent::create([
+            'class_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => 'Aktif',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('final-grades.edit', [$class, $student]))
+            ->assertOk()
+            ->assertSee('value="Kepala Sekolah Baru (NIP: 22222)"', false)
+            ->assertDontSee('Kepala Sekolah Lama');
     }
 
     public function test_final_grade_uses_only_eight_subjects_and_preserves_existing_data(): void

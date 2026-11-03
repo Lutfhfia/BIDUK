@@ -534,7 +534,7 @@
                         <div class="col-md-6">
                             <label class="form-label small text-muted">Kepala Sekolah</label>
                             <input type="text" class="form-control"
-                                value="{{ $headmaster ? $headmaster->name . ' (NIP: ' . ($headmaster->nip ?? '-') . ')' : 'Belum ditentukan' }}"
+                                value="{{ $headmaster ? $headmaster->name . ' (NIP: ' . ($headmaster->employee?->nip ?? '-') . ')' : 'Belum ditentukan' }}"
                                 readonly>
                         </div>
 
@@ -597,13 +597,14 @@
 
                 if (!praktikEl || !tertulisEl || !examEl || !finalEl) return;
 
-                const praktik = parseFloat(praktikEl.value);
-                const tertulis = parseFloat(tertulisEl.value);
+                const praktik = praktikEl.value.trim() === '' ? null : parseFloat(praktikEl.value);
+                const tertulis = tertulisEl.value.trim() === '' ? null : parseFloat(tertulisEl.value);
                 const schoolScore = parseFloat(finalEl.dataset.school);
+                const examScores = [praktik, tertulis].filter(score => score !== null && !isNaN(score));
 
                 // Hitung Nilai Ujian Sekolah
-                if (!isNaN(praktik) && !isNaN(tertulis)) {
-                    const exam = (praktik + tertulis) / 2;
+                if (examScores.length > 0) {
+                    const exam = examScores.reduce((sum, score) => sum + score, 0) / examScores.length;
                     examEl.textContent = exam.toFixed(2);
 
                     // Hitung Nilai Akhir

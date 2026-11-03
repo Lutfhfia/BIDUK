@@ -385,11 +385,16 @@ class FinalGradeService
      */
     public function calculateExamScore(?float $practical, ?float $written): ?float
     {
-        if ($practical === null || $written === null) {
+        $scores = array_filter(
+            [$practical, $written],
+            fn (?float $score): bool => $score !== null
+        );
+
+        if ($scores === []) {
             return null;
         }
 
-        return ($practical + $written) / 2;
+        return array_sum($scores) / count($scores);
     }
 
     /**

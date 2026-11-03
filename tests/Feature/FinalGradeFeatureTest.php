@@ -27,7 +27,7 @@ class FinalGradeFeatureTest extends TestCase
     }
 
     /**
-     * Test 1: Rumus perhitungan nilai ujian: (praktik + tertulis) / 2
+     * Nilai ujian merata-ratakan komponen yang terisi saja.
      */
     public function test_calculate_exam_score_formula(): void
     {
@@ -35,9 +35,9 @@ class FinalGradeFeatureTest extends TestCase
         $examScore = $this->service->calculateExamScore(90.0, 80.0);
         $this->assertEquals(85.0, $examScore);
 
-        // Jika salah satu null, hasil harus null (bukan dianggap nol)
-        $this->assertNull($this->service->calculateExamScore(90.0, null));
-        $this->assertNull($this->service->calculateExamScore(null, 80.0));
+        // Jika hanya satu komponen diisi, gunakan nilainya tanpa membaginya.
+        $this->assertEquals(90.0, $this->service->calculateExamScore(90.0, null));
+        $this->assertEquals(80.0, $this->service->calculateExamScore(null, 80.0));
         $this->assertNull($this->service->calculateExamScore(null, null));
     }
 
