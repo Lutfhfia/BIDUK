@@ -733,3 +733,31 @@ Route::get(
         ->name('profile.update');
 
 });
+
+// Download gambar struktur organisasi sekolah
+Route::get('/struktur-organisasi/download', function () {
+    $school = \App\Models\SchoolProfile::first();
+
+    abort_unless(
+        $school && filled($school->organization_image),
+        404,
+        'Gambar struktur organisasi tidak ditemukan.'
+    );
+
+    $disk = \Illuminate\Support\Facades\Storage::disk('public');
+    $path = $school->organization_image;
+
+    abort_unless(
+        $disk->exists($path),
+        404,
+        'File gambar tidak ditemukan.'
+    );
+
+    $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+
+    return $disk->download(
+        $path,
+        'struktur-organisasi-sdn-204-palembang.' . $extension
+    );
+})->name('landing.organization.download');
+

@@ -33,6 +33,64 @@
             white-space: pre-line;
             overflow-wrap: anywhere;
         }
+        
+/* TOMBOL GAMBAR STRUKTUR ORGANISASI */
+.organization-image-wrapper {
+    position: relative;
+}
+
+.organization-image-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 5;
+}
+
+.organization-image-action {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.organization-image-action:hover {
+    background: #15803d;
+    color: #fff;
+    transform: translateY(-3px);
+}
+
+.organization-image-action:focus-visible {
+    outline: 3px solid #86efac;
+    outline-offset: 3px;
+}
+
+.organization-modal-image {
+    max-width: 100%;
+    max-height: 78vh;
+    width: auto;
+    object-fit: contain;
+}
+
+@media (max-width: 576px) {
+    .organization-image-action {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+}
+
 
         @media (max-width: 575.98px) {
             .landing-section#struktur-organisasi,
@@ -483,45 +541,166 @@
                     : null;
         @endphp
 
-        @if($organizationImage || filled($school->organization_description))
-            <div class="row align-items-center g-4">
-                @if($organizationImage)
-                    <div class="col-12 {{ filled($school->organization_description) ? 'col-lg-7' : '' }} reveal-left">
-                        <div class="biduk-feature-card p-3">
-                            <img src="{{ $organizationImage }}"
-                                 alt="{{ $school->organization_title ?: 'Struktur organisasi sekolah' }}"
-                                 class="landing-profile-image rounded-3"
-                                 loading="lazy">
-                        </div>
-                    </div>
-                @endif
+   
+@if($organizationImage || filled($school->organization_description))
 
-                @if(filled($school->organization_description))
-                    <div class="{{ $organizationImage ? 'col-12 col-lg-5' : 'col-12' }} reveal-right">
-                        <div class="biduk-feature-card h-100">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
-                                      style="width: 48px; height: 48px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
-                                    <i class="bi bi-diagram-3 fs-4"></i>
-                                </span>
-                                <h3 class="h5 fw-bold text-dark mb-0">
-                                    {{ $school->organization_title ?: 'Struktur Organisasi Sekolah' }}
-                                </h3>
-                            </div>
-                            <p class="landing-profile-copy text-secondary mb-0" style="line-height: 1.8;">
-                                {{ $school->organization_description }}
-                            </p>
-                        </div>
+<div class="row align-items-center g-4">
+
+    {{-- GAMBAR STRUKTUR ORGANISASI --}}
+    @if($organizationImage)
+
+        <div class="col-12 {{ filled($school->organization_description) ? 'col-lg-7' : '' }} reveal-left">
+
+            <div class="biduk-feature-card p-3">
+
+                <div class="organization-image-wrapper">
+
+                    <img src="{{ $organizationImage }}"
+                         alt="{{ $school->organization_title ?: 'Struktur organisasi sekolah' }}"
+                         class="landing-profile-image rounded-3"
+                         loading="lazy">
+
+                    {{-- TOMBOL PERBESAR DAN DOWNLOAD --}}
+                    <div class="organization-image-actions">
+
+                        <button type="button"
+                                class="organization-image-action"
+                                data-bs-toggle="modal"
+                                data-bs-target="#organizationImageModal"
+                                title="Perbesar gambar"
+                                aria-label="Perbesar gambar">
+                            <i class="bi bi-zoom-in"></i>
+                        </button>
+
+                        
+                        <a href="{{ route('landing.organization.download') }}"
+   class="organization-image-action"
+   data-biduk-download
+   data-no-page-loader="true"
+   title="Download gambar"
+   aria-label="Download gambar struktur organisasi">
+    <i class="bi bi-download"></i>
+</a>
+
                     </div>
-                @endif
+
+                </div>
+
             </div>
-        @else
-            <div class="landing-empty-state d-flex flex-column align-items-center justify-content-center">
-                <i class="bi bi-diagram-3"></i>
-                <h3 class="h5 fw-bold text-dark">Data struktur organisasi belum tersedia</h3>
-                <p class="mb-0">Informasi akan ditampilkan setelah diperbarui melalui Profil Sekolah.</p>
+
+        </div>
+
+    @endif
+
+    {{-- DESKRIPSI STRUKTUR ORGANISASI --}}
+    @if(filled($school->organization_description))
+
+        <div class="{{ $organizationImage ? 'col-12 col-lg-5' : 'col-12' }} reveal-right">
+
+            <div class="biduk-feature-card h-100">
+
+                <div class="d-flex align-items-center gap-3 mb-3">
+
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                          style="width: 48px; height: 48px; background: var(--biduk-primary-light); color: var(--biduk-primary);">
+
+                        <i class="bi bi-diagram-3 fs-4"></i>
+
+                    </span>
+
+                    <h3 class="h5 fw-bold text-dark mb-0">
+                        {{ $school->organization_title ?: 'Struktur Organisasi Sekolah' }}
+                    </h3>
+
+                </div>
+
+                <p class="landing-profile-copy text-secondary mb-0"
+                   style="line-height: 1.8;">
+                    {{ $school->organization_description }}
+                </p>
+
             </div>
-        @endif
+
+        </div>
+
+    @endif
+
+</div>
+
+{{-- MODAL PERBESAR GAMBAR --}}
+@if($organizationImage)
+
+    <div class="modal fade"
+         id="organizationImageModal"
+         tabindex="-1"
+         aria-labelledby="organizationImageModalLabel"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+
+            <div class="modal-content border-0 rounded-4 shadow-lg">
+
+                <div class="modal-header border-0">
+
+                    <h5 class="modal-title fw-bold"
+                        id="organizationImageModalLabel">
+                        {{ $school->organization_title ?: 'Struktur Organisasi Sekolah' }}
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Tutup">
+                    </button>
+
+                </div>
+
+                <div class="modal-body text-center bg-light">
+
+                    <img src="{{ $organizationImage }}"
+                         alt="Struktur Organisasi {{ $school->name }}"
+                         class="organization-modal-image rounded-3">
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Tutup
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+@endif
+
+@else
+
+{{-- TAMPILAN JIKA DATA BELUM TERSEDIA --}}
+<div class="landing-empty-state d-flex flex-column align-items-center justify-content-center">
+
+    <i class="bi bi-diagram-3"></i>
+
+    <h3 class="h5 fw-bold text-dark">
+        Data struktur organisasi belum tersedia
+    </h3>
+
+    <p class="mb-0">
+        Informasi akan ditampilkan setelah diperbarui melalui Profil Sekolah.
+    </p>
+
+</div>
+
+@endif
+
+          
     </div>
 </section>
 
@@ -846,5 +1025,98 @@
         @endif
     </div>
 </section>
+
+
+@push('scripts')
+<script>
+(function () {
+    // Cegah pemasangan event listener berulang.
+    if (window.organizationDownloadHandlerInstalled) return;
+
+    window.organizationDownloadHandlerInstalled = true;
+
+    window.addEventListener('click', async function (event) {
+        const target = event.target;
+
+        if (!(target instanceof Element)) return;
+
+        const link = target.closest('a[data-organization-download]');
+
+        if (!link) return;
+
+        if (
+            event.button !== 0 ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
+            event.metaKey
+        ) return;
+
+        // Hentikan navigasi asli dan event loader.
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (link.dataset.downloading === 'true') return;
+
+        link.dataset.downloading = 'true';
+
+        try {
+            const response = await fetch(link.href, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Download gagal. HTTP ' + response.status);
+            }
+
+            const blob = await response.blob();
+
+            if (!blob.size) {
+                throw new Error('File gambar kosong.');
+            }
+
+            let filename = link.dataset.filename ||
+                'struktur-organisasi-sdn-204-palembang.jpg';
+
+            const objectUrl = URL.createObjectURL(blob);
+
+            // Buat link sementara khusus untuk download.
+            const temporaryLink = document.createElement('a');
+
+            temporaryLink.href = objectUrl;
+            temporaryLink.download = filename;
+            temporaryLink.hidden = true;
+
+            // Tandai agar tidak dianggap navigasi halaman.
+            temporaryLink.setAttribute('data-biduk-download', 'true');
+            temporaryLink.setAttribute('data-no-page-loader', 'true');
+
+            document.body.appendChild(temporaryLink);
+
+            temporaryLink.click();
+
+            temporaryLink.remove();
+
+            // Bersihkan URL sementara setelah browser memulai download.
+            window.setTimeout(function () {
+                URL.revokeObjectURL(objectUrl);
+            }, 10000);
+
+        } catch (error) {
+            console.error('Download gambar gagal:', error);
+
+            alert('Gambar gagal diunduh. Silakan coba kembali.');
+
+        } finally {
+            link.dataset.downloading = 'false';
+        }
+
+    }, true);
+})();
+</script>
+@endpush
+
+
 
 @endsection

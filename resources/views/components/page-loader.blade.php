@@ -288,6 +288,7 @@
     </div>
 </div>
 
+
 <script>
 (function () {
     const loader = document.getElementById('biduk-page-loader');
@@ -297,30 +298,10 @@
     }
 
     loader.dataset.initialized = 'true';
+
     let skipBeforeUnload = false;
     let skipBeforeUnloadTimer = null;
     let navigationPending = false;
-    let downloadInProgress = false;
-
-    const logoImage = loader.querySelector('.biduk-school-logo');
-    const fallbackIcon = loader.querySelector('.biduk-loader-fallback');
-
-    /*
-     * Tampilkan ikon buku jika file logo sekolah
-     * belum tersedia atau gagal dimuat.
-     */
-    if (logoImage && fallbackIcon) {
-        const showFallback = function () {
-            logoImage.hidden = true;
-            fallbackIcon.hidden = false;
-        };
-
-        logoImage.addEventListener('error', showFallback);
-
-        if (logoImage.complete && logoImage.naturalWidth === 0) {
-            showFallback();
-        }
-    }
 
     const showLoader = function () {
         loader.classList.add('is-active');
@@ -332,43 +313,60 @@
         loader.setAttribute('aria-hidden', 'true');
     };
 
-    const downloadFile = function (url) {
-        if (downloadInProgress) {
-            return;
-        }
-
-        downloadInProgress = true;
+    // Menandai klik sebagai aktivitas download.
+    const markDownload = function () {
+        skipBeforeUnload = true;
         navigationPending = false;
-        const label = loader.querySelector('.biduk-loader-label');
-        const originalLabel = label?.textContent ?? '';
-        if (label) label.textContent = 'Memulai unduhan...';
-        showLoader();
 
-        try {
-            window.location.assign(url);
-        } catch (error) {
-            window.alert(error instanceof Error ? error.message : 'Unduhan gagal. Silakan coba lagi.');
-            downloadInProgress = false;
-            if (label) label.textContent = originalLabel;
-            hideLoader();
-            return;
-        }
+        window.clearTimeout(skipBeforeUnloadTimer);
 
-        window.setTimeout(() => {
-            downloadInProgress = false;
-            if (label) label.textContent = originalLabel;
-            hideLoader();
-        }, 800);
+        skipBeforeUnloadTimer = window.setTimeout(function () {
+            skipBeforeUnload = false;
+        }, 10000);
+
+        // Pastikan loading langsung hilang.
+        hideLoader();
     };
 
+    // API loader hanya untuk navigasi biasa.
+    // Tidak menyediakan fungsi download yang memunculkan loader.
     window.bidukPageLoader = {
         show: showLoader,
-        hide: hideLoader,
-        download: downloadFile,
+        hide: hideLoader
     };
 
     /*
-     * Loading saat membuka tautan internal.
+     * Tangkap klik download sebelum event mencapai
+     * document dan handler lainnya.
+     *
+     * Tidak menggunakan preventDefault agar browser
+     * tetap menjalankan download dari link Laravel.
+     */
+    window.addEventListener('click', function (event) {
+        const target = event.target;
+
+        if (!(target instanceof Element)) {
+            return;
+        }
+
+        const downloadLink = target.closest(
+            'a[data-biduk-download], a[download]'
+        );
+
+        if (!downloadLink) {
+            return;
+        }
+
+        markDownload();
+
+        // Cegah handler lain mengaktifkan page loader.
+        // Aksi default browser untuk download tetap berjalan.
+        event.stopImmediatePropagation();
+
+    }, true);
+
+    /*
+     * Loading untuk navigasi halaman biasa.
      */
     document.addEventListener('click', function (event) {
         if (
@@ -387,33 +385,21 @@
             return;
         }
 
-        const downloadLink = target.closest('a[data-biduk-download], a[download]');
-        if (downloadLink) {
-            event.preventDefault();
-            downloadFile(downloadLink.href);
-            return;
-        }
-
         const link = target.closest('a[href]');
 
         if (!link) {
-    return;
-}
+            return;
+        }
 
-if (link.dataset.noPageLoader === 'true') {
-    skipBeforeUnload = true;
-
-    window.clearTimeout(skipBeforeUnloadTimer);
-
-    skipBeforeUnloadTimer = window.setTimeout(() => {
-        skipBeforeUnload = false;
-    }, 1200);
-
-    return;
-}
-
-skipBeforeUnload = false;
-window.clearTimeout(skipBeforeUnloadTimer);
+        // Download dan link yang dikecualikan.
+        if (
+            link.hasAttribute('download') ||
+            link.hasAttribute('data-biduk-download') ||
+            link.dataset.noPageLoader === 'true'
+        ) {
+            markDownload();
+            return;
+        }
 
         if (link.target && link.target.toLowerCase() !== '_self') {
             return;
@@ -457,10 +443,11 @@ window.clearTimeout(skipBeforeUnloadTimer);
 
         navigationPending = true;
         showLoader();
+
     }, true);
 
     /*
-     * Loading saat formulir dikirim.
+     * Loading untuk form biasa.
      */
     document.addEventListener('submit', function (event) {
         const form = event.target;
@@ -479,28 +466,28 @@ window.clearTimeout(skipBeforeUnloadTimer);
     });
 
     /*
-     * Sembunyikan kembali loading ketika halaman siap
-     * atau saat pengguna kembali ke halaman sebelumnya.
+     * Before unload: kecualikan download.
      */
     window.addEventListener('beforeunload', function () {
-    if (skipBeforeUnload) {
-        skipBeforeUnload = false;
-        window.clearTimeout(skipBeforeUnloadTimer);
-        return;
-    }
+        if (skipBeforeUnload) {
+            skipBeforeUnload = false;
+            window.clearTimeout(skipBeforeUnloadTimer);
+            hideLoader();
+            return;
+        }
 
-    if (downloadInProgress) {
-        return;
-    }
+        if (navigationPending) {
+            showLoader();
+        }
+    });
 
-    navigationPending = true;
-    showLoader();
-});
     window.addEventListener('pageshow', function () {
         navigationPending = false;
         hideLoader();
     });
+
     window.addEventListener('load', hideLoader);
+
     document.addEventListener('visibilitychange', function () {
         if (
             document.visibilityState === 'visible' &&
@@ -511,5 +498,7 @@ window.clearTimeout(skipBeforeUnloadTimer);
             hideLoader();
         }
     });
+
 })();
+
 </script>

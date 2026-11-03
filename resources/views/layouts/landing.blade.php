@@ -362,6 +362,79 @@
             font-size: 0.865rem;
         }
 
+        
+/* ============ MEDIA SOSIAL FOOTER ============ */
+.footer-social {
+    margin-top: 35px;
+    text-align: center;
+}
+
+.footer-social-title {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.footer-social-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+}
+
+.footer-social-link {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.25rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-social-facebook {
+    background: #1877F2;
+}
+
+.footer-social-instagram {
+    background: linear-gradient(
+        45deg,
+        #feda75,
+        #fa7e1e,
+        #d62976,
+        #962fbf,
+        #4f5bd5
+    );
+}
+
+.footer-social-youtube {
+    background: #FF0000;
+}
+
+.footer-social-link:hover {
+    color: #ffffff;
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+.footer-social-link:focus-visible {
+    outline: 3px solid #86efac;
+    outline-offset: 4px;
+}
+
+@media (max-width: 576px) {
+    .footer-social-link {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+}
+
+
         /* ============ BIDIRECTIONAL SCROLL REVEAL ANIMATIONS ============ */
         .reveal {
             opacity: 0;
@@ -725,6 +798,45 @@
                     </div>
                 </div>
             </div>
+
+<!-- MEDIA SOSIAL -->
+<div class="footer-social">
+
+    <h6 class="footer-social-title">
+        Ikuti Media Sosial Kami
+    </h6>
+
+    <div class="footer-social-links">
+
+        <!-- FACEBOOK -->
+        <a href="https://www.facebook.com/share/1HqD8Yzcds/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-social-link footer-social-facebook"
+            aria-label="Facebook">
+            <i class="bi bi-facebook"></i>
+        </a>
+
+        <!-- INSTAGRAM -->
+        <a href="https://www.instagram.com/sdn.204palembang?mdxt=MWMyYWpwNzdlMWtnZQ=="
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-social-link footer-social-instagram"
+            aria-label="Instagram">
+            <i class="bi bi-instagram"></i>
+        </a>
+
+        <!-- YOUTUBE -->
+        <a href="https://youtube.com/@sdn204palembang?si=AIt6L3UrxglPo7lc"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-social-link footer-social-youtube"
+            aria-label="YouTube">
+            <i class="bi bi-youtube"></i>
+        </a>
+
+    </div>
+</div>
 
             <div class="footer-bottom">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 text-secondary">

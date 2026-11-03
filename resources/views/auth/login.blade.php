@@ -940,7 +940,7 @@
 
         <div class="brand-bottom">
             <strong>SDN 204 Palembang</strong>
-            <span>Sistem Informasi Buku Induk Siswa</span>
+            <span>Buku Induk Dgital Unggul dan Kolaboratif</span>
         </div>
 
     </section>
