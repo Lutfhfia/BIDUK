@@ -241,32 +241,6 @@ class SchoolClassController extends Controller
         }
 
         /*
-         * Satu guru hanya boleh menjadi wali kelas
-         * untuk satu kelas pada tahun ajaran yang sama.
-         */
-        if ($teacherUser) {
-            $teacherAlreadyAssigned = SchoolClass::where(
-                'academic_year_id',
-                $validated['academic_year_id']
-            )->where(function ($query) use ($teacherUser) {
-                $query->where('homeroom_teacher_user_id', $teacherUser->id);
-                if ($teacherUser->employee_id) {
-                    $query->orWhere('homeroom_teacher_id', $teacherUser->employee_id);
-                }
-            })
-                ->exists();
-
-            if ($teacherAlreadyAssigned) {
-                return back()
-                    ->withInput()
-                    ->withErrors([
-                        'homeroom_teacher_user_id' =>
-                            'Guru tersebut sudah menjadi wali kelas pada tahun ajaran ini.',
-                    ]);
-            }
-        }
-
-        /*
          * Simpan kelas + mata pelajaran
          * dalam satu transaksi.
          */
@@ -540,35 +514,6 @@ $subjects = Subject::active()
         }
 
         /*
-         * Cek wali kelas.
-         */
-        if ($teacherUser) {
-            $teacherAlreadyAssigned = SchoolClass::where(
-                'academic_year_id',
-                $validated['academic_year_id']
-            )->where(function ($query) use ($teacherUser) {
-                $query->where('homeroom_teacher_user_id', $teacherUser->id);
-                if ($teacherUser->employee_id) {
-                    $query->orWhere('homeroom_teacher_id', $teacherUser->employee_id);
-                }
-            })->where(
-                    'id',
-                    '!=',
-                    $class->id
-                )
-                ->exists();
-
-            if ($teacherAlreadyAssigned) {
-                return back()
-                    ->withInput()
-                    ->withErrors([
-                        'homeroom_teacher_user_id' =>
-                            'Guru tersebut sudah menjadi wali kelas pada tahun ajaran ini.',
-                    ]);
-            }
-        }
-
-        /*
          * Update kelas + mata pelajaran
          * dalam satu transaksi.
          */
@@ -716,10 +661,10 @@ $subjects = Subject::active()
             ->count();
 
         if ($activeStudentCount > 0) {
-            return back()->withErrors([
-                'delete' =>
-                    'Kelas tidak dapat dihapus karena masih memiliki siswa aktif.',
-            ]);
+            return back()->with(
+                'error',
+                "Kelas tidak dapat dihapus karena masih memiliki {$activeStudentCount} siswa aktif. Pindahkan atau keluarkan siswa dari kelas terlebih dahulu."
+            );
         }
 
         // Simpan data sebelum dihapus.

@@ -69,6 +69,7 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
 
         foreach ($rows as $rowIndex => $row) {
             $data = array_values($row->toArray());
+            $data = $this->restoreMissingNisnColumn($data);
 
             if ($this->isEmptyStudentRow($data)) {
                 continue;
@@ -419,6 +420,44 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
         return $name === null && $nis === null && $nisn === null && $nickname === null;
     }
 
+    private function restoreMissingNisnColumn(array $row): array
+    {
+        $name = $this->nullableString($this->value($row, 3));
+        $nickname = $this->nullableString($this->value($row, 4));
+        $genderInNicknameColumn = $this->isGenderLabel($this->value($row, 5));
+        $genderInExpectedColumn = $this->isGenderLabel($this->value($row, 6));
+
+        if (
+            $name !== null
+            && $nickname !== null
+            && $genderInNicknameColumn
+            && !$genderInExpectedColumn
+        ) {
+            array_splice($row, 2, 0, [null]);
+        }
+
+        return $row;
+    }
+
+    private function isGenderLabel(mixed $value): bool
+    {
+        $value = mb_strtoupper(trim((string) $value));
+
+        return in_array($value, [
+            'L',
+            'P',
+            'LAKI-LAKI',
+            'LAKI LAKI',
+            'LAKI - LAKI',
+            'M',
+            'MALE',
+            'PEREMPUAN',
+            'WANITA',
+            'F',
+            'FEMALE',
+        ], true);
+    }
+
     private function value(array $row, int $column): mixed
     {
         return $row[$column - 1] ?? null;
@@ -454,9 +493,11 @@ class StudentsImport implements ToCollection, WithStartRow, WithChunkReading
             return null;
         }
 
-        $value = str_replace(',', '.', $value);
+        if (!preg_match('/\A([+-]?\d+(?:[.,]\d+)?)\s*(?:kg|kgs|cm)?\z/i', $value, $matches)) {
+            return null;
+        }
 
-        return is_numeric($value) ? (float) $value : null;
+        return (float) str_replace(',', '.', $matches[1]);
     }
 
     private function gender(mixed $value): ?string

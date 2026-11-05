@@ -74,6 +74,59 @@ class SchoolClassTeacherAssignmentTest extends TestCase
         ]);
     }
 
+    public function test_class_with_active_students_shows_why_deletion_was_blocked(): void
+    {
+        $role = Role::create(['name' => 'Super Admin']);
+        $role->permissions()->attach([
+            Permission::create(['name' => 'classes.view'])->id,
+            Permission::create(['name' => 'classes.delete'])->id,
+        ]);
+        $admin = User::create([
+            'name' => 'Admin Hapus Kelas',
+            'username' => 'admin-hapus-kelas',
+            'email' => 'admin-hapus-kelas@example.test',
+            'password' => 'password',
+            'role_id' => $role->id,
+            'status' => 'Aktif',
+        ]);
+        $year = AcademicYear::create([
+            'name' => '2025/2026',
+            'start_date' => '2025-07-01',
+            'end_date' => '2026-06-30',
+            'status' => 'active',
+        ]);
+        $class = SchoolClass::create([
+            'academic_year_id' => $year->id,
+            'name' => '1A',
+            'grade_level' => 1,
+            'capacity' => 30,
+            'status' => 'Aktif',
+        ]);
+        $student = Student::create([
+            'nis' => 'BLOCK-CLASS-DELETE',
+            'nisn' => 'BLOCK-CLASS-DELETE-NISN',
+            'name' => 'Siswa Kelas Aktif',
+            'gender' => 'L',
+            'status' => 'Aktif',
+        ]);
+        ClassStudent::create([
+            'class_id' => $class->id,
+            'student_id' => $student->id,
+            'status' => 'Aktif',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('classes.destroy', $class))
+            ->assertRedirect()
+            ->assertSessionHas(
+                'error',
+                'Kelas tidak dapat dihapus karena masih memiliki 1 siswa aktif. Pindahkan atau keluarkan siswa dari kelas terlebih dahulu.'
+            );
+
+        $this->assertDatabaseHas('classes', ['id' => $class->id]);
+        $this->assertDatabaseHas('students', ['id' => $student->id]);
+    }
+
     public function test_active_teacher_user_without_employee_profile_can_be_assigned_as_homeroom_teacher(): void
     {
         $academicYear = AcademicYear::create([
@@ -103,7 +156,8 @@ class SchoolClassTeacherAssignmentTest extends TestCase
         $this->actingAs($admin)
             ->get(route('classes.create'))
             ->assertOk()
-            ->assertSeeText($teacher->name);
+            ->assertSeeText($teacher->name)
+            ->assertSeeText('beberapa kelas pada tahun ajaran yang sama');
 
         $this->post(route('classes.store'), [
             'academic_year_id' => $academicYear->id,
@@ -126,5 +180,33 @@ class SchoolClassTeacherAssignmentTest extends TestCase
         $this->get(route('classes.edit', $class))
             ->assertOk()
             ->assertSee($teacher->name);
+
+        $this->post(route('classes.store'), [
+            'academic_year_id' => $academicYear->id,
+            'name' => '1B',
+            'grade_level' => 1,
+            'homeroom_teacher_user_id' => (string) $teacher->id,
+            'capacity' => 30,
+            'status' => 'Aktif',
+            'subject_ids' => [],
+        ])->assertRedirect(route('classes.index'));
+
+        $secondClass = SchoolClass::query()->where('name', '1B')->firstOrFail();
+        $this->assertSame($class->homeroom_teacher_user_id, $secondClass->homeroom_teacher_user_id);
+
+        $this->put(route('classes.update', $secondClass), [
+            'academic_year_id' => $academicYear->id,
+            'name' => '1B',
+            'grade_level' => 1,
+            'homeroom_teacher_user_id' => (string) $teacher->id,
+            'capacity' => 30,
+            'status' => 'Aktif',
+            'subject_ids' => [],
+        ])->assertRedirect(route('classes.index'));
+
+        $this->assertDatabaseHas('classes', [
+            'id' => $secondClass->id,
+            'homeroom_teacher_user_id' => $teacher->id,
+        ]);
     }
 }

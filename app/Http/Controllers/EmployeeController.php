@@ -595,8 +595,9 @@ class EmployeeController extends Controller
                 ->route('pegawai.index')
                 ->with(
                     'success',
-                    "Import berhasil. {$import->getImportedCount()} data pegawai berhasil ditambahkan beserta akun BIDUK."
-                );
+                    "Import berhasil. {$import->getImportedCount()} data pegawai diproses, termasuk {$import->getUpdatedCount()} data yang diperbarui."
+                )
+                ->with('import_warnings', $import->getWarnings());
 
         } catch (Throwable $e) {
 

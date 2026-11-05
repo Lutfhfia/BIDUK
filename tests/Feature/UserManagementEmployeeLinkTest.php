@@ -200,6 +200,121 @@ class UserManagementEmployeeLinkTest extends TestCase
         ]);
     }
 
+    public function test_import_updates_existing_employee_and_keeps_values_for_blank_cells(): void
+    {
+        $employee = $this->createEmployee([
+            'nip' => '61006',
+            'name' => 'Pegawai Lama',
+            'phone' => null,
+            'address' => null,
+            'status' => 'Nonaktif',
+        ]);
+        $import = new EmployeeImport();
+
+        $import->collection(collect([[
+            'nip' => '61006',
+            'nuptk' => '1234567890',
+            'nama_lengkap' => 'Pegawai Diperbarui',
+            'jenis_kelamin' => 'Laki-laki',
+            'status_kepegawaian' => 'PNS',
+            'jabatan' => 'Guru',
+            'status' => 'PPPK Paruh Waktu',
+            'nomor_hp' => '081234567890',
+            'alamat' => 'Alamat Baru',
+        ]]));
+
+        $this->assertSame(1, $import->getImportedCount());
+        $this->assertSame(1, $import->getUpdatedCount());
+        $this->assertDatabaseCount('employees', 1);
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'nip' => '61006',
+            'nuptk' => '1234567890',
+            'name' => 'Pegawai Diperbarui',
+            'phone' => '081234567890',
+            'address' => 'Alamat Baru',
+            'status' => 'Nonaktif',
+        ]);
+    }
+
+    public function test_import_matches_existing_employee_by_email_when_identifiers_changed(): void
+    {
+        $employee = $this->createEmployee([
+            'nip' => '62000',
+            'nuptk' => '72000',
+            'name' => 'Veni Osika Seftiani Emza',
+            'email' => 'veni@example.test',
+            'phone' => null,
+            'address' => null,
+        ]);
+        $import = new EmployeeImport();
+
+        $import->collection(collect([[
+            'nip' => '62001',
+            'nuptk' => '72001',
+            'nama_lengkap' => 'VENI OSIKA SEFTIANI EMZA',
+            'jenis_kelamin' => 'P',
+            'status_kepegawaian' => 'PPPK',
+            'jabatan' => 'Guru',
+            'status' => 'PPPK',
+            'nomor_hp' => '081234567890',
+            'email' => 'veni@example.test',
+            'alamat' => 'Alamat Diperbarui',
+        ]]));
+
+        $this->assertSame(1, $import->getUpdatedCount());
+        $this->assertDatabaseCount('employees', 1);
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'nip' => '62001',
+            'nuptk' => '72001',
+            'phone' => '081234567890',
+            'address' => 'Alamat Diperbarui',
+        ]);
+    }
+
+    public function test_duplicate_email_does_not_cancel_other_employee_updates(): void
+    {
+        $employee = $this->createEmployee([
+            'nip' => '63001',
+            'name' => 'Pegawai Sama',
+            'phone' => null,
+        ]);
+        $this->createEmployee([
+            'nip' => '63002',
+            'name' => 'Pegawai Sama',
+            'email' => 'sama@example.test',
+        ]);
+        $import = new EmployeeImport();
+
+        $import->collection(collect([[
+            'nip' => '63001',
+            'nuptk' => '73001',
+            'nama_lengkap' => 'Pegawai Sama',
+            'jenis_kelamin' => 'L',
+            'status_kepegawaian' => 'PNS',
+            'jabatan' => 'Guru',
+            'status' => 'PNS',
+            'nomor_hp' => '081234567890',
+            'email' => 'sama@example.test',
+            'alamat' => 'Alamat Diperbarui',
+        ]]));
+
+        $this->assertSame(1, $import->getUpdatedCount());
+        $this->assertCount(1, $import->getWarnings());
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'nuptk' => '73001',
+            'phone' => '081234567890',
+            'email' => null,
+            'address' => 'Alamat Diperbarui',
+        ]);
+        $this->assertDatabaseHas('employees', [
+            'nip' => '63002',
+            'email' => 'sama@example.test',
+        ]);
+    }
+
     public function test_editing_employee_does_not_overwrite_user_role_or_status(): void
     {
         $admin = $this->createSuperAdmin();

@@ -414,6 +414,18 @@
         </div>
     @endif
 
+    @if(session('import_warnings'))
+        <div class="alert alert-warning alert-dismissible fade show">
+            <strong>Beberapa data tidak dapat diimpor lengkap:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach(session('import_warnings') as $warning)
+                    <li>{{ $warning }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
 
     {{-- Alert error --}}
     @if($errors->any())
@@ -941,6 +953,10 @@
 
                     </ol>
 
+                </div>
+
+                <div class="alert alert-info py-2">
+                    Pegawai dengan NIP atau NUPTK yang sudah terdaftar akan diperbarui. Kolom kosong tidak akan menghapus data yang sudah tersimpan.
                 </div>
 
 

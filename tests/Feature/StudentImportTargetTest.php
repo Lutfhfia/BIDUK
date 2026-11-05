@@ -137,6 +137,111 @@ class StudentImportTargetTest extends TestCase
         ]);
     }
 
+    public function test_import_restores_columns_when_student_workbook_omits_nisn_column(): void
+    {
+        [$teacher, $year, $class] = $this->createTeacherWithClass();
+        $file = $this->makeWorkbook([
+            'A4' => 1,
+            'B4' => 'NIS-CLASS-ONE',
+            'C4' => 'Siswa Kelas Satu',
+            'D4' => 'Satu',
+            'E4' => 'P',
+            'F4' => 'Palembang',
+            'G4' => '2020-01-02',
+            'H4' => 'Islam',
+            'I4' => 'Indonesia',
+        ]);
+
+        $response = $this->actingAs($teacher)->post(route('students.import'), [
+            'academic_year_id' => $year->id,
+            'class_id' => $class->id,
+            'file' => new UploadedFile(
+                $file,
+                'students-missing-nisn.xlsx',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                null,
+                true
+            ),
+        ]);
+
+        $response->assertRedirect(route('students.index'));
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('students', [
+            'nis' => 'NIS-CLASS-ONE',
+            'nisn' => null,
+            'name' => 'Siswa Kelas Satu',
+            'nickname' => 'Satu',
+            'gender' => 'P',
+            'birth_place' => 'Palembang',
+        ]);
+        $this->assertSame(
+            '2020-01-02',
+            Student::where('nis', 'NIS-CLASS-ONE')->firstOrFail()->birth_date->toDateString()
+        );
+        $this->assertDatabaseHas('class_student', [
+            'student_id' => Student::where('nis', 'NIS-CLASS-ONE')->firstOrFail()->id,
+            'class_id' => $class->id,
+            'status' => 'Aktif',
+        ]);
+    }
+
+    public function test_import_saves_measurements_with_units_and_book_induk_preview_displays_them(): void
+    {
+        [$teacher, $year, $class] = $this->createTeacherWithClass();
+        $teacher->role->permissions()->attach(Permission::create([
+            'name' => 'student_records.view',
+        ])->id);
+        $semester = Semester::create([
+            'academic_year_id' => $year->id,
+            'name' => 'Ganjil',
+        ]);
+        $file = $this->makeWorkbook([
+            'A4' => 1,
+            'B4' => 'NIS-MEASUREMENTS',
+            'C4' => 'Siswa Uji Pengukuran',
+            'D4' => 'Uji',
+            'E4' => 'P',
+            'F4' => 'Palembang',
+            'G4' => '2020-01-02',
+            'O4' => '18 kg',
+            'P4' => '116 cm',
+        ]);
+
+        $this->actingAs($teacher)
+            ->post(route('students.import'), [
+                'academic_year_id' => $year->id,
+                'class_id' => $class->id,
+                'file' => new UploadedFile(
+                    $file,
+                    'students-with-measurements.xlsx',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    null,
+                    true
+                ),
+            ])
+            ->assertRedirect(route('students.index'));
+
+        $student = Student::where('nis', 'NIS-MEASUREMENTS')->firstOrFail();
+        $this->assertDatabaseHas('student_physiques', [
+            'student_id' => $student->id,
+            'academic_year_id' => $year->id,
+            'semester_id' => $semester->id,
+            'weight' => 18,
+            'height' => 116,
+        ]);
+
+        $this->get(route('buku-induk.print', [
+            'student' => $student->id,
+            'academic_year_id' => $year->id,
+            'class_id' => $class->id,
+            'print_type' => 'class',
+        ]))
+            ->assertOk()
+            ->assertSeeText('116 Cm')
+            ->assertSeeText('18 Kg');
+    }
+
     public function test_teacher_cannot_import_to_a_class_not_assigned_to_them(): void
     {
         [$teacher, $year] = $this->createTeacherWithClass();

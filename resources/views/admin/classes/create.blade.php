@@ -266,7 +266,7 @@
                         </select>
 
                         <div class="form-text">
-                            Pilih akun aktif dengan role Guru. Tidak perlu menghubungkan akun ke Profil Pegawai.
+                            Pilih akun aktif dengan role Guru. Satu guru dapat menjadi wali kelas untuk beberapa kelas pada tahun ajaran yang sama.
                         </div>
 
                         @error('homeroom_teacher_user_id')
@@ -276,11 +276,6 @@
                             </div>
 
                         @enderror
-
-                        <div class="form-text">
-                            Satu guru hanya dapat menjadi wali kelas satu kelas
-                            pada tahun ajaran yang sama.
-                        </div>
 
                     </div>
 

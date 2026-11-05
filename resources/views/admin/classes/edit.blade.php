@@ -268,7 +268,7 @@
                             </select>
 
                             <div class="form-text">
-                                Pilih akun aktif dengan role Guru. Satu akun hanya dapat menjadi wali kelas untuk satu kelas pada tahun ajaran yang sama.
+                                Pilih akun aktif dengan role Guru. Satu guru dapat menjadi wali kelas untuk beberapa kelas pada tahun ajaran yang sama.
                             </div>
 
                             @error('homeroom_teacher_user_id')

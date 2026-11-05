@@ -21,6 +21,8 @@ class EmployeeImport implements
      * Jumlah data yang berhasil diimport.
      */
     protected int $importedCount = 0;
+    protected int $updatedCount = 0;
+    protected array $warnings = [];
 
     /**
      * Proses seluruh baris Excel.
@@ -29,6 +31,7 @@ class EmployeeImport implements
     {
         $preparedRows = [];
         $errors = [];
+        $this->warnings = [];
 
         /*
          * Untuk mendeteksi data duplikat di file Excel
@@ -127,6 +130,39 @@ class EmployeeImport implements
              * 2. VALIDASI DATA
              * =====================================================
              */
+            $existingByNip = $data['nip']
+                ? Employee::where('nip', $data['nip'])->first()
+                : null;
+            $existingByNuptk = $data['nuptk']
+                ? Employee::where('nuptk', $data['nuptk'])->first()
+                : null;
+            $existingByEmail = $data['email']
+                ? Employee::where('email', $data['email'])->first()
+                : null;
+
+            if (
+                $existingByNip
+                && $existingByNuptk
+                && $existingByNip->id !== $existingByNuptk->id
+            ) {
+                $errors[] =
+                    "Baris {$excelRow}: NIP dan NUPTK mengarah ke data pegawai yang berbeda.";
+
+                continue;
+            }
+
+            $existingEmployee = $existingByNip ?? $existingByNuptk;
+            if (
+                !$existingEmployee
+                && $existingByEmail
+                && $data['name']
+                && mb_strtolower(trim($existingByEmail->name)) === mb_strtolower(trim($data['name']))
+            ) {
+                $existingEmployee = $existingByEmail;
+            }
+
+            $requiredOrNullable = $existingEmployee ? 'nullable' : 'required';
+
             $validator = Validator::make(
                 $data,
                 [
@@ -143,13 +179,13 @@ class EmployeeImport implements
                     ],
 
                     'name' => [
-                        'required',
+                        $requiredOrNullable,
                         'string',
                         'max:100',
                     ],
 
                     'gender' => [
-                        'required',
+                        $requiredOrNullable,
                         'in:L,P',
                     ],
 
@@ -159,7 +195,7 @@ class EmployeeImport implements
                     ],
 
                     'employment_status' => [
-                        'required',
+                        $requiredOrNullable,
                         'in:PNS,PPPK,Non-ASN',
                     ],
 
@@ -176,13 +212,13 @@ class EmployeeImport implements
                      * Keamanan
                      */
                     'position' => [
-                        'required',
+                        $requiredOrNullable,
                         'string',
                         'max:100',
                     ],
 
                     'status' => [
-                        'required',
+                        'nullable',
                         'in:Aktif,Nonaktif',
                     ],
 
@@ -264,10 +300,9 @@ class EmployeeImport implements
                         true
                     )
                     ||
-                    Employee::where(
-                        'nip',
-                        $data['nip']
-                    )->exists()
+                    Employee::where('nip', $data['nip'])
+                        ->when($existingEmployee, fn ($query) => $query->where('id', '!=', $existingEmployee->id))
+                        ->exists()
                 )
             ) {
 
@@ -293,10 +328,9 @@ class EmployeeImport implements
                         true
                     )
                     ||
-                    Employee::where(
-                        'nuptk',
-                        $data['nuptk']
-                    )->exists()
+                    Employee::where('nuptk', $data['nuptk'])
+                        ->when($existingEmployee, fn ($query) => $query->where('id', '!=', $existingEmployee->id))
+                        ->exists()
                 )
             ) {
 
@@ -322,17 +356,14 @@ class EmployeeImport implements
                         true
                     )
                     ||
-                    Employee::where(
-                        'email',
-                        $data['email']
-                    )->exists()
+                    Employee::where('email', $data['email'])
+                        ->when($existingEmployee, fn ($query) => $query->where('id', '!=', $existingEmployee->id))
+                        ->exists()
                 )
             ) {
-
-                $errors[] =
-                    "Baris {$excelRow}: Email {$data['email']} sudah digunakan.";
-
-                continue;
+                $this->warnings[] =
+                    "Baris {$excelRow}: Email {$data['email']} sudah digunakan pegawai lain; data selain email tetap diimpor.";
+                $data['email'] = null;
             }
 
 
@@ -352,6 +383,8 @@ class EmployeeImport implements
 
             $preparedRows[] = [
                 ...$data,
+
+                'employee_id' => $existingEmployee?->id,
 
                 'excel_row' =>
                     $excelRow,
@@ -384,11 +417,18 @@ class EmployeeImport implements
          */
         DB::transaction(
             function () use ($preparedRows) {
+                $updatedCount = 0;
 
                 foreach (
                     $preparedRows
                     as $data
                 ) {
+                    $employeeId = $data['employee_id'];
+                    unset($data['employee_id'], $data['excel_row']);
+
+                    $employee = $employeeId
+                        ? Employee::findOrFail($employeeId)
+                        : new Employee();
 
                     /*
                      * =================================================
@@ -399,10 +439,11 @@ class EmployeeImport implements
                      * Kepala Sekolah -> Kepala Sekolah
                      * Selain itu     -> Tenaga Kependidikan
                      */
-                    $employeeType =
-                        $this->employeeTypeFromPosition(
+                    if ($data['position'] !== null) {
+                        $data['employee_type'] = $this->employeeTypeFromPosition(
                             $data['position']
                         );
+                    }
 
 
                     /*
@@ -413,10 +454,11 @@ class EmployeeImport implements
                      * UI menggunakan Non-ASN.
                      * Database lama menggunakan Honorer.
                      */
-                    $employmentStatus =
-                        $this->employmentStatusForDatabase(
+                    if ($data['employment_status'] !== null) {
+                        $data['employment_status'] = $this->employmentStatusForDatabase(
                             $data['employment_status']
                         );
+                    }
 
 
                     /*
@@ -424,48 +466,12 @@ class EmployeeImport implements
                      * SIMPAN PEGAWAI
                      * =================================================
                      */
-                    Employee::create([
-
-                        'nip' =>
-                            $data['nip'],
-
-                        'nuptk' =>
-                            $data['nuptk'],
-
-                        'name' =>
-                            $data['name'],
-
-                        'gender' =>
-                            $data['gender'],
-
-                        'birth_place' =>
-                            $data['birth_place'],
-
-                        'birth_date' =>
-                            $data['birth_date'],
-
-                        'position' =>
-                            $data['position'],
-
-                        'employee_type' =>
-                            $employeeType,
-
-                        'employment_status' =>
-                            $employmentStatus,
-
-                        'phone' =>
-                            $data['phone'],
-
-                        'email' =>
-                            $data['email'],
-
-                        'address' =>
-                            $data['address'],
-
-                        'status' =>
-                            $data['status'],
-                    ]);
-
+                    $employee->fill(array_filter(
+                        $data,
+                        static fn ($value) => $value !== null
+                    ));
+                    $employee->save();
+                    $updatedCount += $employeeId !== null ? 1 : 0;
                 }
 
 
@@ -474,6 +480,7 @@ class EmployeeImport implements
                  */
                 $this->importedCount =
                     count($preparedRows);
+                $this->updatedCount = $updatedCount;
             }
         );
     }
@@ -485,6 +492,16 @@ class EmployeeImport implements
     public function getImportedCount(): int
     {
         return $this->importedCount;
+    }
+
+    public function getUpdatedCount(): int
+    {
+        return $this->updatedCount;
+    }
+
+    public function getWarnings(): array
+    {
+        return $this->warnings;
     }
 
 
@@ -499,11 +516,9 @@ class EmployeeImport implements
             return null;
         }
 
-        $value = trim(
-            (string) $value
-        );
+        $value = trim(str_replace("\u{00A0}", ' ', (string) $value));
 
-        return $value === ''
+        return $value === '' || $value === '-' || $value === '—'
             ? null
             : $value;
     }
@@ -635,17 +650,7 @@ class EmployeeImport implements
             return null;
         }
 
-        $normalized =
-            strtolower(
-                trim($value)
-            );
-
-        $normalized =
-            preg_replace(
-                '/\s+/',
-                ' ',
-                $normalized
-            );
+        $normalized = strtolower(trim(preg_replace('/\s+/u', ' ', $value)));
 
         return match ($normalized) {
 
@@ -692,6 +697,7 @@ class EmployeeImport implements
      * Excel:
      * Aktif
      * Tidak Aktif
+     * PNS / PPPK / PPPK Paruh Waktu (legacy employment-status column)
      *
      * Database:
      * Aktif
@@ -707,17 +713,7 @@ class EmployeeImport implements
             return null;
         }
 
-        $normalized =
-            strtolower(
-                trim($value)
-            );
-
-        $normalized =
-            preg_replace(
-                '/\s+/',
-                ' ',
-                $normalized
-            );
+        $normalized = strtolower(trim(preg_replace('/\s+/u', ' ', $value)));
 
         return match ($normalized) {
 
@@ -729,6 +725,18 @@ class EmployeeImport implements
             'non aktif',
             'tidakaktif'
                 => 'Nonaktif',
+
+            'pns',
+            'pppk',
+            'p3k',
+            'pppk paruh waktu',
+            'p3k paruh waktu',
+            'non-asn',
+            'non asn',
+            'nonasn',
+            'honorer',
+            'kontrak'
+                => null,
 
             default
                 => $value,
