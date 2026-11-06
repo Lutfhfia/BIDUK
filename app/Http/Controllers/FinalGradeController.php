@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicYear;
+use App\Models\Employee;
 use App\Models\FinalGrade;
 use App\Models\GraduationStatus;
 use App\Models\RekapAbsensi;
@@ -10,7 +11,6 @@ use App\Models\SchoolClass;
 use App\Models\SchoolProfile;
 use App\Models\Semester;
 use App\Models\Student;
-use App\Models\User;
 use App\Services\FinalGradeService;
 use App\Services\TeacherClassAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -38,23 +38,6 @@ class FinalGradeController extends Controller
      */
     public function edit(Request $request, SchoolClass $class, Student $student)
     {
-        return $this->renderFinalGrade($request, $class, $student, true);
-    }
-
-    /**
-     * Menampilkan nilai akhir/ijazah tanpa hak untuk mengubah data.
-     */
-    public function show(Request $request, SchoolClass $class, Student $student)
-    {
-        return $this->renderFinalGrade($request, $class, $student, false);
-    }
-
-    private function renderFinalGrade(
-        Request $request,
-        SchoolClass $class,
-        Student $student,
-        bool $canEditGrades
-    ) {
         app(TeacherClassAccess::class)->assertCanAccessClass($request->user(), $class);
 
         /*
@@ -144,7 +127,7 @@ class FinalGradeController extends Controller
         /*
          * Kepala sekolah.
          */
-        $headmaster = $this->getHeadmaster();
+        $headmaster = Employee::where('position', 'like', '%Kepala Sekolah%')->first();
 
         $returnUrl = $request->input('return_url')
             ?: session('report_card_grades_index_url')
@@ -167,8 +150,7 @@ class FinalGradeController extends Controller
             'attendanceMissingSemesters',
             'homeroomTeacher',
             'headmaster',
-            'returnUrl',
-            'canEditGrades'
+            'returnUrl'
         ));
     }
 
@@ -346,14 +328,22 @@ class FinalGradeController extends Controller
         $headmaster    = null;
         $headmasterNip = null;
 
-        $letterheadImage = base64_encode(
-            file_get_contents(public_path('images/nilai-akhir-kop.png'))
-        );
+        $imagePath = public_path('images/nilai-akhir-kop.png');
 
-        $headmasterUser = $this->getHeadmaster();
-        if ($headmasterUser) {
-            $headmaster = $headmasterUser->name;
-            $headmasterNip = $headmasterUser->employee?->nip;
+        $letterheadImage = null;
+
+        if (is_file($imagePath) && is_readable($imagePath)) {
+            $imageContent = file_get_contents($imagePath);
+
+            if ($imageContent !== false) {
+                $letterheadImage = base64_encode($imageContent);
+            }
+        }
+
+        $kepalaSekolah = Employee::where('position', 'like', '%Kepala Sekolah%')->first();
+        if ($kepalaSekolah) {
+            $headmaster    = $kepalaSekolah->name;
+            $headmasterNip = $kepalaSekolah->nip;
         }
 
         /*
@@ -386,16 +376,6 @@ class FinalGradeController extends Controller
         return Pdf::loadHTML($view->render())
             ->setPaper('a4', 'portrait')
             ->download($filename);
-    }
-
-    private function getHeadmaster(): ?User
-    {
-        return User::query()
-            ->with('employee')
-            ->where('status', 'Aktif')
-            ->whereHas('role', fn ($query) => $query->where('name', 'Kepala Sekolah'))
-            ->orderBy('id')
-            ->first();
     }
 
     /**
