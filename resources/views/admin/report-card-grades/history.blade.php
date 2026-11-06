@@ -381,7 +381,7 @@
                                         @if ($canManageClassHistory)
                                             @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
                                                 <button type="button"
-                                                        class="btn btn-sm btn-outline-primary w-100"
+                                                        class="btn btn-sm btn-success w-100"
                                                         data-bs-toggle="modal"
                                                         data-bs-target="#history-modal-{{ $level }}">
                                                     <i class="bi bi-journal-text me-1"></i>
@@ -550,7 +550,7 @@
                                 @if ($canManageClassHistory)
                                     @if ($historyAcademicYears->isNotEmpty() || auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('academic_years.create'))
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-primary w-100"
+                                                class="btn btn-sm btn-success w-100"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#history-modal-{{ $level }}">
                                             <i class="bi bi-plus-circle me-1"></i>
