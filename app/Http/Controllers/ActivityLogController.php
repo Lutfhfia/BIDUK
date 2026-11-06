@@ -78,7 +78,11 @@ class ActivityLogController extends Controller
             ->whereNotNull('action')
             ->distinct()
             ->orderBy('action')
-            ->pluck('action');
+            ->pluck('action')
+            ->merge(['imported'])
+            ->unique()
+            ->sort()
+            ->values();
 
         return view('activity-logs.index', compact(
             'logs',

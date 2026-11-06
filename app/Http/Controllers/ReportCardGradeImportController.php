@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ActivityLogger;
 use App\Services\ReportCardGradeImportContext;
 use App\Services\ReportCardGradeImportService;
 use Illuminate\Http\RedirectResponse;
@@ -111,6 +112,28 @@ class ReportCardGradeImportController extends Controller
         }
 
         $importedRecords = $importer->import($preview);
+        $summary = $preview['summary'];
+        app(ActivityLogger::class)->log(
+            'imported',
+            'report_card_grades',
+            sprintf(
+                'Import nilai rapor: %d data untuk %s, %s, semester %s.',
+                $importedRecords,
+                $preview['metadata']['class'],
+                $preview['metadata']['academic_year'],
+                $preview['metadata']['semester']
+            ),
+            null,
+            null,
+            [
+                'imported_records' => $importedRecords,
+                'new_records' => $summary['new_records'],
+                'updated_records' => $summary['updated_records'],
+                'academic_year_id' => $preview['academic_year_id'],
+                'class_id' => $selection['class']->id,
+                'semester_id' => $selection['semester']->id,
+            ]
+        );
         Storage::disk('local')->delete($session['path']);
         $request->session()->forget($sessionKey);
 

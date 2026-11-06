@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\ReportCardGradeController;
 use App\Http\Controllers\ReportCardGradeImportController;
 use App\Models\AcademicYear;
+use App\Models\ActivityLog;
 use App\Models\ClassStudent;
 use App\Models\Employee;
 use App\Models\ReportCardGrade;
@@ -452,6 +453,17 @@ class ReportCardGradeImportTest extends TestCase
             'token' => $previewResponse->viewData('token'),
         ])->assertRedirect()
             ->assertSessionHas('success');
+
+        $activityLog = ActivityLog::where('module', 'report_card_grades')
+            ->where('action', 'imported')
+            ->firstOrFail();
+        $this->assertSame($admin->id, $activityLog->user_id);
+        $this->assertSame(2, $activityLog->new_values['imported_records']);
+        $this->assertSame(2, $activityLog->new_values['new_records']);
+        $this->assertSame(0, $activityLog->new_values['updated_records']);
+        $this->assertSame($year->id, $activityLog->new_values['academic_year_id']);
+        $this->assertSame($class->id, $activityLog->new_values['class_id']);
+        $this->assertSame($odd->id, $activityLog->new_values['semester_id']);
 
         foreach ([
             [$math, [81.5, 'B', 'Capaian pembelajaran Matematika']],

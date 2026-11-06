@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
+use App\Models\ActivityLog;
 use App\Models\Employee;
 use App\Models\Permission;
 use App\Models\Role;
@@ -135,6 +136,16 @@ class StudentImportTargetTest extends TestCase
             'height' => 150,
             'weight' => 52,
         ]);
+
+        $activityLog = ActivityLog::where('module', 'students')
+            ->where('action', 'imported')
+            ->firstOrFail();
+        $this->assertSame($teacher->id, $activityLog->user_id);
+        $this->assertSame(1, $activityLog->new_values['created']);
+        $this->assertSame(0, $activityLog->new_values['updated']);
+        $this->assertSame(0, $activityLog->new_values['skipped']);
+        $this->assertSame($year->id, $activityLog->new_values['academic_year_id']);
+        $this->assertSame($class->id, $activityLog->new_values['class_id']);
     }
 
     public function test_import_restores_columns_when_student_workbook_omits_nisn_column(): void

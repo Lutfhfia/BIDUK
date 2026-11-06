@@ -26,6 +26,7 @@ class ActivityLog extends Model
         'created' => 'Ditambahkan',
         'updated' => 'Diperbarui',
         'deleted' => 'Dihapus',
+        'imported' => 'Diimpor',
         'login' => 'Login',
         'logout' => 'Keluar',
         'students_added' => 'Siswa Ditambahkan',

@@ -4,10 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Employee;
 use App\Imports\EmployeeImport;
+use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class UserManagementEmployeeLinkTest extends TestCase
@@ -198,6 +202,34 @@ class UserManagementEmployeeLinkTest extends TestCase
         $this->assertDatabaseMissing('users', [
             'username' => '60006',
         ]);
+    }
+
+    public function test_employee_import_is_recorded_in_activity_log(): void
+    {
+        $admin = $this->createSuperAdmin();
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['nip', 'nuptk', 'nama_lengkap', 'jenis_kelamin', 'status_kepegawaian', 'jabatan', 'status', 'email'],
+            ['60007', null, 'Pegawai Tercatat', 'L', 'PNS', 'Guru', 'Aktif', 'pegawai-tercatat@example.test'],
+        ]);
+        $path = tempnam(sys_get_temp_dir(), 'employee-import-');
+        (new Xlsx($spreadsheet))->save($path);
+        $file = UploadedFile::fake()->createWithContent('pegawai.xlsx', file_get_contents($path));
+        unlink($path);
+
+        $this->actingAs($admin)
+            ->post(route('pegawai.import'), ['file' => $file])
+            ->assertRedirect(route('pegawai.index'))
+            ->assertSessionHas('success');
+
+        $activityLog = ActivityLog::where('module', 'employees')
+            ->where('action', 'imported')
+            ->firstOrFail();
+        $this->assertSame($admin->id, $activityLog->user_id);
+        $this->assertSame(1, $activityLog->new_values['processed']);
+        $this->assertSame(1, $activityLog->new_values['created']);
+        $this->assertSame(0, $activityLog->new_values['updated']);
     }
 
     public function test_import_updates_existing_employee_and_keeps_values_for_blank_cells(): void

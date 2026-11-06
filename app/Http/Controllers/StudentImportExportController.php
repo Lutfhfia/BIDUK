@@ -15,6 +15,7 @@ use App\Exports\StudentsTemplateExport;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Student;
+use App\Services\ActivityLogger;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -136,6 +137,27 @@ class StudentImportExportController extends Controller
             );
 
             Excel::import($import, $request->file('file'));
+
+            $importSummary = [
+                'created' => $import->getImportedCount(),
+                'updated' => $import->getUpdatedCount(),
+                'skipped' => $import->getSkippedCount(),
+                'academic_year_id' => $request->integer('academic_year_id'),
+                'class_id' => $class?->id,
+            ];
+            app(ActivityLogger::class)->log(
+                'imported',
+                'students',
+                sprintf(
+                    'Import data siswa: %d baru, %d diperbarui, %d dilewati/gagal.',
+                    $importSummary['created'],
+                    $importSummary['updated'],
+                    $importSummary['skipped']
+                ),
+                null,
+                null,
+                $importSummary
+            );
 
             $message = sprintf(
                 'Import selesai. Baru: %d, diperbarui: %d, dilewati/gagal: %d.',

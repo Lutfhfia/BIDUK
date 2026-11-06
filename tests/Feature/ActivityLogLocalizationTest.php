@@ -25,13 +25,20 @@ class ActivityLogLocalizationTest extends TestCase
             'module' => 'student_class_histories',
             'description' => 'Menambahkan siswa ke kelas 1A',
         ]);
+        ActivityLog::create([
+            'action' => 'imported',
+            'module' => 'students',
+            'description' => 'Import data siswa: 1 baru.',
+        ]);
 
         $this->actingAs($admin)
             ->get(route('activity-logs.index'))
             ->assertOk()
             ->assertSeeText('Autentikasi')
             ->assertSeeText('Riwayat Kelas Siswa')
+            ->assertSeeText('Siswa')
             ->assertSeeText('Siswa Ditambahkan')
+            ->assertSeeText('Diimpor')
             ->assertSeeText('Login')
             ->assertDontSeeText('Authentication')
             ->assertDontSeeText('Student Class Histories')
@@ -64,6 +71,18 @@ class ActivityLogLocalizationTest extends TestCase
             ->assertSeeText('Diperbarui')
             ->assertSee('value="academic_years"', false)
             ->assertSee('value="updated"', false)
+            ->assertSee('selected', false);
+    }
+
+    public function test_import_filter_is_available_before_any_import_activity_exists(): void
+    {
+        $admin = $this->createSuperAdmin();
+
+        $this->actingAs($admin)
+            ->get(route('activity-logs.index', ['action' => 'imported']))
+            ->assertOk()
+            ->assertSeeText('Diimpor')
+            ->assertSee('value="imported"', false)
             ->assertSee('selected', false);
     }
 

@@ -591,6 +591,25 @@ class EmployeeController extends Controller
                 $request->file('file')
             );
 
+            $importSummary = [
+                'processed' => $import->getImportedCount(),
+                'created' => $import->getImportedCount() - $import->getUpdatedCount(),
+                'updated' => $import->getUpdatedCount(),
+            ];
+            app(ActivityLogger::class)->log(
+                'imported',
+                'employees',
+                sprintf(
+                    'Import data pegawai: %d diproses, %d baru, %d diperbarui.',
+                    $importSummary['processed'],
+                    $importSummary['created'],
+                    $importSummary['updated']
+                ),
+                null,
+                null,
+                $importSummary
+            );
+
             return redirect()
                 ->route('pegawai.index')
                 ->with(
