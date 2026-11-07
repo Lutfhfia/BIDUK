@@ -516,7 +516,7 @@
                         @if (auth()->user()?->isSuperAdmin() || auth()->user()?->hasPermission('classes.create'))
                         <a
                             href="{{ route('classes.create') }}"
-                            class="btn btn-biduk-primary"
+                            class="btn btn-biduk-primary empty-state-add-btn"
                         >
                             <i class="bi bi-plus-lg me-1"></i>
                             Tambah Kelas Pertama

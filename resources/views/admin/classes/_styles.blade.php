@@ -11,6 +11,15 @@
         color: #fff;
     }
 
+    .class-management-page .empty-state-add-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .class-management-page .empty-state-add-btn i {
+        font-size: 0.9rem;
+    }
+
     .class-management-page .btn-biduk-outline:active {
         border-color: var(--biduk-primary-dark);
         background: var(--biduk-primary-dark);
